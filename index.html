@@ -245,6 +245,9 @@ li:last-child {
         <input type="password" id="login-password" placeholder="Password" required>
         <button type="submit">Login</button>
       </form>
+      <p style="text-align: center; margin-top: 25px; color: #666;">
+        Don't have an account? <button id="login-register-btn" style="background: none; border: none; color: #667eea; cursor: pointer; text-decoration: underline;">Register</button>
+      </p>
     </div>
 
     <!-- Register Page -->
@@ -261,7 +264,7 @@ li:last-child {
           <option value="">Select Role</option>
           <option value="Student">Student</option>
           <option value="Instructor">Instructor</option>
-          <option value="Exam Administrator">Exam Administrator</option>
+          <option value="Exam Administrator" id="admin-option">Exam Administrator</option>
         </select>
         <button type="submit">Register</button>
       </form>
@@ -417,6 +420,10 @@ li:last-child {
     function showPage(pageId) {
       document.querySelectorAll('#app > div').forEach(div => div.classList.add('hidden'));
       document.getElementById(pageId).classList.remove('hidden');
+      if (pageId === 'register-page') {
+        const hasAdmin = users.some(u => u.role === 'Exam Administrator');
+        document.getElementById('admin-option').style.display = hasAdmin ? 'none' : 'block';
+      }
     }
 
     function saveData() {
@@ -428,12 +435,13 @@ li:last-child {
     }
 
     // Initialize
+    const hasAdmin = users.some(u => u.role === 'Exam Administrator');
     if (currentUser) {
       if (currentUser.role === 'Student') showStudentDashboard();
       else if (currentUser.role === 'Instructor') showInstructorDashboard();
       else if (currentUser.role === 'Exam Administrator') showAdminDashboard();
       else showPage('login-page');
-    } else if (users.length === 0) {
+    } else if (users.length === 0 || !hasAdmin) {
       showPage('register-page');
     } else {
       showPage('login-page');
@@ -454,6 +462,17 @@ li:last-child {
       } else {
         alert('Invalid credentials or account deactivated');
       }
+    });
+
+    // Register button on login page
+    document.getElementById('login-register-btn').addEventListener('click', function() {
+      const hasAdmin = users.some(u => u.role === 'Exam Administrator');
+      if (hasAdmin) {
+        document.getElementById('admin-option').style.display = 'none';
+      } else {
+        document.getElementById('admin-option').style.display = 'block';
+      }
+      showPage('register-page');
     });
 
     // Register
