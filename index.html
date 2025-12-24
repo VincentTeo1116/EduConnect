@@ -173,6 +173,7 @@ const HomePage = () => {
           value={loginData.email}
           onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
           required
+          autoComplete="off"
         />
         <input
           type="password"
@@ -180,6 +181,7 @@ const HomePage = () => {
           value={loginData.password}
           onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
           required
+          autoComplete="off"
         />
         <button type="submit">Login</button>
       </form>
@@ -197,6 +199,7 @@ const HomePage = () => {
           value={registerData.name}
           onChange={(e) => setRegisterData({ ...registerData, name: e.target.value })}
           required
+          autoComplete="off"
         />
         <input
           type="email"
@@ -204,6 +207,7 @@ const HomePage = () => {
           value={registerData.email}
           onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
           required
+          autoComplete="off"
         />
         <input
           type="password"
@@ -211,6 +215,7 @@ const HomePage = () => {
           value={registerData.password}
           onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
           required
+          autoComplete="off"
         />
         <button type="submit">Register</button>
       </form>
