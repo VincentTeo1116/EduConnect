@@ -113,16 +113,14 @@ li {
   <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script type="text/babel">
-import React, { useState, useEffect } from 'react';
-
 const HomePage = () => {
-  const [page, setPage] = useState('login');
-  const [users, setUsers] = useState([]);
-  const [currentUser, setCurrentUser] = useState(null);
-  const [loginData, setLoginData] = useState({ email: '', password: '' });
-  const [registerData, setRegisterData] = useState({ name: '', email: '', password: '' });
+  const [page, setPage] = React.useState('login');
+  const [users, setUsers] = React.useState([]);
+  const [currentUser, setCurrentUser] = React.useState(null);
+  const [loginData, setLoginData] = React.useState({ email: '', password: '' });
+  const [registerData, setRegisterData] = React.useState({ name: '', email: '', password: '' });
 
-  useEffect(() => {
+  React.useEffect(() => {
     const storedUsers = JSON.parse(localStorage.getItem('users')) || [];
     setUsers(storedUsers);
     const storedUser = JSON.parse(localStorage.getItem('currentUser'));
