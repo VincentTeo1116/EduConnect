@@ -470,34 +470,16 @@ const HomePage = () => {
     localStorage.setItem('questions', JSON.stringify(updatedQuestions));
   };
 
-  const chatbotRespond = async (query) => {
-    if (!chatbotApiKey) {
-      return 'Please set your DeepSeek API key in the chatbot section.';
-    }
-    try {
-      const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${chatbotApiKey}`
-        },
-        body: JSON.stringify({
-          model: 'deepseek-chat',
-          messages: [{ role: 'user', content: query }],
-          max_tokens: 150
-        })
-      });
-      const data = await response.json();
-      return data.choices[0].message.content;
-    } catch (error) {
-      return 'Error connecting to chatbot. Check your API key.';
-    }
+  const chatbotRespond = (query) => {
+    // Placeholder for DeepSeek API integration
+    // Replace with actual API call when ready
+    return 'Chatbot response: ' + query + ' (API integration pending)';
   };
 
-  const handleChatbot = async (e) => {
+  const handleChatbot = (e) => {
     e.preventDefault();
     localStorage.setItem('chatbotApiKey', chatbotApiKey);
-    const response = await chatbotRespond(chatbotQuery);
+    const response = chatbotRespond(chatbotQuery);
     setChatbotResponse(response);
   };
 
