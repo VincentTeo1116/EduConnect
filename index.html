@@ -192,8 +192,17 @@ li:hover {
   background: rgba(102, 126, 234, 0.05);
 }
 
-li:last-child {
-  border-bottom: none;
+.logo {
+  width: 50px;
+  height: auto;
+  margin-right: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+}
+
+.logo:hover {
+  transform: scale(1.05);
 }
   </style>
 </head>
@@ -205,6 +214,9 @@ li:last-child {
   <script type="text/babel">
 const LoginForm = ({ loginData, setLoginData, handleLogin, setPage }) => (
   <div className="form-container">
+    <div style={{textAlign: 'center', marginBottom: '20px'}}>
+      <img src="Images/Logo.png" alt="EduConnect Logo" className="logo" />
+    </div>
     <h2>Login to EduConnect</h2>
     <form onSubmit={handleLogin}>
       <input
@@ -231,6 +243,9 @@ const LoginForm = ({ loginData, setLoginData, handleLogin, setPage }) => (
 
 const RegisterForm = ({ registerData, setRegisterData, handleRegister, setPage }) => (
   <div className="form-container">
+    <div style={{textAlign: 'center', marginBottom: '20px'}}>
+      <img src="Images/Logo.png" alt="EduConnect Logo" className="logo" />
+    </div>
     <h2>Register for EduConnect</h2>
     <form onSubmit={handleRegister}>
       <input
@@ -266,7 +281,10 @@ const RegisterForm = ({ registerData, setRegisterData, handleRegister, setPage }
 const MainPage = ({ currentUser, handleLogout }) => (
   <div className="main-container">
     <header>
-      <h1>Welcome to EduConnect Learning Centre, {currentUser.name}!</h1>
+      <div style={{display: 'flex', alignItems: 'center'}}>
+        <img src="Images/Logo.png" alt="EduConnect Logo" className="logo" />
+        <h1>Welcome to EduConnect Learning Centre, {currentUser.name}!</h1>
+      </div>
       <button onClick={handleLogout}>Logout</button>
     </header>
     <main>
