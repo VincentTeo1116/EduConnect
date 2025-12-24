@@ -271,7 +271,6 @@ const LoginForm = ({ loginData, setLoginData, handleLogin, setPage }) => (
       />
       <button type="submit">Login</button>
     </form>
-
       />
       <input
         type="password"
@@ -380,7 +379,7 @@ const HomePage = () => {
     }
   };
 
-  const handleRegister = (e) => {
+  const handleCreateUser = (e) => {
     e.preventDefault();
     if (users.find(u => u.email === registerData.email)) {
       alert('User already exists');
@@ -390,9 +389,8 @@ const HomePage = () => {
     const updatedUsers = [...users, newUser];
     setUsers(updatedUsers);
     localStorage.setItem('users', JSON.stringify(updatedUsers));
-    setCurrentUser(newUser);
-    localStorage.setItem('currentUser', JSON.stringify(newUser));
-    setPage('home');
+    setRegisterData({ name: '', email: '', password: '', role: '' }); // Reset form
+    alert('User created successfully');
   };
 
   const handleLogout = () => {
@@ -613,7 +611,7 @@ const HomePage = () => {
       <main>
         <section>
           <h3>Create User Account</h3>
-          <form onSubmit={handleRegister}>
+          <form onSubmit={handleCreateUser}>
             <input placeholder="Name" value={registerData.name} onChange={(e) => setRegisterData({ ...registerData, name: e.target.value })} required />
             <input type="email" placeholder="Email" value={registerData.email} onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })} required />
             <input type="password" placeholder="Password" value={registerData.password} onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })} required />
