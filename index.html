@@ -654,6 +654,7 @@ const HomePage = () => {
     if (currentUser.role === 'Student') return <StudentDashboard />;
     if (currentUser.role === 'Instructor') return <InstructorDashboard />;
     if (currentUser.role === 'Exam Administrator') return <AdminDashboard />;
+    return <div>Invalid role. Please contact administrator.</div>;
   }
 };
 
