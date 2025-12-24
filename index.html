@@ -351,10 +351,15 @@ const HomePage = () => {
   React.useEffect(() => {
     try {
       const storedUsers = JSON.parse(localStorage.getItem('users')) || [];
-      setUsers(storedUsers);
+      // Backward compatibility: set default role if missing
+      const updatedUsers = storedUsers.map(u => ({ ...u, role: u.role || 'Student', active: u.active !== false }));
+      setUsers(updatedUsers);
+      localStorage.setItem('users', JSON.stringify(updatedUsers));
       const storedUser = JSON.parse(localStorage.getItem('currentUser'));
       if (storedUser) {
-        setCurrentUser(storedUser);
+        const userWithRole = { ...storedUser, role: storedUser.role || 'Student' };
+        setCurrentUser(userWithRole);
+        localStorage.setItem('currentUser', JSON.stringify(userWithRole));
         setPage('home');
       }
       const storedAssessments = JSON.parse(localStorage.getItem('assessments')) || [];
@@ -391,7 +396,7 @@ const HomePage = () => {
       alert('User already exists');
       return;
     }
-    const newUser = { ...registerData, id: Date.now(), active: true };
+    const newUser = { ...registerData, id: Date.now(), active: true, role: registerData.role || 'Student' };
     const updatedUsers = [...users, newUser];
     setUsers(updatedUsers);
     localStorage.setItem('users', JSON.stringify(updatedUsers));
