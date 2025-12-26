@@ -124,7 +124,9 @@
         e.preventDefault();
         const enrolledClasses = classes.filter(c => c.students.includes(currentUser.id));
         const moduleId = parseInt(feedbackData.moduleId);
-        const isEnrolled = enrolledClasses.some(c => c.moduleId === moduleId);
+        
+        // Allow feedback if enrolled in the module OR if no enrollment system is set up yet
+        const isEnrolled = enrolledClasses.some(c => c.moduleId === moduleId) || enrolledClasses.length === 0;
         
         if (!isEnrolled) {
           alert('You must be enrolled in this module to give feedback');
@@ -155,7 +157,10 @@
 
       const enrolledClasses = classes.filter(c => c.students.includes(currentUser.id));
       const enrolledModuleIds = enrolledClasses.map(c => c.moduleId);
-      const enrolledAssessments = assessments.filter(a => enrolledModuleIds.includes(a.moduleId));
+      // Fallback: if no enrolled classes, show all assessments (for backward compatibility)
+      const enrolledAssessments = enrolledModuleIds.length > 0 
+        ? assessments.filter(a => a.moduleId && enrolledModuleIds.includes(a.moduleId))
+        : assessments;
 
       return (
         <div className="main-container">
@@ -219,7 +224,7 @@
                   required
                 >
                   <option value="">Select Module</option>
-                  {enrolledModuleIds.map(moduleId => {
+                  {(enrolledModuleIds.length > 0 ? enrolledModuleIds : modules.map(m => m.id)).map(moduleId => {
                     const module = modules.find(m => m.id === moduleId);
                     return <option key={moduleId} value={moduleId}>{module?.name}</option>;
                   })}
@@ -290,7 +295,7 @@
 
       // Get modules taught by this instructor (modules that have assessments by this instructor)
       const taughtModuleIds = [...new Set(assessments.filter(a => a.instructorId === currentUser.id).map(a => a.moduleId))];
-      const taughtModules = modules.filter(m => taughtModuleIds.includes(m.id));
+      const taughtModules = taughtModuleIds.length > 0 ? modules.filter(m => taughtModuleIds.includes(m.id)) : modules;
 
       return (
         <div className="main-container">
@@ -557,7 +562,10 @@
                         moduleFeedbacks.map(f => (
                           <div key={f.id} style={{ border: '1px solid #eee', padding: '8px', margin: '5px 0' }}>
                             <p><strong>Student:</strong> {users.find(u => u.id === f.studentId)?.name}</p>
-                            <p><strong>Lecturer:</strong> {users.find(u => assessments.find(a => a.moduleId === module.id && a.instructorId === u.id))?.name}</p>
+                            <p><strong>Lecturer:</strong> {(() => {
+                              const lecturerId = assessments.find(a => a.moduleId === module.id)?.instructorId;
+                              return users.find(u => u.id === lecturerId)?.name || 'Unknown';
+                            })()}</p>
                             <p><strong>Comment:</strong> {f.comment}</p>
                             <p><small>{new Date(f.timestamp).toLocaleString()}</small></p>
                           </div>
@@ -757,13 +765,46 @@
         const storedModules = JSON.parse(localStorage.getItem('modules')) || [];
         const storedClasses = JSON.parse(localStorage.getItem('classes')) || [];
         const storedFeedbacks = JSON.parse(localStorage.getItem('feedbacks')) || [];
+        
+        // Ensure all assessments have moduleId (for backward compatibility)
+        const updatedAssessments = storedAssessments.map(a => ({
+          ...a,
+          moduleId: a.moduleId || 1 // Default to first module if missing
+        }));
+        
+        // Create default modules and classes if none exist
+        let finalModules = storedModules;
+        let finalClasses = storedClasses;
+        if (storedModules.length === 0) {
+          finalModules = [
+            { id: 1, name: 'Introduction to Programming', description: 'Basic programming concepts' },
+            { id: 2, name: 'Data Structures', description: 'Advanced data structures and algorithms' },
+            { id: 3, name: 'Web Development', description: 'Frontend and backend web development' }
+          ];
+          localStorage.setItem('modules', JSON.stringify(finalModules));
+        }
+        if (storedClasses.length === 0 && finalModules.length > 0) {
+          finalClasses = [
+            { id: 1, name: 'Programming Class A', moduleId: 1, students: [] },
+            { id: 2, name: 'Data Structures Class B', moduleId: 2, students: [] },
+            { id: 3, name: 'Web Dev Class C', moduleId: 3, students: [] }
+          ];
+          localStorage.setItem('classes', JSON.stringify(finalClasses));
+        }
+        
         setUsers(storedUsers);
-        setAssessments(storedAssessments);
+        setAssessments(updatedAssessments);
         setSubmissions(storedSubmissions);
         setQuestions(storedQuestions);
-        setModules(storedModules);
-        setClasses(storedClasses);
+        setModules(finalModules);
+        setClasses(finalClasses);
         setFeedbacks(storedFeedbacks);
+        
+        // Save updated assessments back to localStorage if any were modified
+        if (updatedAssessments.some((a, i) => a.moduleId !== storedAssessments[i]?.moduleId)) {
+          localStorage.setItem('assessments', JSON.stringify(updatedAssessments));
+        }
+        
         const storedUser = JSON.parse(localStorage.getItem('currentUser'));
         if (storedUser) {
           setCurrentUser(storedUser);
