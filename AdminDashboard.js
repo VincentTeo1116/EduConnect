@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 
-const AdminDashboard = ({ currentUser, users, assessments, submissions, setUsers, handleLogout, goToProfile }) => {
+const AdminDashboard = ({ currentUser, users, modules, classes, setUsers, setModules, setClasses, handleLogout, goToProfile }) => {
   const [userData, setUserData] = useState({ name: '', email: '', password: '', role: '' });
+  const [moduleData, setModuleData] = useState({ name: '', description: '' });
+  const [classData, setClassData] = useState({ name: '', moduleId: '' });
 
   const handleUserSubmit = (e) => {
     e.preventDefault();
@@ -22,10 +24,34 @@ const AdminDashboard = ({ currentUser, users, assessments, submissions, setUsers
     localStorage.setItem('users', JSON.stringify(updated));
   };
 
-  const approveGrade = (submissionId) => {
-    // Assuming submissions is passed, but for admin, approve grades
-    // Need to pass submissions and setSubmissions
-    alert('Grade approved');
+  const handleModuleSubmit = (e) => {
+    e.preventDefault();
+    const newModule = { id: Date.now(), name: moduleData.name, description: moduleData.description };
+    setModules(prev => [...prev, newModule]);
+    localStorage.setItem('modules', JSON.stringify([...modules, newModule]));
+    setModuleData({ name: '', description: '' });
+    alert('Module created');
+  };
+
+  const deleteModule = (moduleId) => {
+    setModules(prev => prev.filter(m => m.id !== moduleId));
+    const updated = modules.filter(m => m.id !== moduleId);
+    localStorage.setItem('modules', JSON.stringify(updated));
+  };
+
+  const handleClassSubmit = (e) => {
+    e.preventDefault();
+    const newClass = { id: Date.now(), name: classData.name, moduleId: parseInt(classData.moduleId), students: [] };
+    setClasses(prev => [...prev, newClass]);
+    localStorage.setItem('classes', JSON.stringify([...classes, newClass]));
+    setClassData({ name: '', moduleId: '' });
+    alert('Class created');
+  };
+
+  const deleteClass = (classId) => {
+    setClasses(prev => prev.filter(c => c.id !== classId));
+    const updated = classes.filter(c => c.id !== classId);
+    localStorage.setItem('classes', JSON.stringify(updated));
   };
 
   return (
@@ -51,6 +77,7 @@ const AdminDashboard = ({ currentUser, users, assessments, submissions, setUsers
               <option value="">Select Role</option>
               <option value="Student">Student</option>
               <option value="Instructor">Instructor</option>
+              <option value="Admin">Admin</option>
               <option value="Exam Administrator">Exam Administrator</option>
             </select>
             <button type="submit">Create User</button>
@@ -68,12 +95,42 @@ const AdminDashboard = ({ currentUser, users, assessments, submissions, setUsers
           </div>
         </section>
         <section>
-          <h3>Approve Grades</h3>
+          <h3>Create Module</h3>
+          <form onSubmit={handleModuleSubmit}>
+            <input type="text" placeholder="Module Name" value={moduleData.name} onChange={(e) => setModuleData({ ...moduleData, name: e.target.value })} required />
+            <textarea placeholder="Description" value={moduleData.description} onChange={(e) => setModuleData({ ...moduleData, description: e.target.value })} required />
+            <button type="submit">Create Module</button>
+          </form>
+        </section>
+        <section>
+          <h3>Manage Modules</h3>
           <div>
-            {submissions.filter(s => s.status === 'graded').map(s => (
-              <div key={s.id} style={{ border: '1px solid #ddd', padding: '10px', margin: '10px 0' }}>
-                <p>Grade: {s.grade}</p>
-                <button onClick={() => approveGrade(s.id)}>Approve</button>
+            {modules.map(m => (
+              <div key={m.id} style={{ border: '1px solid #ddd', padding: '10px', margin: '10px 0' }}>
+                <p>{m.name} - {m.description}</p>
+                <button onClick={() => deleteModule(m.id)}>Delete</button>
+              </div>
+            ))}
+          </div>
+        </section>
+        <section>
+          <h3>Create Class</h3>
+          <form onSubmit={handleClassSubmit}>
+            <input type="text" placeholder="Class Name" value={classData.name} onChange={(e) => setClassData({ ...classData, name: e.target.value })} required />
+            <select value={classData.moduleId} onChange={(e) => setClassData({ ...classData, moduleId: e.target.value })} required>
+              <option value="">Select Module</option>
+              {modules.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+            </select>
+            <button type="submit">Create Class</button>
+          </form>
+        </section>
+        <section>
+          <h3>Manage Classes</h3>
+          <div>
+            {classes.map(c => (
+              <div key={c.id} style={{ border: '1px solid #ddd', padding: '10px', margin: '10px 0' }}>
+                <p>{c.name} - Module: {modules.find(m => m.id === c.moduleId)?.name}</p>
+                <button onClick={() => deleteClass(c.id)}>Delete</button>
               </div>
             ))}
           </div>

@@ -36,6 +36,7 @@ const RegisterPage = ({ registerData, setRegisterData, handleRegister, goToLogin
         <option value="">Select Role</option>
         <option value="Student">Student</option>
         <option value="Instructor">Instructor</option>
+        <option value="Admin">Admin</option>
         <option value="Exam Administrator">Exam Administrator</option>
       </select>
       <button type="submit">Register</button>

@@ -367,12 +367,214 @@
       );
     };
 
+    const ExamAdminDashboard = ({ currentUser, assessments, submissions, users, handleLogout, goToProfile }) => {
+      return (
+        <div className="main-container">
+          <header>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <img src="Images/Logo.png" alt="EduConnect Logo" className="logo" />
+              <h1>Welcome, {currentUser.name} (Exam Administrator)</h1>
+            </div>
+            <div>
+              <button onClick={goToProfile}>Profile</button>
+              <button onClick={handleLogout}>Logout</button>
+            </div>
+          </header>
+          <main>
+            <section>
+              <h3>Module Results</h3>
+              <div>
+                {assessments.map(a => (
+                  <div key={a.id} style={{ border: '1px solid #ddd', padding: '10px', margin: '10px 0' }}>
+                    <h4>{a.title} - {a.course}</h4>
+                    <p>Submissions:</p>
+                    <ul>
+                      {submissions.filter(s => s.assessmentId === a.id).map(s => (
+                        <li key={s.id}>
+                          Student: {users.find(u => u.id === s.studentId)?.name} - Grade: {s.grade} - Status: {s.status}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </section>
+            <section>
+              <h3>Feedback from Students to Lecturers</h3>
+              <div>
+                {submissions.filter(s => s.feedback).map(s => (
+                  <div key={s.id} style={{ border: '1px solid #ddd', padding: '10px', margin: '10px 0' }}>
+                    <p>Assessment: {assessments.find(a => a.id === s.assessmentId)?.title}</p>
+                    <p>Student: {users.find(u => u.id === s.studentId)?.name}</p>
+                    <p>Feedback: {s.feedback}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
+            <section>
+              <h3>Grading Criteria</h3>
+              <div>
+                {assessments.map(a => (
+                  <div key={a.id} style={{ border: '1px solid #ddd', padding: '10px', margin: '10px 0' }}>
+                    <h4>{a.title}</h4>
+                    <p>Criteria: {a.criteria}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </main>
+        </div>
+      );
+    };
+
+    const AdminDashboard = ({ currentUser, users, modules, classes, setUsers, setModules, setClasses, handleLogout, goToProfile }) => {
+      const [userData, setUserData] = useState({ name: '', email: '', password: '', role: '' });
+      const [moduleData, setModuleData] = useState({ name: '', description: '' });
+      const [classData, setClassData] = useState({ name: '', moduleId: '' });
+
+      const handleUserSubmit = (e) => {
+        e.preventDefault();
+        if (users.find(u => u.email === userData.email)) {
+          alert('User already exists');
+          return;
+        }
+        const newUser = { id: Date.now(), name: userData.name, email: userData.email, password: userData.password, role: userData.role, active: true };
+        setUsers(prev => [...prev, newUser]);
+        localStorage.setItem('users', JSON.stringify([...users, newUser]));
+        setUserData({ name: '', email: '', password: '', role: '' });
+        alert('User created');
+      };
+
+      const toggleUser = (userId) => {
+        setUsers(prev => prev.map(u => u.id === userId ? { ...u, active: !u.active } : u));
+        const updated = users.map(u => u.id === userId ? { ...u, active: !u.active } : u);
+        localStorage.setItem('users', JSON.stringify(updated));
+      };
+
+      const handleModuleSubmit = (e) => {
+        e.preventDefault();
+        const newModule = { id: Date.now(), name: moduleData.name, description: moduleData.description };
+        setModules(prev => [...prev, newModule]);
+        localStorage.setItem('modules', JSON.stringify([...modules, newModule]));
+        setModuleData({ name: '', description: '' });
+        alert('Module created');
+      };
+
+      const deleteModule = (moduleId) => {
+        setModules(prev => prev.filter(m => m.id !== moduleId));
+        const updated = modules.filter(m => m.id !== moduleId);
+        localStorage.setItem('modules', JSON.stringify(updated));
+      };
+
+      const handleClassSubmit = (e) => {
+        e.preventDefault();
+        const newClass = { id: Date.now(), name: classData.name, moduleId: parseInt(classData.moduleId), students: [] };
+        setClasses(prev => [...prev, newClass]);
+        localStorage.setItem('classes', JSON.stringify([...classes, newClass]));
+        setClassData({ name: '', moduleId: '' });
+        alert('Class created');
+      };
+
+      const deleteClass = (classId) => {
+        setClasses(prev => prev.filter(c => c.id !== classId));
+        const updated = classes.filter(c => c.id !== classId);
+        localStorage.setItem('classes', JSON.stringify(updated));
+      };
+
+      return (
+        <div className="main-container">
+          <header>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <img src="Images/Logo.png" alt="EduConnect Logo" className="logo" />
+              <h1>Welcome, {currentUser.name} (Admin)</h1>
+            </div>
+            <div>
+              <button onClick={goToProfile}>Profile</button>
+              <button onClick={handleLogout}>Logout</button>
+            </div>
+          </header>
+          <main>
+            <section>
+              <h3>Create User Account</h3>
+              <form onSubmit={handleUserSubmit}>
+                <input type="text" placeholder="Name" value={userData.name} onChange={(e) => setUserData({ ...userData, name: e.target.value })} required />
+                <input type="email" placeholder="Email" value={userData.email} onChange={(e) => setUserData({ ...userData, email: e.target.value })} required />
+                <input type="password" placeholder="Password" value={userData.password} onChange={(e) => setUserData({ ...userData, password: e.target.value })} required />
+                <select value={userData.role} onChange={(e) => setUserData({ ...userData, role: e.target.value })} required>
+                  <option value="">Select Role</option>
+                  <option value="Student">Student</option>
+                  <option value="Instructor">Instructor</option>
+                  <option value="Admin">Admin</option>
+                  <option value="Exam Administrator">Exam Administrator</option>
+                </select>
+                <button type="submit">Create User</button>
+              </form>
+            </section>
+            <section>
+              <h3>Manage Users</h3>
+              <div>
+                {users.map(u => (
+                  <div key={u.id} style={{ border: '1px solid #ddd', padding: '10px', margin: '10px 0' }}>
+                    <p>{u.name} - {u.role} - {u.active ? 'Active' : 'Inactive'}</p>
+                    <button onClick={() => toggleUser(u.id)}>{u.active ? 'Deactivate' : 'Activate'}</button>
+                  </div>
+                ))}
+              </div>
+            </section>
+            <section>
+              <h3>Create Module</h3>
+              <form onSubmit={handleModuleSubmit}>
+                <input type="text" placeholder="Module Name" value={moduleData.name} onChange={(e) => setModuleData({ ...moduleData, name: e.target.value })} required />
+                <textarea placeholder="Description" value={moduleData.description} onChange={(e) => setModuleData({ ...moduleData, description: e.target.value })} required />
+                <button type="submit">Create Module</button>
+              </form>
+            </section>
+            <section>
+              <h3>Manage Modules</h3>
+              <div>
+                {modules.map(m => (
+                  <div key={m.id} style={{ border: '1px solid #ddd', padding: '10px', margin: '10px 0' }}>
+                    <p>{m.name} - {m.description}</p>
+                    <button onClick={() => deleteModule(m.id)}>Delete</button>
+                  </div>
+                ))}
+              </div>
+            </section>
+            <section>
+              <h3>Create Class</h3>
+              <form onSubmit={handleClassSubmit}>
+                <input type="text" placeholder="Class Name" value={classData.name} onChange={(e) => setClassData({ ...classData, name: e.target.value })} required />
+                <select value={classData.moduleId} onChange={(e) => setClassData({ ...classData, moduleId: e.target.value })} required>
+                  <option value="">Select Module</option>
+                  {modules.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                </select>
+                <button type="submit">Create Class</button>
+              </form>
+            </section>
+            <section>
+              <h3>Manage Classes</h3>
+              <div>
+                {classes.map(c => (
+                  <div key={c.id} style={{ border: '1px solid #ddd', padding: '10px', margin: '10px 0' }}>
+                    <p>{c.name} - Module: {modules.find(m => m.id === c.moduleId)?.name}</p>
+                    <button onClick={() => deleteClass(c.id)}>Delete</button>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </main>
+        </div>
+      );
+    };
+
     const HomePage = () => {
       const [page, setPage] = useState('login');
       const [users, setUsers] = useState([]);
       const [assessments, setAssessments] = useState([]);
       const [submissions, setSubmissions] = useState([]);
       const [questions, setQuestions] = useState([]);
+      const [modules, setModules] = useState([]);
+      const [classes, setClasses] = useState([]);
       const [currentUser, setCurrentUser] = useState(null);
       const [loginData, setLoginData] = useState({ email: '', password: '' });
       const [registerData, setRegisterData] = useState({ name: '', email: '', password: '', role: '' });
@@ -382,16 +584,21 @@
         const storedAssessments = JSON.parse(localStorage.getItem('assessments')) || [];
         const storedSubmissions = JSON.parse(localStorage.getItem('submissions')) || [];
         const storedQuestions = JSON.parse(localStorage.getItem('questions')) || [];
+        const storedModules = JSON.parse(localStorage.getItem('modules')) || [];
+        const storedClasses = JSON.parse(localStorage.getItem('classes')) || [];
         setUsers(storedUsers);
         setAssessments(storedAssessments);
         setSubmissions(storedSubmissions);
         setQuestions(storedQuestions);
+        setModules(storedModules);
+        setClasses(storedClasses);
         const storedUser = JSON.parse(localStorage.getItem('currentUser'));
         if (storedUser) {
           setCurrentUser(storedUser);
           if (storedUser.role === 'Student') setPage('student-dashboard');
           else if (storedUser.role === 'Instructor') setPage('instructor-dashboard');
-          else if (storedUser.role === 'Exam Administrator') setPage('admin-dashboard');
+          else if (storedUser.role === 'Admin') setPage('admin-dashboard');
+          else if (storedUser.role === 'Exam Administrator') setPage('exam-admin-dashboard');
         } else {
           const hasAdmin = storedUsers.some(u => u.role === 'Exam Administrator');
           if (storedUsers.length === 0 || !hasAdmin) {
@@ -407,6 +614,8 @@
         localStorage.setItem('assessments', JSON.stringify(assessments));
         localStorage.setItem('submissions', JSON.stringify(submissions));
         localStorage.setItem('questions', JSON.stringify(questions));
+        localStorage.setItem('modules', JSON.stringify(modules));
+        localStorage.setItem('classes', JSON.stringify(classes));
         if (currentUser) localStorage.setItem('currentUser', JSON.stringify(currentUser));
       };
 
@@ -418,7 +627,8 @@
           localStorage.setItem('currentUser', JSON.stringify(user));
           if (user.role === 'Student') setPage('student-dashboard');
           else if (user.role === 'Instructor') setPage('instructor-dashboard');
-          else if (user.role === 'Exam Administrator') setPage('admin-dashboard');
+          else if (user.role === 'Admin') setPage('admin-dashboard');
+          else if (user.role === 'Exam Administrator') setPage('exam-admin-dashboard');
         } else {
           alert('Invalid credentials or account deactivated');
         }
@@ -437,7 +647,8 @@
         saveData();
         if (newUser.role === 'Student') setPage('student-dashboard');
         else if (newUser.role === 'Instructor') setPage('instructor-dashboard');
-        else if (newUser.role === 'Exam Administrator') setPage('admin-dashboard');
+        else if (newUser.role === 'Admin') setPage('admin-dashboard');
+        else if (newUser.role === 'Exam Administrator') setPage('exam-admin-dashboard');
       };
 
       const handleLogout = () => {
@@ -459,7 +670,8 @@
       if (page === 'register') return <RegisterPage registerData={registerData} setRegisterData={setRegisterData} handleRegister={handleRegister} goToLogin={goToLogin} />;
       if (page === 'student-dashboard') return <StudentDashboard currentUser={currentUser} assessments={assessments} submissions={submissions} questions={questions} setSubmissions={setSubmissions} setQuestions={setQuestions} handleLogout={handleLogout} goToProfile={goToProfile} />;
       if (page === 'instructor-dashboard') return <InstructorDashboard currentUser={currentUser} assessments={assessments} submissions={submissions} questions={questions} setAssessments={setAssessments} setSubmissions={setSubmissions} setQuestions={setQuestions} handleLogout={handleLogout} goToProfile={goToProfile} />;
-      if (page === 'admin-dashboard') return <AdminDashboard currentUser={currentUser} users={users} assessments={assessments} submissions={submissions} setUsers={setUsers} handleLogout={handleLogout} goToProfile={goToProfile} />;
+      if (page === 'admin-dashboard') return <AdminDashboard currentUser={currentUser} users={users} modules={modules} classes={classes} setUsers={setUsers} setModules={setModules} setClasses={setClasses} handleLogout={handleLogout} goToProfile={goToProfile} />;
+      if (page === 'exam-admin-dashboard') return <ExamAdminDashboard currentUser={currentUser} assessments={assessments} submissions={submissions} users={users} handleLogout={handleLogout} goToProfile={goToProfile} />;
       if (page === 'profile') return <ProfilePage currentUser={currentUser} setCurrentUser={setCurrentUser} users={users} setUsers={setUsers} goBack={goBack} handleLogout={handleLogout} />;
       return <div>Page not found</div>;
     };

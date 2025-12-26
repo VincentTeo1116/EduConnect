@@ -6,7 +6,7 @@ A React-based learning management system for students, instructors, and administ
 
 - User authentication (Login/Register)
 - Role-based dashboards:
-  - Student: View assessments, submit work, ask questions
+  - Student: View assessments, submit assessments, ask questions
   - Instructor: Create assessments, grade submissions, answer questions
   - Admin: Manage users, approve grades
 - Profile management
