@@ -6,9 +6,10 @@ A React-based learning management system for students, instructors, and administ
 
 - User authentication (Login/Register)
 - Role-based dashboards:
-  - Student: View assessments, submit assessments, ask questions
-  - Instructor: Create assessments, grade submissions, answer questions
-  - Admin: Manage users, approve grades
+  - **Student**: View assessments, submit work, ask questions
+  - **Instructor**: Create assessments, grade submissions, answer questions
+  - **Admin**: CRUD users, manage modules, manage classes
+  - **Exam Administrator**: View module results, feedback from students to lecturers, view grading criteria
 - Profile management
 - Local storage for data persistence
 
@@ -34,17 +35,18 @@ A React-based learning management system for students, instructors, and administ
 
 ## File Structure
 
-- `index.html`: Main HTML file
-- `App.js`: Main React component
-- `HomePage.js`: State management and routing
-- `LoginPage.js`: Login form
-- `RegisterPage.js`: Registration form
-- `StudentDashboard.js`: Student interface
-- `InstructorDashboard.js`: Instructor interface
-- `AdminDashboard.js`: Admin interface
-- `ProfilePage.js`: Profile management
+- `index.html`: Main HTML file with inline React components
+- `App.js`: Main React component (not used, components inlined)
+- `HomePage.js`: State management and routing (not used, inlined)
+- `LoginPage.js`: Login form (not used, inlined)
+- `RegisterPage.js`: Registration form (not used, inlined)
+- `StudentDashboard.js`: Student interface (not used, inlined)
+- `InstructorDashboard.js`: Instructor interface (not used, inlined)
+- `AdminDashboard.js`: Admin interface (CRUD users, modules, classes)
+- `ExamAdminDashboard.js`: Exam Administrator interface (view results, feedback, criteria)
+- `ProfilePage.js`: Profile management (not used, inlined)
 - `App.css`: Styles
-- `NavigationBar.js`: Alternative navigation (not currently used)
+- `Images/`: Logo and images
 
 ## Notes
 
