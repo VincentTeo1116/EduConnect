@@ -49,11 +49,22 @@ Following Moodle's concept, students can provide feedback/comments to lecturers 
 4. **As Instructor**: View student feedback for your modules
 5. **As Exam Admin**: Monitor all feedback in the system
 
-## Technologies Used
+## Module Structure
 
-- React (with Babel for JSX)
-- CSS for styling
-- Local Storage for data persistence
+Modules follow a structured format with the following fields:
+- **Code**: Primary key (e.g., NWT-112025, OOP-112025)
+- **Name**: Full module name
+- **Instructor ID**: Assigned instructor user ID
+- **Exam Admin ID**: Assigned exam administrator user ID
+- **Description**: Module description
+
+### Default Modules:
+- NWT-112025: Networking Technologies
+- OOP-112025: Object-Oriented Programming  
+- SDM-112025: Software Development Methods
+- CLD-112025: Cloud Computing Fundamentals
+- MOB-112025: Mobile Application Development
+- PRG-112025: Programming Fundamentals
 
 ## File Structure
 
