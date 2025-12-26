@@ -86,8 +86,9 @@
       </div>
     );
 
-    const StudentDashboard = ({ currentUser, assessments, submissions, questions, setSubmissions, setQuestions, handleLogout, goToProfile }) => {
+    const StudentDashboard = ({ currentUser, assessments, submissions, questions, classes, modules, feedbacks, setSubmissions, setQuestions, setClasses, setFeedbacks, handleLogout, goToProfile }) => {
       const [questionData, setQuestionData] = useState({ assessmentId: '', text: '' });
+      const [feedbackData, setFeedbackData] = useState({ moduleId: '', comment: '' });
 
       const submitAssessment = (assessmentId) => {
         const submission = {
@@ -105,6 +106,44 @@
         alert('Submission successful');
       };
 
+      const enrollInClass = (classId) => {
+        const classToEnroll = classes.find(c => c.id === classId);
+        if (!classToEnroll.students.includes(currentUser.id)) {
+          const updatedClasses = classes.map(c => 
+            c.id === classId ? { ...c, students: [...c.students, currentUser.id] } : c
+          );
+          setClasses(updatedClasses);
+          localStorage.setItem('classes', JSON.stringify(updatedClasses));
+          alert('Enrolled successfully');
+        } else {
+          alert('Already enrolled');
+        }
+      };
+
+      const submitFeedback = (e) => {
+        e.preventDefault();
+        const enrolledClasses = classes.filter(c => c.students.includes(currentUser.id));
+        const moduleId = parseInt(feedbackData.moduleId);
+        const isEnrolled = enrolledClasses.some(c => c.moduleId === moduleId);
+        
+        if (!isEnrolled) {
+          alert('You must be enrolled in this module to give feedback');
+          return;
+        }
+
+        const feedback = {
+          id: Date.now(),
+          studentId: currentUser.id,
+          moduleId,
+          comment: feedbackData.comment,
+          timestamp: new Date().toISOString()
+        };
+        setFeedbacks(prev => [...prev, feedback]);
+        localStorage.setItem('feedbacks', JSON.stringify([...feedbacks, feedback]));
+        setFeedbackData({ moduleId: '', comment: '' });
+        alert('Feedback submitted');
+      };
+
       const handleQuestionSubmit = (e) => {
         e.preventDefault();
         const q = { id: Date.now(), assessmentId: parseInt(questionData.assessmentId), studentId: currentUser.id, question: questionData.text, answers: [] };
@@ -113,6 +152,10 @@
         setQuestionData({ assessmentId: '', text: '' });
         alert('Question submitted');
       };
+
+      const enrolledClasses = classes.filter(c => c.students.includes(currentUser.id));
+      const enrolledModuleIds = enrolledClasses.map(c => c.moduleId);
+      const enrolledAssessments = assessments.filter(a => enrolledModuleIds.includes(a.moduleId));
 
       return (
         <div className="main-container">
@@ -128,9 +171,36 @@
           </header>
           <main>
             <section>
+              <h3>Available Classes</h3>
+              <div>
+                {classes.filter(c => !c.students.includes(currentUser.id)).map(c => (
+                  <div key={c.id} style={{ border: '1px solid #ddd', padding: '10px', margin: '10px 0' }}>
+                    <h4>{c.name}</h4>
+                    <p>Module: {modules.find(m => m.id === c.moduleId)?.name}</p>
+                    <button onClick={() => enrollInClass(c.id)}>Enroll</button>
+                  </div>
+                ))}
+              </div>
+            </section>
+            <section>
+              <h3>My Enrolled Modules</h3>
+              <div>
+                {enrolledClasses.map(c => {
+                  const module = modules.find(m => m.id === c.moduleId);
+                  return (
+                    <div key={c.id} style={{ border: '1px solid #ddd', padding: '10px', margin: '10px 0' }}>
+                      <h4>{module?.name}</h4>
+                      <p>{module?.description}</p>
+                      <p>Class: {c.name}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+            <section>
               <h3>My Assessments</h3>
               <div>
-                {assessments.map(a => (
+                {enrolledAssessments.map(a => (
                   <div key={a.id} style={{ border: '1px solid #ddd', padding: '10px', margin: '10px 0' }}>
                     <h4>{a.title}</h4>
                     <p>{a.description}</p>
@@ -141,6 +211,29 @@
               </div>
             </section>
             <section>
+              <h3>Give Feedback to Lecturer</h3>
+              <form onSubmit={submitFeedback}>
+                <select
+                  value={feedbackData.moduleId}
+                  onChange={(e) => setFeedbackData({ ...feedbackData, moduleId: e.target.value })}
+                  required
+                >
+                  <option value="">Select Module</option>
+                  {enrolledModuleIds.map(moduleId => {
+                    const module = modules.find(m => m.id === moduleId);
+                    return <option key={moduleId} value={moduleId}>{module?.name}</option>;
+                  })}
+                </select>
+                <textarea
+                  placeholder="Your feedback/comment to the lecturer"
+                  value={feedbackData.comment}
+                  onChange={(e) => setFeedbackData({ ...feedbackData, comment: e.target.value })}
+                  required
+                />
+                <button type="submit">Submit Feedback</button>
+              </form>
+            </section>
+            <section>
               <h3>Ask a Question</h3>
               <form onSubmit={handleQuestionSubmit}>
                 <select
@@ -149,7 +242,7 @@
                   required
                 >
                   <option value="">Select Assessment</option>
-                  {assessments.map(a => <option key={a.id} value={a.id}>{a.title}</option>)}
+                  {enrolledAssessments.map(a => <option key={a.id} value={a.id}>{a.title}</option>)}
                 </select>
                 <textarea
                   placeholder="Question"
@@ -165,15 +258,15 @@
       );
     };
 
-    const InstructorDashboard = ({ currentUser, assessments, submissions, questions, setAssessments, setSubmissions, setQuestions, handleLogout, goToProfile }) => {
-      const [assessmentData, setAssessmentData] = useState({ title: '', description: '', course: '', deadline: '', criteria: '' });
+    const InstructorDashboard = ({ currentUser, assessments, submissions, questions, modules, classes, feedbacks, users, setAssessments, setSubmissions, setQuestions, handleLogout, goToProfile }) => {
+      const [assessmentData, setAssessmentData] = useState({ title: '', description: '', course: '', deadline: '', criteria: '', moduleId: '' });
 
       const handleAssessmentSubmit = (e) => {
         e.preventDefault();
-        const assessment = { id: Date.now(), title: assessmentData.title, description: assessmentData.description, course: assessmentData.course, deadline: assessmentData.deadline, criteria: assessmentData.criteria, instructorId: currentUser.id, files: [] };
+        const assessment = { id: Date.now(), title: assessmentData.title, description: assessmentData.description, course: assessmentData.course, deadline: assessmentData.deadline, criteria: assessmentData.criteria, instructorId: currentUser.id, moduleId: parseInt(assessmentData.moduleId), files: [] };
         setAssessments(prev => [...prev, assessment]);
         localStorage.setItem('assessments', JSON.stringify([...assessments, assessment]));
-        setAssessmentData({ title: '', description: '', course: '', deadline: '', criteria: '' });
+        setAssessmentData({ title: '', description: '', course: '', deadline: '', criteria: '', moduleId: '' });
         alert('Assessment created');
       };
 
@@ -194,6 +287,10 @@
         const updated = questions.map(q => q.id === questionId ? { ...q, answers: [...q.answers, { instructorId: currentUser.id, answer, official: true, resolved: false }] } : q);
         localStorage.setItem('questions', JSON.stringify(updated));
       };
+
+      // Get modules taught by this instructor (modules that have assessments by this instructor)
+      const taughtModuleIds = [...new Set(assessments.filter(a => a.instructorId === currentUser.id).map(a => a.moduleId))];
+      const taughtModules = modules.filter(m => taughtModuleIds.includes(m.id));
 
       return (
         <div className="main-container">
@@ -216,15 +313,61 @@
                 <input type="text" placeholder="Course" value={assessmentData.course} onChange={(e) => setAssessmentData({ ...assessmentData, course: e.target.value })} required />
                 <input type="datetime-local" value={assessmentData.deadline} onChange={(e) => setAssessmentData({ ...assessmentData, deadline: e.target.value })} required />
                 <textarea placeholder="Grading Criteria" value={assessmentData.criteria} onChange={(e) => setAssessmentData({ ...assessmentData, criteria: e.target.value })} required />
+                <select value={assessmentData.moduleId} onChange={(e) => setAssessmentData({ ...assessmentData, moduleId: e.target.value })} required>
+                  <option value="">Select Module</option>
+                  {modules.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                </select>
                 <button type="submit">Create</button>
               </form>
+            </section>
+            <section>
+              <h3>My Modules & Classes</h3>
+              <div>
+                {taughtModules.map(module => (
+                  <div key={module.id} style={{ border: '1px solid #ddd', padding: '10px', margin: '10px 0' }}>
+                    <h4>{module.name}</h4>
+                    <p>{module.description}</p>
+                    <p>Classes:</p>
+                    <ul>
+                      {classes.filter(c => c.moduleId === module.id).map(c => (
+                        <li key={c.id}>{c.name} - {c.students.length} students enrolled</li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </section>
+            <section>
+              <h3>Student Feedback</h3>
+              <div>
+                {taughtModules.map(module => {
+                  const moduleFeedbacks = feedbacks.filter(f => f.moduleId === module.id);
+                  return (
+                    <div key={module.id} style={{ border: '1px solid #ddd', padding: '10px', margin: '10px 0' }}>
+                      <h4>Feedback for {module.name}</h4>
+                      {moduleFeedbacks.length === 0 ? (
+                        <p>No feedback yet</p>
+                      ) : (
+                        moduleFeedbacks.map(f => (
+                          <div key={f.id} style={{ border: '1px solid #eee', padding: '8px', margin: '5px 0' }}>
+                            <p><strong>Student:</strong> {users.find(u => u.id === f.studentId)?.name}</p>
+                            <p><strong>Comment:</strong> {f.comment}</p>
+                            <p><small>{new Date(f.timestamp).toLocaleString()}</small></p>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </section>
             <section>
               <h3>Submissions</h3>
               <div>
                 {submissions.filter(s => assessments.find(a => a.id === s.assessmentId && a.instructorId === currentUser.id)).map(s => (
                   <div key={s.id} style={{ border: '1px solid #ddd', padding: '10px', margin: '10px 0' }}>
-                    <p>Student: {s.studentId}</p>
+                    <p>Student: {users.find(u => u.id === s.studentId)?.name}</p>
+                    <p>Assessment: {assessments.find(a => a.id === s.assessmentId)?.title}</p>
                     <input type="number" placeholder="Grade" onChange={(e) => gradeSubmission(s.id, e.target.value)} />
                     <textarea placeholder="Feedback" value={s.feedback} onChange={(e) => updateFeedback(s.id, e.target.value)} />
                   </div>
@@ -234,9 +377,10 @@
             <section>
               <h3>Questions</h3>
               <div>
-                {questions.map(q => (
+                {questions.filter(q => assessments.find(a => a.id === q.assessmentId && a.instructorId === currentUser.id)).map(q => (
                   <div key={q.id} style={{ border: '1px solid #ddd', padding: '10px', margin: '10px 0' }}>
-                    <p>{q.question}</p>
+                    <p><strong>Student:</strong> {users.find(u => u.id === q.studentId)?.name}</p>
+                    <p><strong>Question:</strong> {q.question}</p>
                     <textarea placeholder="Answer" onChange={(e) => answerQuestion(q.id, e.target.value)} />
                   </div>
                 ))}
@@ -367,7 +511,7 @@
       );
     };
 
-    const ExamAdminDashboard = ({ currentUser, assessments, submissions, users, handleLogout, goToProfile }) => {
+    const ExamAdminDashboard = ({ currentUser, assessments, submissions, users, modules, feedbacks, handleLogout, goToProfile }) => {
       return (
         <div className="main-container">
           <header>
@@ -400,13 +544,38 @@
               </div>
             </section>
             <section>
-              <h3>Feedback from Students to Lecturers</h3>
+              <h3>Student Feedback to Lecturers</h3>
+              <div>
+                {modules.map(module => {
+                  const moduleFeedbacks = feedbacks.filter(f => f.moduleId === module.id);
+                  return (
+                    <div key={module.id} style={{ border: '1px solid #ddd', padding: '10px', margin: '10px 0' }}>
+                      <h4>Feedback for {module.name}</h4>
+                      {moduleFeedbacks.length === 0 ? (
+                        <p>No feedback yet</p>
+                      ) : (
+                        moduleFeedbacks.map(f => (
+                          <div key={f.id} style={{ border: '1px solid #eee', padding: '8px', margin: '5px 0' }}>
+                            <p><strong>Student:</strong> {users.find(u => u.id === f.studentId)?.name}</p>
+                            <p><strong>Lecturer:</strong> {users.find(u => assessments.find(a => a.moduleId === module.id && a.instructorId === u.id))?.name}</p>
+                            <p><strong>Comment:</strong> {f.comment}</p>
+                            <p><small>{new Date(f.timestamp).toLocaleString()}</small></p>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+            <section>
+              <h3>Feedback from Lecturers to Students</h3>
               <div>
                 {submissions.filter(s => s.feedback).map(s => (
                   <div key={s.id} style={{ border: '1px solid #ddd', padding: '10px', margin: '10px 0' }}>
                     <p>Assessment: {assessments.find(a => a.id === s.assessmentId)?.title}</p>
                     <p>Student: {users.find(u => u.id === s.studentId)?.name}</p>
-                    <p>Feedback: {s.feedback}</p>
+                    <p>Lecturer Feedback: {s.feedback}</p>
                   </div>
                 ))}
               </div>
@@ -575,6 +744,7 @@
       const [questions, setQuestions] = useState([]);
       const [modules, setModules] = useState([]);
       const [classes, setClasses] = useState([]);
+      const [feedbacks, setFeedbacks] = useState([]);
       const [currentUser, setCurrentUser] = useState(null);
       const [loginData, setLoginData] = useState({ email: '', password: '' });
       const [registerData, setRegisterData] = useState({ name: '', email: '', password: '', role: '' });
@@ -586,12 +756,14 @@
         const storedQuestions = JSON.parse(localStorage.getItem('questions')) || [];
         const storedModules = JSON.parse(localStorage.getItem('modules')) || [];
         const storedClasses = JSON.parse(localStorage.getItem('classes')) || [];
+        const storedFeedbacks = JSON.parse(localStorage.getItem('feedbacks')) || [];
         setUsers(storedUsers);
         setAssessments(storedAssessments);
         setSubmissions(storedSubmissions);
         setQuestions(storedQuestions);
         setModules(storedModules);
         setClasses(storedClasses);
+        setFeedbacks(storedFeedbacks);
         const storedUser = JSON.parse(localStorage.getItem('currentUser'));
         if (storedUser) {
           setCurrentUser(storedUser);
@@ -616,6 +788,7 @@
         localStorage.setItem('questions', JSON.stringify(questions));
         localStorage.setItem('modules', JSON.stringify(modules));
         localStorage.setItem('classes', JSON.stringify(classes));
+        localStorage.setItem('feedbacks', JSON.stringify(feedbacks));
         if (currentUser) localStorage.setItem('currentUser', JSON.stringify(currentUser));
       };
 
@@ -668,10 +841,10 @@
 
       if (page === 'login') return <LoginPage loginData={loginData} setLoginData={setLoginData} handleLogin={handleLogin} goToRegister={goToRegister} />;
       if (page === 'register') return <RegisterPage registerData={registerData} setRegisterData={setRegisterData} handleRegister={handleRegister} goToLogin={goToLogin} />;
-      if (page === 'student-dashboard') return <StudentDashboard currentUser={currentUser} assessments={assessments} submissions={submissions} questions={questions} setSubmissions={setSubmissions} setQuestions={setQuestions} handleLogout={handleLogout} goToProfile={goToProfile} />;
-      if (page === 'instructor-dashboard') return <InstructorDashboard currentUser={currentUser} assessments={assessments} submissions={submissions} questions={questions} setAssessments={setAssessments} setSubmissions={setSubmissions} setQuestions={setQuestions} handleLogout={handleLogout} goToProfile={goToProfile} />;
+      if (page === 'student-dashboard') return <StudentDashboard currentUser={currentUser} assessments={assessments} submissions={submissions} questions={questions} classes={classes} modules={modules} feedbacks={feedbacks} setSubmissions={setSubmissions} setQuestions={setQuestions} setClasses={setClasses} setFeedbacks={setFeedbacks} handleLogout={handleLogout} goToProfile={goToProfile} />;
+      if (page === 'instructor-dashboard') return <InstructorDashboard currentUser={currentUser} assessments={assessments} submissions={submissions} questions={questions} modules={modules} classes={classes} feedbacks={feedbacks} users={users} setAssessments={setAssessments} setSubmissions={setSubmissions} setQuestions={setQuestions} handleLogout={handleLogout} goToProfile={goToProfile} />;
       if (page === 'admin-dashboard') return <AdminDashboard currentUser={currentUser} users={users} modules={modules} classes={classes} setUsers={setUsers} setModules={setModules} setClasses={setClasses} handleLogout={handleLogout} goToProfile={goToProfile} />;
-      if (page === 'exam-admin-dashboard') return <ExamAdminDashboard currentUser={currentUser} assessments={assessments} submissions={submissions} users={users} handleLogout={handleLogout} goToProfile={goToProfile} />;
+      if (page === 'exam-admin-dashboard') return <ExamAdminDashboard currentUser={currentUser} assessments={assessments} submissions={submissions} users={users} modules={modules} feedbacks={feedbacks} handleLogout={handleLogout} goToProfile={goToProfile} />;
       if (page === 'profile') return <ProfilePage currentUser={currentUser} setCurrentUser={setCurrentUser} users={users} setUsers={setUsers} goBack={goBack} handleLogout={handleLogout} />;
       return <div>Page not found</div>;
     };
