@@ -1,32 +1,63 @@
 import React, { useState, useEffect } from 'react';
-import './App.css'; // Assuming you have a CSS file for styling
+import './App.css';
+import LoginPage from './LoginPage.js';
+import RegisterPage from './RegisterPage.js';
+import StudentDashboard from './StudentDashboard.js';
 
 const HomePage = () => {
   const [page, setPage] = useState('login');
   const [users, setUsers] = useState([]);
+  const [assessments, setAssessments] = useState([]);
+  const [submissions, setSubmissions] = useState([]);
+  const [questions, setQuestions] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
   const [loginData, setLoginData] = useState({ email: '', password: '' });
-  const [registerData, setRegisterData] = useState({ name: '', email: '', password: '' });
+  const [registerData, setRegisterData] = useState({ name: '', email: '', password: '', role: '' });
 
   useEffect(() => {
     const storedUsers = JSON.parse(localStorage.getItem('users')) || [];
+    const storedAssessments = JSON.parse(localStorage.getItem('assessments')) || [];
+    const storedSubmissions = JSON.parse(localStorage.getItem('submissions')) || [];
+    const storedQuestions = JSON.parse(localStorage.getItem('questions')) || [];
     setUsers(storedUsers);
+    setAssessments(storedAssessments);
+    setSubmissions(storedSubmissions);
+    setQuestions(storedQuestions);
     const storedUser = JSON.parse(localStorage.getItem('currentUser'));
     if (storedUser) {
       setCurrentUser(storedUser);
-      setPage('home');
+      if (storedUser.role === 'Student') setPage('student-dashboard');
+      else if (storedUser.role === 'Instructor') setPage('instructor-dashboard');
+      else if (storedUser.role === 'Exam Administrator') setPage('admin-dashboard');
+    } else {
+      const hasAdmin = storedUsers.some(u => u.role === 'Exam Administrator');
+      if (storedUsers.length === 0 || !hasAdmin) {
+        setPage('register');
+      } else {
+        setPage('login');
+      }
     }
   }, []);
 
+  const saveData = () => {
+    localStorage.setItem('users', JSON.stringify(users));
+    localStorage.setItem('assessments', JSON.stringify(assessments));
+    localStorage.setItem('submissions', JSON.stringify(submissions));
+    localStorage.setItem('questions', JSON.stringify(questions));
+    if (currentUser) localStorage.setItem('currentUser', JSON.stringify(currentUser));
+  };
+
   const handleLogin = (e) => {
     e.preventDefault();
-    const user = users.find(u => u.email === loginData.email && u.password === loginData.password);
+    const user = users.find(u => u.email === loginData.email && u.password === loginData.password && u.active !== false);
     if (user) {
       setCurrentUser(user);
       localStorage.setItem('currentUser', JSON.stringify(user));
-      setPage('home');
+      if (user.role === 'Student') setPage('student-dashboard');
+      else if (user.role === 'Instructor') setPage('instructor-dashboard');
+      else if (user.role === 'Exam Administrator') setPage('admin-dashboard');
     } else {
-      alert('Invalid credentials');
+      alert('Invalid credentials or account deactivated');
     }
   };
 
@@ -36,13 +67,14 @@ const HomePage = () => {
       alert('User already exists');
       return;
     }
-    const newUser = { ...registerData, id: Date.now() };
+    const newUser = { id: Date.now(), name: registerData.name, email: registerData.email, password: registerData.password, role: registerData.role, active: true };
     const updatedUsers = [...users, newUser];
     setUsers(updatedUsers);
-    localStorage.setItem('users', JSON.stringify(updatedUsers));
     setCurrentUser(newUser);
-    localStorage.setItem('currentUser', JSON.stringify(newUser));
-    setPage('home');
+    saveData();
+    if (newUser.role === 'Student') setPage('student-dashboard');
+    else if (newUser.role === 'Instructor') setPage('instructor-dashboard');
+    else if (newUser.role === 'Exam Administrator') setPage('admin-dashboard');
   };
 
   const handleLogout = () => {
@@ -51,88 +83,14 @@ const HomePage = () => {
     setPage('login');
   };
 
-  const LoginForm = () => (
-    <div className="form-container">
-      <h2>Login to EduConnect</h2>
-      <form onSubmit={handleLogin}>
-        <input
-          type="email"
-          placeholder="Email"
-          value={loginData.email}
-          onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
-          required
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={loginData.password}
-          onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
-          required
-        />
-        <button type="submit">Login</button>
-      </form>
-      <p>Don't have an account? <button onClick={() => setPage('register')}>Register</button></p>
-    </div>
-  );
+  const goToRegister = () => setPage('register');
+  const goToLogin = () => setPage('login');
+  const goToProfile = () => setPage('profile');
 
-  const RegisterForm = () => (
-    <div className="form-container">
-      <h2>Register for EduConnect</h2>
-      <form onSubmit={handleRegister}>
-        <input
-          type="text"
-          placeholder="Name"
-          value={registerData.name}
-          onChange={(e) => setRegisterData({ ...registerData, name: e.target.value })}
-          required
-        />
-        <input
-          type="email"
-          placeholder="Email"
-          value={registerData.email}
-          onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
-          required
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={registerData.password}
-          onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
-          required
-        />
-        <button type="submit">Register</button>
-      </form>
-      <p>Already have an account? <button onClick={() => setPage('login')}>Login</button></p>
-    </div>
-  );
-
-  const MainPage = () => (
-    <div className="main-container">
-      <header>
-        <h1>Welcome to EduConnect Learning Centre, {currentUser.name}!</h1>
-        <button onClick={handleLogout}>Logout</button>
-      </header>
-      <main>
-        <section>
-          <h2>Available Courses</h2>
-          <ul>
-            <li>Introduction to Programming</li>
-            <li>Data Structures and Algorithms</li>
-            <li>Web Development</li>
-            <li>Machine Learning Basics</li>
-          </ul>
-        </section>
-        <section>
-          <h2>Your Progress</h2>
-          <p>Track your learning progress here.</p>
-        </section>
-      </main>
-    </div>
-  );
-
-  if (page === 'login') return <LoginForm />;
-  if (page === 'register') return <RegisterForm />;
-  if (page === 'home') return <MainPage />;
+  if (page === 'login') return <LoginPage loginData={loginData} setLoginData={setLoginData} handleLogin={handleLogin} goToRegister={goToRegister} />;
+  if (page === 'register') return <RegisterPage registerData={registerData} setRegisterData={setRegisterData} handleRegister={handleRegister} goToLogin={goToLogin} />;
+  if (page === 'student-dashboard') return <StudentDashboard currentUser={currentUser} assessments={assessments} submissions={submissions} questions={questions} setSubmissions={setSubmissions} setQuestions={setQuestions} handleLogout={handleLogout} goToProfile={goToProfile} />;
+  return <div>Page not found</div>;
 };
 
 export default HomePage;

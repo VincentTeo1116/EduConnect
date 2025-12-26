@@ -1,4 +1,5 @@
 import React from 'react';
+import './App.css';
 import HomePage from './HomePage.js';
 
 function App() {
@@ -10,3 +11,5 @@ function App() {
 }
 
 export default App;
+
+ReactDOM.render(<App />, document.getElementById('root'));
