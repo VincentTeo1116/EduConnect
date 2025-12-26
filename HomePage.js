@@ -3,6 +3,9 @@ import './App.css';
 import LoginPage from './LoginPage.js';
 import RegisterPage from './RegisterPage.js';
 import StudentDashboard from './StudentDashboard.js';
+import InstructorDashboard from './InstructorDashboard.js';
+import AdminDashboard from './AdminDashboard.js';
+import ProfilePage from './ProfilePage.js';
 
 const HomePage = () => {
   const [page, setPage] = useState('login');
@@ -86,10 +89,18 @@ const HomePage = () => {
   const goToRegister = () => setPage('register');
   const goToLogin = () => setPage('login');
   const goToProfile = () => setPage('profile');
+  const goBack = () => {
+    if (currentUser.role === 'Student') setPage('student-dashboard');
+    else if (currentUser.role === 'Instructor') setPage('instructor-dashboard');
+    else if (currentUser.role === 'Exam Administrator') setPage('admin-dashboard');
+  };
 
   if (page === 'login') return <LoginPage loginData={loginData} setLoginData={setLoginData} handleLogin={handleLogin} goToRegister={goToRegister} />;
   if (page === 'register') return <RegisterPage registerData={registerData} setRegisterData={setRegisterData} handleRegister={handleRegister} goToLogin={goToLogin} />;
   if (page === 'student-dashboard') return <StudentDashboard currentUser={currentUser} assessments={assessments} submissions={submissions} questions={questions} setSubmissions={setSubmissions} setQuestions={setQuestions} handleLogout={handleLogout} goToProfile={goToProfile} />;
+  if (page === 'instructor-dashboard') return <InstructorDashboard currentUser={currentUser} assessments={assessments} submissions={submissions} questions={questions} setAssessments={setAssessments} setSubmissions={setSubmissions} setQuestions={setQuestions} handleLogout={handleLogout} goToProfile={goToProfile} />;
+  if (page === 'admin-dashboard') return <AdminDashboard currentUser={currentUser} users={users} assessments={assessments} submissions={submissions} setUsers={setUsers} handleLogout={handleLogout} goToProfile={goToProfile} />;
+  if (page === 'profile') return <ProfilePage currentUser={currentUser} setCurrentUser={setCurrentUser} users={users} setUsers={setUsers} goBack={goBack} handleLogout={handleLogout} />;
   return <div>Page not found</div>;
 };
 
