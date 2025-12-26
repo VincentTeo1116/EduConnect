@@ -123,10 +123,10 @@
       const submitFeedback = (e) => {
         e.preventDefault();
         const enrolledClasses = classes.filter(c => c.students.includes(currentUser.id));
-        const moduleId = parseInt(feedbackData.moduleId);
+        const moduleCode = feedbackData.moduleId;
         
         // Allow feedback if enrolled in the module OR if no enrollment system is set up yet
-        const isEnrolled = enrolledClasses.some(c => c.moduleId === moduleId) || enrolledClasses.length === 0;
+        const isEnrolled = enrolledClasses.some(c => c.moduleCode === moduleCode) || enrolledClasses.length === 0;
         
         if (!isEnrolled) {
           alert('You must be enrolled in this module to give feedback');
@@ -136,7 +136,7 @@
         const feedback = {
           id: Date.now(),
           studentId: currentUser.id,
-          moduleId,
+          moduleCode,
           comment: feedbackData.comment,
           timestamp: new Date().toISOString()
         };
@@ -156,10 +156,10 @@
       };
 
       const enrolledClasses = classes.filter(c => c.students.includes(currentUser.id));
-      const enrolledModuleIds = enrolledClasses.map(c => c.moduleId);
+      const enrolledModuleCodes = enrolledClasses.map(c => c.moduleCode);
       // Fallback: if no enrolled classes, show all assessments (for backward compatibility)
-      const enrolledAssessments = enrolledModuleIds.length > 0 
-        ? assessments.filter(a => a.moduleId && enrolledModuleIds.includes(a.moduleId))
+      const enrolledAssessments = enrolledModuleCodes.length > 0 
+        ? assessments.filter(a => a.moduleCode && enrolledModuleCodes.includes(a.moduleCode))
         : assessments;
 
       return (
@@ -181,7 +181,7 @@
                 {classes.filter(c => !c.students.includes(currentUser.id)).map(c => (
                   <div key={c.id} style={{ border: '1px solid #ddd', padding: '10px', margin: '10px 0' }}>
                     <h4>{c.name}</h4>
-                    <p>Module: {modules.find(m => m.id === c.moduleId)?.name}</p>
+                    <p>Module: {modules.find(m => m.code === c.moduleCode)?.name} ({c.moduleCode})</p>
                     <button onClick={() => enrollInClass(c.id)}>Enroll</button>
                   </div>
                 ))}
@@ -191,10 +191,10 @@
               <h3>My Enrolled Modules</h3>
               <div>
                 {enrolledClasses.map(c => {
-                  const module = modules.find(m => m.id === c.moduleId);
+                  const module = modules.find(m => m.code === c.moduleCode);
                   return (
                     <div key={c.id} style={{ border: '1px solid #ddd', padding: '10px', margin: '10px 0' }}>
-                      <h4>{module?.name}</h4>
+                      <h4>{module?.code} - {module?.name}</h4>
                       <p>{module?.description}</p>
                       <p>Class: {c.name}</p>
                     </div>
@@ -224,9 +224,9 @@
                   required
                 >
                   <option value="">Select Module</option>
-                  {(enrolledModuleIds.length > 0 ? enrolledModuleIds : modules.map(m => m.id)).map(moduleId => {
-                    const module = modules.find(m => m.id === moduleId);
-                    return <option key={moduleId} value={moduleId}>{module?.name}</option>;
+                  {(enrolledModuleCodes.length > 0 ? enrolledModuleCodes : modules.map(m => m.code)).map(moduleCode => {
+                    const module = modules.find(m => m.code === moduleCode);
+                    return <option key={moduleCode} value={moduleCode}>{module?.code} - {module?.name}</option>;
                   })}
                 </select>
                 <textarea
@@ -264,14 +264,14 @@
     };
 
     const InstructorDashboard = ({ currentUser, assessments, submissions, questions, modules, classes, feedbacks, users, setAssessments, setSubmissions, setQuestions, handleLogout, goToProfile }) => {
-      const [assessmentData, setAssessmentData] = useState({ title: '', description: '', course: '', deadline: '', criteria: '', moduleId: '' });
+      const [assessmentData, setAssessmentData] = useState({ title: '', description: '', course: '', deadline: '', criteria: '', moduleCode: '' });
 
       const handleAssessmentSubmit = (e) => {
         e.preventDefault();
-        const assessment = { id: Date.now(), title: assessmentData.title, description: assessmentData.description, course: assessmentData.course, deadline: assessmentData.deadline, criteria: assessmentData.criteria, instructorId: currentUser.id, moduleId: parseInt(assessmentData.moduleId), files: [] };
+        const assessment = { id: Date.now(), title: assessmentData.title, description: assessmentData.description, course: assessmentData.course, deadline: assessmentData.deadline, criteria: assessmentData.criteria, instructorId: currentUser.id, moduleCode: assessmentData.moduleCode, files: [] };
         setAssessments(prev => [...prev, assessment]);
         localStorage.setItem('assessments', JSON.stringify([...assessments, assessment]));
-        setAssessmentData({ title: '', description: '', course: '', deadline: '', criteria: '', moduleId: '' });
+        setAssessmentData({ title: '', description: '', course: '', deadline: '', criteria: '', moduleCode: '' });
         alert('Assessment created');
       };
 
@@ -294,8 +294,8 @@
       };
 
       // Get modules taught by this instructor (modules that have assessments by this instructor)
-      const taughtModuleIds = [...new Set(assessments.filter(a => a.instructorId === currentUser.id).map(a => a.moduleId))];
-      const taughtModules = taughtModuleIds.length > 0 ? modules.filter(m => taughtModuleIds.includes(m.id)) : modules;
+      const taughtModuleCodes = [...new Set(assessments.filter(a => a.instructorId === currentUser.id).map(a => a.moduleCode))];
+      const taughtModules = taughtModuleCodes.length > 0 ? modules.filter(m => taughtModuleCodes.includes(m.code)) : modules;
 
       return (
         <div className="main-container">
@@ -318,9 +318,9 @@
                 <input type="text" placeholder="Course" value={assessmentData.course} onChange={(e) => setAssessmentData({ ...assessmentData, course: e.target.value })} required />
                 <input type="datetime-local" value={assessmentData.deadline} onChange={(e) => setAssessmentData({ ...assessmentData, deadline: e.target.value })} required />
                 <textarea placeholder="Grading Criteria" value={assessmentData.criteria} onChange={(e) => setAssessmentData({ ...assessmentData, criteria: e.target.value })} required />
-                <select value={assessmentData.moduleId} onChange={(e) => setAssessmentData({ ...assessmentData, moduleId: e.target.value })} required>
+                <select value={assessmentData.moduleCode} onChange={(e) => setAssessmentData({ ...assessmentData, moduleCode: e.target.value })} required>
                   <option value="">Select Module</option>
-                  {modules.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                  {modules.map(m => <option key={m.code} value={m.code}>{m.code} - {m.name}</option>)}
                 </select>
                 <button type="submit">Create</button>
               </form>
@@ -346,9 +346,9 @@
               <h3>Student Feedback</h3>
               <div>
                 {taughtModules.map(module => {
-                  const moduleFeedbacks = feedbacks.filter(f => f.moduleId === module.id);
+                  const moduleFeedbacks = feedbacks.filter(f => f.moduleCode === module.code);
                   return (
-                    <div key={module.id} style={{ border: '1px solid #ddd', padding: '10px', margin: '10px 0' }}>
+                    <div key={module.code} style={{ border: '1px solid #ddd', padding: '10px', margin: '10px 0' }}>
                       <h4>Feedback for {module.name}</h4>
                       {moduleFeedbacks.length === 0 ? (
                         <p>No feedback yet</p>
@@ -552,9 +552,9 @@
               <h3>Student Feedback to Lecturers</h3>
               <div>
                 {modules.map(module => {
-                  const moduleFeedbacks = feedbacks.filter(f => f.moduleId === module.id);
+                  const moduleFeedbacks = feedbacks.filter(f => f.moduleCode === module.code);
                   return (
-                    <div key={module.id} style={{ border: '1px solid #ddd', padding: '10px', margin: '10px 0' }}>
+                    <div key={module.code} style={{ border: '1px solid #ddd', padding: '10px', margin: '10px 0' }}>
                       <h4>Feedback for {module.name}</h4>
                       {moduleFeedbacks.length === 0 ? (
                         <p>No feedback yet</p>
@@ -562,10 +562,7 @@
                         moduleFeedbacks.map(f => (
                           <div key={f.id} style={{ border: '1px solid #eee', padding: '8px', margin: '5px 0' }}>
                             <p><strong>Student:</strong> {users.find(u => u.id === f.studentId)?.name}</p>
-                            <p><strong>Lecturer:</strong> {(() => {
-                              const lecturerId = assessments.find(a => a.moduleId === module.id)?.instructorId;
-                              return users.find(u => u.id === lecturerId)?.name || 'Unknown';
-                            })()}</p>
+                            <p><strong>Lecturer:</strong> {users.find(u => u.id === module.instructorId)?.name || 'Unknown'}</p>
                             <p><strong>Comment:</strong> {f.comment}</p>
                             <p><small>{new Date(f.timestamp).toLocaleString()}</small></p>
                           </div>
@@ -606,8 +603,8 @@
 
     const AdminDashboard = ({ currentUser, users, modules, classes, setUsers, setModules, setClasses, handleLogout, goToProfile }) => {
       const [userData, setUserData] = useState({ name: '', email: '', password: '', role: '' });
-      const [moduleData, setModuleData] = useState({ name: '', description: '' });
-      const [classData, setClassData] = useState({ name: '', moduleId: '' });
+      const [moduleData, setModuleData] = useState({ code: '', name: '', instructorId: '', examAdminId: '', description: '' });
+      const [classData, setClassData] = useState({ name: '', moduleCode: '' });
 
       const handleUserSubmit = (e) => {
         e.preventDefault();
@@ -630,25 +627,35 @@
 
       const handleModuleSubmit = (e) => {
         e.preventDefault();
-        const newModule = { id: Date.now(), name: moduleData.name, description: moduleData.description };
+        if (modules.find(m => m.code === moduleData.code)) {
+          alert('Module code already exists');
+          return;
+        }
+        const newModule = { 
+          code: moduleData.code, 
+          name: moduleData.name, 
+          instructorId: moduleData.instructorId, 
+          examAdminId: moduleData.examAdminId, 
+          description: moduleData.description 
+        };
         setModules(prev => [...prev, newModule]);
         localStorage.setItem('modules', JSON.stringify([...modules, newModule]));
-        setModuleData({ name: '', description: '' });
+        setModuleData({ code: '', name: '', instructorId: '', examAdminId: '', description: '' });
         alert('Module created');
       };
 
-      const deleteModule = (moduleId) => {
-        setModules(prev => prev.filter(m => m.id !== moduleId));
-        const updated = modules.filter(m => m.id !== moduleId);
+      const deleteModule = (moduleCode) => {
+        setModules(prev => prev.filter(m => m.code !== moduleCode));
+        const updated = modules.filter(m => m.code !== moduleCode);
         localStorage.setItem('modules', JSON.stringify(updated));
       };
 
       const handleClassSubmit = (e) => {
         e.preventDefault();
-        const newClass = { id: Date.now(), name: classData.name, moduleId: parseInt(classData.moduleId), students: [] };
+        const newClass = { id: Date.now(), name: classData.name, moduleCode: classData.moduleCode, students: [] };
         setClasses(prev => [...prev, newClass]);
         localStorage.setItem('classes', JSON.stringify([...classes, newClass]));
-        setClassData({ name: '', moduleId: '' });
+        setClassData({ name: '', moduleCode: '' });
         alert('Class created');
       };
 
@@ -701,7 +708,16 @@
             <section>
               <h3>Create Module</h3>
               <form onSubmit={handleModuleSubmit}>
+                <input type="text" placeholder="Module Code (e.g., NWT-112025)" value={moduleData.code} onChange={(e) => setModuleData({ ...moduleData, code: e.target.value })} required />
                 <input type="text" placeholder="Module Name" value={moduleData.name} onChange={(e) => setModuleData({ ...moduleData, name: e.target.value })} required />
+                <select value={moduleData.instructorId} onChange={(e) => setModuleData({ ...moduleData, instructorId: e.target.value })} required>
+                  <option value="">Select Instructor</option>
+                  {users.filter(u => u.role === 'Instructor').map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+                </select>
+                <select value={moduleData.examAdminId} onChange={(e) => setModuleData({ ...moduleData, examAdminId: e.target.value })} required>
+                  <option value="">Select Exam Administrator</option>
+                  {users.filter(u => u.role === 'Exam Administrator').map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+                </select>
                 <textarea placeholder="Description" value={moduleData.description} onChange={(e) => setModuleData({ ...moduleData, description: e.target.value })} required />
                 <button type="submit">Create Module</button>
               </form>
@@ -710,9 +726,12 @@
               <h3>Manage Modules</h3>
               <div>
                 {modules.map(m => (
-                  <div key={m.id} style={{ border: '1px solid #ddd', padding: '10px', margin: '10px 0' }}>
-                    <p>{m.name} - {m.description}</p>
-                    <button onClick={() => deleteModule(m.id)}>Delete</button>
+                  <div key={m.code} style={{ border: '1px solid #ddd', padding: '10px', margin: '10px 0' }}>
+                    <p><strong>{m.code}</strong> - {m.name}</p>
+                    <p>Instructor: {users.find(u => u.id === m.instructorId)?.name || 'Not assigned'}</p>
+                    <p>Exam Admin: {users.find(u => u.id === m.examAdminId)?.name || 'Not assigned'}</p>
+                    <p>{m.description}</p>
+                    <button onClick={() => deleteModule(m.code)}>Delete</button>
                   </div>
                 ))}
               </div>
@@ -721,9 +740,9 @@
               <h3>Create Class</h3>
               <form onSubmit={handleClassSubmit}>
                 <input type="text" placeholder="Class Name" value={classData.name} onChange={(e) => setClassData({ ...classData, name: e.target.value })} required />
-                <select value={classData.moduleId} onChange={(e) => setClassData({ ...classData, moduleId: e.target.value })} required>
+                <select value={classData.moduleCode} onChange={(e) => setClassData({ ...classData, moduleCode: e.target.value })} required>
                   <option value="">Select Module</option>
-                  {modules.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                  {modules.map(m => <option key={m.code} value={m.code}>{m.code} - {m.name}</option>)}
                 </select>
                 <button type="submit">Create Class</button>
               </form>
@@ -733,7 +752,7 @@
               <div>
                 {classes.map(c => (
                   <div key={c.id} style={{ border: '1px solid #ddd', padding: '10px', margin: '10px 0' }}>
-                    <p>{c.name} - Module: {modules.find(m => m.id === c.moduleId)?.name}</p>
+                    <p>{c.name} - Module: {modules.find(m => m.code === c.moduleCode)?.name} ({c.moduleCode})</p>
                     <button onClick={() => deleteClass(c.id)}>Delete</button>
                   </div>
                 ))}
@@ -766,10 +785,10 @@
         const storedClasses = JSON.parse(localStorage.getItem('classes')) || [];
         const storedFeedbacks = JSON.parse(localStorage.getItem('feedbacks')) || [];
         
-        // Ensure all assessments have moduleId (for backward compatibility)
+        // Ensure all assessments have moduleCode (for backward compatibility)
         const updatedAssessments = storedAssessments.map(a => ({
           ...a,
-          moduleId: a.moduleId || 1 // Default to first module if missing
+          moduleCode: a.moduleCode || a.moduleId || 'NWT-112025' // Default to first module if missing
         }));
         
         // Create default modules and classes if none exist
@@ -777,17 +796,20 @@
         let finalClasses = storedClasses;
         if (storedModules.length === 0) {
           finalModules = [
-            { id: 1, name: 'Introduction to Programming', description: 'Basic programming concepts' },
-            { id: 2, name: 'Data Structures', description: 'Advanced data structures and algorithms' },
-            { id: 3, name: 'Web Development', description: 'Frontend and backend web development' }
+            { code: 'NWT-112025', name: 'Networking Technologies', instructorId: 'b', examAdminId: 'c', description: 'Basic networking concepts and technologies' },
+            { code: 'OOP-112025', name: 'Object-Oriented Programming', instructorId: 'b', examAdminId: 'c', description: 'Advanced object-oriented programming concepts' },
+            { code: 'SDM-112025', name: 'Software Development Methods', instructorId: 'd', examAdminId: 'c', description: 'Software development methodologies and practices' },
+            { code: 'CLD-112025', name: 'Cloud Computing Fundamentals', instructorId: 'd', examAdminId: 'c', description: 'Introduction to cloud computing concepts' },
+            { code: 'MOB-112025', name: 'Mobile Application Development', instructorId: 'd', examAdminId: 'e', description: 'Developing applications for mobile platforms' },
+            { code: 'PRG-112025', name: 'Programming Fundamentals', instructorId: 'd', examAdminId: 'e', description: 'Basic programming concepts and principles' }
           ];
           localStorage.setItem('modules', JSON.stringify(finalModules));
         }
         if (storedClasses.length === 0 && finalModules.length > 0) {
           finalClasses = [
-            { id: 1, name: 'Programming Class A', moduleId: 1, students: [] },
-            { id: 2, name: 'Data Structures Class B', moduleId: 2, students: [] },
-            { id: 3, name: 'Web Dev Class C', moduleId: 3, students: [] }
+            { id: 1, name: 'Networking Technologies Class A', moduleCode: 'NWT-112025', students: [] },
+            { id: 2, name: 'Object-Oriented Programming Class B', moduleCode: 'OOP-112025', students: [] },
+            { id: 3, name: 'Software Development Methods Class C', moduleCode: 'SDM-112025', students: [] }
           ];
           localStorage.setItem('classes', JSON.stringify(finalClasses));
         }
