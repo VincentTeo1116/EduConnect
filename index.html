@@ -5,12 +5,474 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>EduConnect Learning Centre</title>
   <link rel="icon" href="Images/Logo.png" type="image/png">
+  <link rel="stylesheet" href="App.css">
 </head>
 <body>
   <div id="root"></div>
   <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
   <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script type="text/babel" src="App.js"></script>
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    const LoginPage = ({ loginData, setLoginData, handleLogin, goToRegister }) => (
+      <div className="form-container">
+        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+          <img src="Images/Logo.png" alt="EduConnect Logo" className="logo" />
+        </div>
+        <h2>Login to EduConnect</h2>
+        <form onSubmit={handleLogin}>
+          <input
+            type="email"
+            placeholder="Email"
+            value={loginData.email}
+            onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
+            required
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            value={loginData.password}
+            onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
+            required
+          />
+          <button type="submit">Login</button>
+        </form>
+        <p>Don't have an account? <button onClick={goToRegister}>Register</button></p>
+      </div>
+    );
+
+    const RegisterPage = ({ registerData, setRegisterData, handleRegister, goToLogin }) => (
+      <div className="form-container">
+        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+          <img src="Images/Logo.png" alt="EduConnect Logo" className="logo" />
+        </div>
+        <h2>Register for EduConnect</h2>
+        <form onSubmit={handleRegister}>
+          <input
+            type="text"
+            placeholder="Name"
+            value={registerData.name}
+            onChange={(e) => setRegisterData({ ...registerData, name: e.target.value })}
+            required
+          />
+          <input
+            type="email"
+            placeholder="Email"
+            value={registerData.email}
+            onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
+            required
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            value={registerData.password}
+            onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
+            required
+          />
+          <select
+            value={registerData.role}
+            onChange={(e) => setRegisterData({ ...registerData, role: e.target.value })}
+            required
+          >
+            <option value="">Select Role</option>
+            <option value="Student">Student</option>
+            <option value="Instructor">Instructor</option>
+            <option value="Exam Administrator">Exam Administrator</option>
+          </select>
+          <button type="submit">Register</button>
+        </form>
+        <p>Already have an account? <button onClick={goToLogin}>Login</button></p>
+      </div>
+    );
+
+    const StudentDashboard = ({ currentUser, assessments, submissions, questions, setSubmissions, setQuestions, handleLogout, goToProfile }) => {
+      const [questionData, setQuestionData] = useState({ assessmentId: '', text: '' });
+
+      const submitAssessment = (assessmentId) => {
+        const submission = {
+          id: Date.now(),
+          assessmentId,
+          studentId: currentUser.id,
+          files: 'file.pdf',
+          drafts: [{ version: 1, content: 'file.pdf', timestamp: new Date().toISOString() }],
+          grade: null,
+          feedback: '',
+          status: 'submitted'
+        };
+        setSubmissions(prev => [...prev, submission]);
+        localStorage.setItem('submissions', JSON.stringify([...submissions, submission]));
+        alert('Submission successful');
+      };
+
+      const handleQuestionSubmit = (e) => {
+        e.preventDefault();
+        const q = { id: Date.now(), assessmentId: parseInt(questionData.assessmentId), studentId: currentUser.id, question: questionData.text, answers: [] };
+        setQuestions(prev => [...prev, q]);
+        localStorage.setItem('questions', JSON.stringify([...questions, q]));
+        setQuestionData({ assessmentId: '', text: '' });
+        alert('Question submitted');
+      };
+
+      return (
+        <div className="main-container">
+          <header>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <img src="Images/Logo.png" alt="EduConnect Logo" className="logo" />
+              <h1>Welcome, {currentUser.name} (Student)</h1>
+            </div>
+            <div>
+              <button onClick={goToProfile}>Profile</button>
+              <button onClick={handleLogout}>Logout</button>
+            </div>
+          </header>
+          <main>
+            <section>
+              <h3>My Assessments</h3>
+              <div>
+                {assessments.map(a => (
+                  <div key={a.id} style={{ border: '1px solid #ddd', padding: '10px', margin: '10px 0' }}>
+                    <h4>{a.title}</h4>
+                    <p>{a.description}</p>
+                    <p>Deadline: {a.deadline}</p>
+                    <button onClick={() => submitAssessment(a.id)}>Submit</button>
+                  </div>
+                ))}
+              </div>
+            </section>
+            <section>
+              <h3>Ask a Question</h3>
+              <form onSubmit={handleQuestionSubmit}>
+                <select
+                  value={questionData.assessmentId}
+                  onChange={(e) => setQuestionData({ ...questionData, assessmentId: e.target.value })}
+                  required
+                >
+                  <option value="">Select Assessment</option>
+                  {assessments.map(a => <option key={a.id} value={a.id}>{a.title}</option>)}
+                </select>
+                <textarea
+                  placeholder="Question"
+                  value={questionData.text}
+                  onChange={(e) => setQuestionData({ ...questionData, text: e.target.value })}
+                  required
+                />
+                <button type="submit">Ask</button>
+              </form>
+            </section>
+          </main>
+        </div>
+      );
+    };
+
+    const InstructorDashboard = ({ currentUser, assessments, submissions, questions, setAssessments, setSubmissions, setQuestions, handleLogout, goToProfile }) => {
+      const [assessmentData, setAssessmentData] = useState({ title: '', description: '', course: '', deadline: '', criteria: '' });
+
+      const handleAssessmentSubmit = (e) => {
+        e.preventDefault();
+        const assessment = { id: Date.now(), title: assessmentData.title, description: assessmentData.description, course: assessmentData.course, deadline: assessmentData.deadline, criteria: assessmentData.criteria, instructorId: currentUser.id, files: [] };
+        setAssessments(prev => [...prev, assessment]);
+        localStorage.setItem('assessments', JSON.stringify([...assessments, assessment]));
+        setAssessmentData({ title: '', description: '', course: '', deadline: '', criteria: '' });
+        alert('Assessment created');
+      };
+
+      const gradeSubmission = (submissionId, grade) => {
+        setSubmissions(prev => prev.map(s => s.id === submissionId ? { ...s, grade, status: 'graded' } : s));
+        const updated = submissions.map(s => s.id === submissionId ? { ...s, grade, status: 'graded' } : s);
+        localStorage.setItem('submissions', JSON.stringify(updated));
+      };
+
+      const updateFeedback = (submissionId, feedback) => {
+        setSubmissions(prev => prev.map(s => s.id === submissionId ? { ...s, feedback } : s));
+        const updated = submissions.map(s => s.id === submissionId ? { ...s, feedback } : s);
+        localStorage.setItem('submissions', JSON.stringify(updated));
+      };
+
+      const answerQuestion = (questionId, answer) => {
+        setQuestions(prev => prev.map(q => q.id === questionId ? { ...q, answers: [...q.answers, { instructorId: currentUser.id, answer, official: true, resolved: false }] } : q));
+        const updated = questions.map(q => q.id === questionId ? { ...q, answers: [...q.answers, { instructorId: currentUser.id, answer, official: true, resolved: false }] } : q);
+        localStorage.setItem('questions', JSON.stringify(updated));
+      };
+
+      return (
+        <div className="main-container">
+          <header>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <img src="Images/Logo.png" alt="EduConnect Logo" className="logo" />
+              <h1>Welcome, {currentUser.name} (Instructor)</h1>
+            </div>
+            <div>
+              <button onClick={goToProfile}>Profile</button>
+              <button onClick={handleLogout}>Logout</button>
+            </div>
+          </header>
+          <main>
+            <section>
+              <h3>Create Assessment</h3>
+              <form onSubmit={handleAssessmentSubmit}>
+                <input type="text" placeholder="Title" value={assessmentData.title} onChange={(e) => setAssessmentData({ ...assessmentData, title: e.target.value })} required />
+                <textarea placeholder="Description" value={assessmentData.description} onChange={(e) => setAssessmentData({ ...assessmentData, description: e.target.value })} required />
+                <input type="text" placeholder="Course" value={assessmentData.course} onChange={(e) => setAssessmentData({ ...assessmentData, course: e.target.value })} required />
+                <input type="datetime-local" value={assessmentData.deadline} onChange={(e) => setAssessmentData({ ...assessmentData, deadline: e.target.value })} required />
+                <textarea placeholder="Grading Criteria" value={assessmentData.criteria} onChange={(e) => setAssessmentData({ ...assessmentData, criteria: e.target.value })} required />
+                <button type="submit">Create</button>
+              </form>
+            </section>
+            <section>
+              <h3>Submissions</h3>
+              <div>
+                {submissions.filter(s => assessments.find(a => a.id === s.assessmentId && a.instructorId === currentUser.id)).map(s => (
+                  <div key={s.id} style={{ border: '1px solid #ddd', padding: '10px', margin: '10px 0' }}>
+                    <p>Student: {s.studentId}</p>
+                    <input type="number" placeholder="Grade" onChange={(e) => gradeSubmission(s.id, e.target.value)} />
+                    <textarea placeholder="Feedback" value={s.feedback} onChange={(e) => updateFeedback(s.id, e.target.value)} />
+                  </div>
+                ))}
+              </div>
+            </section>
+            <section>
+              <h3>Questions</h3>
+              <div>
+                {questions.map(q => (
+                  <div key={q.id} style={{ border: '1px solid #ddd', padding: '10px', margin: '10px 0' }}>
+                    <p>{q.question}</p>
+                    <textarea placeholder="Answer" onChange={(e) => answerQuestion(q.id, e.target.value)} />
+                  </div>
+                ))}
+              </div>
+            </section>
+          </main>
+        </div>
+      );
+    };
+
+    const AdminDashboard = ({ currentUser, users, assessments, submissions, setUsers, handleLogout, goToProfile }) => {
+      const [userData, setUserData] = useState({ name: '', email: '', password: '', role: '' });
+
+      const handleUserSubmit = (e) => {
+        e.preventDefault();
+        if (users.find(u => u.email === userData.email)) {
+          alert('User already exists');
+          return;
+        }
+        const newUser = { id: Date.now(), name: userData.name, email: userData.email, password: userData.password, role: userData.role, active: true };
+        setUsers(prev => [...prev, newUser]);
+        localStorage.setItem('users', JSON.stringify([...users, newUser]));
+        setUserData({ name: '', email: '', password: '', role: '' });
+        alert('User created');
+      };
+
+      const toggleUser = (userId) => {
+        setUsers(prev => prev.map(u => u.id === userId ? { ...u, active: !u.active } : u));
+        const updated = users.map(u => u.id === userId ? { ...u, active: !u.active } : u);
+        localStorage.setItem('users', JSON.stringify(updated));
+      };
+
+      const approveGrade = (submissionId) => {
+        alert('Grade approved');
+      };
+
+      return (
+        <div className="main-container">
+          <header>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <img src="Images/Logo.png" alt="EduConnect Logo" className="logo" />
+              <h1>Welcome, {currentUser.name} (Admin)</h1>
+            </div>
+            <div>
+              <button onClick={goToProfile}>Profile</button>
+              <button onClick={handleLogout}>Logout</button>
+            </div>
+          </header>
+          <main>
+            <section>
+              <h3>Create User Account</h3>
+              <form onSubmit={handleUserSubmit}>
+                <input type="text" placeholder="Name" value={userData.name} onChange={(e) => setUserData({ ...userData, name: e.target.value })} required />
+                <input type="email" placeholder="Email" value={userData.email} onChange={(e) => setUserData({ ...userData, email: e.target.value })} required />
+                <input type="password" placeholder="Password" value={userData.password} onChange={(e) => setUserData({ ...userData, password: e.target.value })} required />
+                <select value={userData.role} onChange={(e) => setUserData({ ...userData, role: e.target.value })} required>
+                  <option value="">Select Role</option>
+                  <option value="Student">Student</option>
+                  <option value="Instructor">Instructor</option>
+                  <option value="Exam Administrator">Exam Administrator</option>
+                </select>
+                <button type="submit">Create User</button>
+              </form>
+            </section>
+            <section>
+              <h3>Manage Users</h3>
+              <div>
+                {users.map(u => (
+                  <div key={u.id} style={{ border: '1px solid #ddd', padding: '10px', margin: '10px 0' }}>
+                    <p>{u.name} - {u.role} - {u.active ? 'Active' : 'Inactive'}</p>
+                    <button onClick={() => toggleUser(u.id)}>{u.active ? 'Deactivate' : 'Activate'}</button>
+                  </div>
+                ))}
+              </div>
+            </section>
+            <section>
+              <h3>Approve Grades</h3>
+              <div>
+                {submissions.filter(s => s.status === 'graded').map(s => (
+                  <div key={s.id} style={{ border: '1px solid #ddd', padding: '10px', margin: '10px 0' }}>
+                    <p>Grade: {s.grade}</p>
+                    <button onClick={() => approveGrade(s.id)}>Approve</button>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </main>
+        </div>
+      );
+    };
+
+    const ProfilePage = ({ currentUser, setCurrentUser, users, setUsers, goBack, handleLogout }) => {
+      const [profileData, setProfileData] = useState({ name: currentUser.name, email: currentUser.email });
+
+      const handleUpdate = (e) => {
+        e.preventDefault();
+        const updatedUser = { ...currentUser, name: profileData.name, email: profileData.email };
+        setCurrentUser(updatedUser);
+        setUsers(prev => prev.map(u => u.id === currentUser.id ? updatedUser : u));
+        localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+        localStorage.setItem('users', JSON.stringify(users.map(u => u.id === currentUser.id ? updatedUser : u)));
+        alert('Profile updated');
+      };
+
+      return (
+        <div className="main-container">
+          <header>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <img src="Images/Logo.png" alt="EduConnect Logo" className="logo" />
+              <h1>Profile</h1>
+            </div>
+            <div>
+              <button onClick={goBack}>Back</button>
+              <button onClick={handleLogout}>Logout</button>
+            </div>
+          </header>
+          <main>
+            <section>
+              <h3>Update Profile</h3>
+              <form onSubmit={handleUpdate}>
+                <input type="text" placeholder="Name" value={profileData.name} onChange={(e) => setProfileData({ ...profileData, name: e.target.value })} required />
+                <input type="email" placeholder="Email" value={profileData.email} onChange={(e) => setProfileData({ ...profileData, email: e.target.value })} required />
+                <button type="submit">Update</button>
+              </form>
+            </section>
+          </main>
+        </div>
+      );
+    };
+
+    const HomePage = () => {
+      const [page, setPage] = useState('login');
+      const [users, setUsers] = useState([]);
+      const [assessments, setAssessments] = useState([]);
+      const [submissions, setSubmissions] = useState([]);
+      const [questions, setQuestions] = useState([]);
+      const [currentUser, setCurrentUser] = useState(null);
+      const [loginData, setLoginData] = useState({ email: '', password: '' });
+      const [registerData, setRegisterData] = useState({ name: '', email: '', password: '', role: '' });
+
+      useEffect(() => {
+        const storedUsers = JSON.parse(localStorage.getItem('users')) || [];
+        const storedAssessments = JSON.parse(localStorage.getItem('assessments')) || [];
+        const storedSubmissions = JSON.parse(localStorage.getItem('submissions')) || [];
+        const storedQuestions = JSON.parse(localStorage.getItem('questions')) || [];
+        setUsers(storedUsers);
+        setAssessments(storedAssessments);
+        setSubmissions(storedSubmissions);
+        setQuestions(storedQuestions);
+        const storedUser = JSON.parse(localStorage.getItem('currentUser'));
+        if (storedUser) {
+          setCurrentUser(storedUser);
+          if (storedUser.role === 'Student') setPage('student-dashboard');
+          else if (storedUser.role === 'Instructor') setPage('instructor-dashboard');
+          else if (storedUser.role === 'Exam Administrator') setPage('admin-dashboard');
+        } else {
+          const hasAdmin = storedUsers.some(u => u.role === 'Exam Administrator');
+          if (storedUsers.length === 0 || !hasAdmin) {
+            setPage('register');
+          } else {
+            setPage('login');
+          }
+        }
+      }, []);
+
+      const saveData = () => {
+        localStorage.setItem('users', JSON.stringify(users));
+        localStorage.setItem('assessments', JSON.stringify(assessments));
+        localStorage.setItem('submissions', JSON.stringify(submissions));
+        localStorage.setItem('questions', JSON.stringify(questions));
+        if (currentUser) localStorage.setItem('currentUser', JSON.stringify(currentUser));
+      };
+
+      const handleLogin = (e) => {
+        e.preventDefault();
+        const user = users.find(u => u.email === loginData.email && u.password === loginData.password && u.active !== false);
+        if (user) {
+          setCurrentUser(user);
+          localStorage.setItem('currentUser', JSON.stringify(user));
+          if (user.role === 'Student') setPage('student-dashboard');
+          else if (user.role === 'Instructor') setPage('instructor-dashboard');
+          else if (user.role === 'Exam Administrator') setPage('admin-dashboard');
+        } else {
+          alert('Invalid credentials or account deactivated');
+        }
+      };
+
+      const handleRegister = (e) => {
+        e.preventDefault();
+        if (users.find(u => u.email === registerData.email)) {
+          alert('User already exists');
+          return;
+        }
+        const newUser = { id: Date.now(), name: registerData.name, email: registerData.email, password: registerData.password, role: registerData.role, active: true };
+        const updatedUsers = [...users, newUser];
+        setUsers(updatedUsers);
+        setCurrentUser(newUser);
+        saveData();
+        if (newUser.role === 'Student') setPage('student-dashboard');
+        else if (newUser.role === 'Instructor') setPage('instructor-dashboard');
+        else if (newUser.role === 'Exam Administrator') setPage('admin-dashboard');
+      };
+
+      const handleLogout = () => {
+        setCurrentUser(null);
+        localStorage.removeItem('currentUser');
+        setPage('login');
+      };
+
+      const goToRegister = () => setPage('register');
+      const goToLogin = () => setPage('login');
+      const goToProfile = () => setPage('profile');
+      const goBack = () => {
+        if (currentUser.role === 'Student') setPage('student-dashboard');
+        else if (currentUser.role === 'Instructor') setPage('instructor-dashboard');
+        else if (currentUser.role === 'Exam Administrator') setPage('admin-dashboard');
+      };
+
+      if (page === 'login') return <LoginPage loginData={loginData} setLoginData={setLoginData} handleLogin={handleLogin} goToRegister={goToRegister} />;
+      if (page === 'register') return <RegisterPage registerData={registerData} setRegisterData={setRegisterData} handleRegister={handleRegister} goToLogin={goToLogin} />;
+      if (page === 'student-dashboard') return <StudentDashboard currentUser={currentUser} assessments={assessments} submissions={submissions} questions={questions} setSubmissions={setSubmissions} setQuestions={setQuestions} handleLogout={handleLogout} goToProfile={goToProfile} />;
+      if (page === 'instructor-dashboard') return <InstructorDashboard currentUser={currentUser} assessments={assessments} submissions={submissions} questions={questions} setAssessments={setAssessments} setSubmissions={setSubmissions} setQuestions={setQuestions} handleLogout={handleLogout} goToProfile={goToProfile} />;
+      if (page === 'admin-dashboard') return <AdminDashboard currentUser={currentUser} users={users} assessments={assessments} submissions={submissions} setUsers={setUsers} handleLogout={handleLogout} goToProfile={goToProfile} />;
+      if (page === 'profile') return <ProfilePage currentUser={currentUser} setCurrentUser={setCurrentUser} users={users} setUsers={setUsers} goBack={goBack} handleLogout={handleLogout} />;
+      return <div>Page not found</div>;
+    };
+
+    function App() {
+      return (
+        <div className="App">
+          <HomePage />
+        </div>
+      );
+    }
+
+    ReactDOM.render(<App />, document.getElementById('root'));
+  </script>
 </body>
 </html>
