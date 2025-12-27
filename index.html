@@ -209,7 +209,7 @@
         const updatedAssessments = storedAssessments.map(a => ({
           ...a,
           moduleCode: a.moduleCode || a.moduleId || 'NWT-112025'
-        }));
+        })); // moduleId fallback for legacy, but all logic should use moduleCode
         
         // Create default modules and classes if none exist
         let finalModules = storedModules;
@@ -256,7 +256,8 @@
         setClasses(finalClasses);
         setFeedbacks(storedFeedbacks);
         
-        if (updatedAssessments.some((a, i) => a.moduleId !== storedAssessments[i]?.moduleId)) {
+        // Remove legacy moduleId check, just update if any moduleCode was missing
+        if (storedAssessments.some(a => !a.moduleCode)) {
           localStorage.setItem('assessments', JSON.stringify(updatedAssessments));
         }
         

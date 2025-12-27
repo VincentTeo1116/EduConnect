@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 const AdminDashboard = ({ currentUser, users, modules, classes, setUsers, setModules, setClasses, handleLogout, goToProfile }) => {
   const [userData, setUserData] = useState({ name: '', email: '', password: '', role: '' });
   const [moduleData, setModuleData] = useState({ name: '', description: '' });
-  const [classData, setClassData] = useState({ name: '', moduleId: '' });
+  const [classData, setClassData] = useState({ name: '', moduleCode: '' });
 
   const handleUserSubmit = (e) => {
     e.preventDefault();
@@ -26,25 +26,29 @@ const AdminDashboard = ({ currentUser, users, modules, classes, setUsers, setMod
 
   const handleModuleSubmit = (e) => {
     e.preventDefault();
-    const newModule = { id: Date.now(), name: moduleData.name, description: moduleData.description };
+    // Generate a module code (simple example: first 3 uppercase letters + timestamp)
+    const code = moduleData.name
+      ? moduleData.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,3) + '-' + Date.now().toString().slice(-6)
+      : 'MOD-' + Date.now().toString().slice(-6);
+    const newModule = { code, name: moduleData.name, description: moduleData.description, instructorId: null, examAdminId: null };
     setModules(prev => [...prev, newModule]);
     localStorage.setItem('modules', JSON.stringify([...modules, newModule]));
     setModuleData({ name: '', description: '' });
     alert('Module created');
   };
 
-  const deleteModule = (moduleId) => {
-    setModules(prev => prev.filter(m => m.id !== moduleId));
-    const updated = modules.filter(m => m.id !== moduleId);
+  const deleteModule = (moduleCode) => {
+    setModules(prev => prev.filter(m => m.code !== moduleCode));
+    const updated = modules.filter(m => m.code !== moduleCode);
     localStorage.setItem('modules', JSON.stringify(updated));
   };
 
   const handleClassSubmit = (e) => {
     e.preventDefault();
-    const newClass = { id: Date.now(), name: classData.name, moduleId: parseInt(classData.moduleId), students: [] };
+    const newClass = { id: Date.now(), name: classData.name, moduleCode: classData.moduleCode, students: [] };
     setClasses(prev => [...prev, newClass]);
     localStorage.setItem('classes', JSON.stringify([...classes, newClass]));
-    setClassData({ name: '', moduleId: '' });
+    setClassData({ name: '', moduleCode: '' });
     alert('Class created');
   };
 
@@ -106,9 +110,9 @@ const AdminDashboard = ({ currentUser, users, modules, classes, setUsers, setMod
           <h3>Manage Modules</h3>
           <div>
             {modules.map(m => (
-              <div key={m.id} style={{ border: '1px solid #ddd', padding: '10px', margin: '10px 0' }}>
+              <div key={m.code} style={{ border: '1px solid #ddd', padding: '10px', margin: '10px 0' }}>
                 <p>{m.name} - {m.description}</p>
-                <button onClick={() => deleteModule(m.id)}>Delete</button>
+                <button onClick={() => deleteModule(m.code)}>Delete</button>
               </div>
             ))}
           </div>
@@ -117,9 +121,9 @@ const AdminDashboard = ({ currentUser, users, modules, classes, setUsers, setMod
           <h3>Create Class</h3>
           <form onSubmit={handleClassSubmit}>
             <input type="text" placeholder="Class Name" value={classData.name} onChange={(e) => setClassData({ ...classData, name: e.target.value })} required />
-            <select value={classData.moduleId} onChange={(e) => setClassData({ ...classData, moduleId: e.target.value })} required>
+            <select value={classData.moduleCode} onChange={(e) => setClassData({ ...classData, moduleCode: e.target.value })} required>
               <option value="">Select Module</option>
-              {modules.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+              {modules.map(m => <option key={m.code} value={m.code}>{m.name}</option>)}
             </select>
             <button type="submit">Create Class</button>
           </form>
@@ -129,7 +133,7 @@ const AdminDashboard = ({ currentUser, users, modules, classes, setUsers, setMod
           <div>
             {classes.map(c => (
               <div key={c.id} style={{ border: '1px solid #ddd', padding: '10px', margin: '10px 0' }}>
-                <p>{c.name} - Module: {modules.find(m => m.id === c.moduleId)?.name}</p>
+                <p>{c.name} - Module: {modules.find(m => m.code === c.moduleCode)?.name}</p>
                 <button onClick={() => deleteClass(c.id)}>Delete</button>
               </div>
             ))}
