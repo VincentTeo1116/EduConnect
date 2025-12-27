@@ -317,6 +317,8 @@
       const [userData, setUserData] = useState({ name: '', email: '', password: '', role: '' });
       const [moduleData, setModuleData] = useState({ code: '', name: '', instructorId: '', examAdminId: '', description: '' });
       const [classData, setClassData] = useState({ name: '', moduleCode: '' });
+      const [currentView, setCurrentView] = useState('main');
+      const [showAddForm, setShowAddForm] = useState(false);
 
       const handleUserSubmit = (e) => {
         e.preventDefault();
@@ -328,6 +330,7 @@
         setUsers(prev => [...prev, newUser]);
         localStorage.setItem('users', JSON.stringify([...users, newUser]));
         setUserData({ name: '', email: '', password: '', role: '' });
+        setShowAddForm(false);
         alert('User created');
       };
 
@@ -353,6 +356,7 @@
         setModules(prev => [...prev, newModule]);
         localStorage.setItem('modules', JSON.stringify([...modules, newModule]));
         setModuleData({ code: '', name: '', instructorId: '', examAdminId: '', description: '' });
+        setShowAddForm(false);
         alert('Module created');
       };
 
@@ -368,6 +372,7 @@
         setClasses(prev => [...prev, newClass]);
         localStorage.setItem('classes', JSON.stringify([...classes, newClass]));
         setClassData({ name: '', moduleCode: '' });
+        setShowAddForm(false);
         alert('Class created');
       };
 
@@ -377,19 +382,34 @@
         localStorage.setItem('classes', JSON.stringify(updated));
       };
 
-      return (
-        <div className="main-container">
-          <header>
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-              <img src="Images/Logo.png" alt="EduConnect Logo" className="logo" />
-              <h1>Welcome, {currentUser.name} (System Admin)</h1>
+      const renderMainView = () => (
+        <main>
+          <h2>System Administration</h2>
+          <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+            <div className="item-card" style={{ cursor: 'pointer', textAlign: 'center' }} onClick={() => setCurrentView('users')}>
+              <h3>Manage User Accounts</h3>
+              <p>View, add, and manage user accounts</p>
             </div>
-            <div>
-              <button onClick={goToProfile}>Profile</button>
-              <button onClick={handleLogout}>Logout</button>
+            <div className="item-card" style={{ cursor: 'pointer', textAlign: 'center' }} onClick={() => setCurrentView('modules')}>
+              <h3>Manage Modules</h3>
+              <p>View, add, and manage course modules</p>
             </div>
-          </header>
-          <main>
+            <div className="item-card" style={{ cursor: 'pointer', textAlign: 'center' }} onClick={() => setCurrentView('classes')}>
+              <h3>Manage Classes</h3>
+              <p>View, add, and manage class enrollments</p>
+            </div>
+          </div>
+        </main>
+      );
+
+      const renderUsersView = () => (
+        <main>
+          <h2>Manage User Accounts</h2>
+          <button onClick={() => setCurrentView('main')} className="btn-secondary">Back to Main</button>
+          <button onClick={() => setShowAddForm(!showAddForm)} className="btn-primary" style={{ marginLeft: '10px' }}>
+            {showAddForm ? 'Cancel' : 'Add User'}
+          </button>
+          {showAddForm && (
             <section>
               <h3>Create User Account</h3>
               <form onSubmit={handleUserSubmit}>
@@ -406,19 +426,31 @@
                 <button type="submit" className="btn-primary">Create User</button>
               </form>
             </section>
-            <section>
-              <h3>Manage Users</h3>
-              <div>
-                {users.map(u => (
-                  <div key={u.id} className="item-card">
-                    <p><strong>{u.name}</strong> - {u.role} - {u.active ? 'Active' : 'Inactive'}</p>
-                    <button onClick={() => toggleUser(u.id)} className={u.active ? 'btn-danger' : 'btn-success'}>
-                      {u.active ? 'Deactivate' : 'Activate'}
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </section>
+          )}
+          <section>
+            <h3>Existing Users</h3>
+            <div>
+              {users.map(u => (
+                <div key={u.id} className="item-card">
+                  <p><strong>{u.name}</strong> - {u.role} - {u.active ? 'Active' : 'Inactive'}</p>
+                  <button onClick={() => toggleUser(u.id)} className={u.active ? 'btn-danger' : 'btn-success'}>
+                    {u.active ? 'Deactivate' : 'Activate'}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </section>
+        </main>
+      );
+
+      const renderModulesView = () => (
+        <main>
+          <h2>Manage Modules</h2>
+          <button onClick={() => setCurrentView('main')} className="btn-secondary">Back to Main</button>
+          <button onClick={() => setShowAddForm(!showAddForm)} className="btn-primary" style={{ marginLeft: '10px' }}>
+            {showAddForm ? 'Cancel' : 'Add Module'}
+          </button>
+          {showAddForm && (
             <section>
               <h3>Create Module</h3>
               <form onSubmit={handleModuleSubmit}>
@@ -436,20 +468,32 @@
                 <button type="submit" className="btn-primary">Create Module</button>
               </form>
             </section>
-            <section>
-              <h3>Manage Modules</h3>
-              <div>
-                {modules.map(m => (
-                  <div key={m.code} className="item-card">
-                    <p><strong>{m.code}</strong> - {m.name}</p>
-                    <p>Instructor: {users.find(u => u.id === m.instructorId)?.name || 'Not assigned'}</p>
-                    <p>Exam Admin: {users.find(u => u.id === m.examAdminId)?.name || 'Not assigned'}</p>
-                    <p>{m.description}</p>
-                    <button onClick={() => deleteModule(m.code)} className="btn-danger">Delete</button>
-                  </div>
-                ))}
-              </div>
-            </section>
+          )}
+          <section>
+            <h3>Existing Modules</h3>
+            <div>
+              {modules.map(m => (
+                <div key={m.code} className="item-card">
+                  <p><strong>{m.code}</strong> - {m.name}</p>
+                  <p>Instructor: {users.find(u => u.id === m.instructorId)?.name || 'Not assigned'}</p>
+                  <p>Exam Admin: {users.find(u => u.id === m.examAdminId)?.name || 'Not assigned'}</p>
+                  <p>{m.description}</p>
+                  <button onClick={() => deleteModule(m.code)} className="btn-danger">Delete</button>
+                </div>
+              ))}
+            </div>
+          </section>
+        </main>
+      );
+
+      const renderClassesView = () => (
+        <main>
+          <h2>Manage Classes</h2>
+          <button onClick={() => setCurrentView('main')} className="btn-secondary">Back to Main</button>
+          <button onClick={() => setShowAddForm(!showAddForm)} className="btn-primary" style={{ marginLeft: '10px' }}>
+            {showAddForm ? 'Cancel' : 'Add Class'}
+          </button>
+          {showAddForm && (
             <section>
               <h3>Create Class</h3>
               <form onSubmit={handleClassSubmit}>
@@ -461,18 +505,37 @@
                 <button type="submit" className="btn-primary">Create Class</button>
               </form>
             </section>
-            <section>
-              <h3>Manage Classes</h3>
-              <div>
-                {classes.map(c => (
-                  <div key={c.id} className="item-card">
-                    <p><strong>{c.name}</strong> - Module: {modules.find(m => m.code === c.moduleCode)?.name} ({c.moduleCode})</p>
-                    <button onClick={() => deleteClass(c.id)} className="btn-danger">Delete</button>
-                  </div>
-                ))}
-              </div>
-            </section>
-          </main>
+          )}
+          <section>
+            <h3>Existing Classes</h3>
+            <div>
+              {classes.map(c => (
+                <div key={c.id} className="item-card">
+                  <p><strong>{c.name}</strong> - Module: {modules.find(m => m.code === c.moduleCode)?.name} ({c.moduleCode})</p>
+                  <button onClick={() => deleteClass(c.id)} className="btn-danger">Delete</button>
+                </div>
+              ))}
+            </div>
+          </section>
+        </main>
+      );
+
+      return (
+        <div className="main-container">
+          <header>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <img src="Images/Logo.png" alt="EduConnect Logo" className="logo" />
+              <h1>Welcome, {currentUser.name} (System Admin)</h1>
+            </div>
+            <div>
+              <button onClick={goToProfile}>Profile</button>
+              <button onClick={handleLogout}>Logout</button>
+            </div>
+          </header>
+          {currentView === 'main' && renderMainView()}
+          {currentView === 'users' && renderUsersView()}
+          {currentView === 'modules' && renderModulesView()}
+          {currentView === 'classes' && renderClassesView()}
         </div>
       );
     };
