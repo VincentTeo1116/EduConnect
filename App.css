@@ -167,16 +167,16 @@ header button {
     padding-right: 2vw;
   }
   section, .item-card {
-    font-size: 1.25rem;
+    font-size: 1.45rem;
     padding: 40px 32px;
   }
   .form-container {
-    font-size: 1.15rem;
+    font-size: 1.25rem;
     padding: 40px 32px;
   }
   input, select, textarea, button {
-    font-size: 1.1rem !important;
-    padding: 18px !important;
+    font-size: 1.25rem !important;
+    padding: 20px !important;
   }
 }
 }
