@@ -154,9 +154,17 @@ header button {
 
 @media (min-width: 1200px) {
   .main-container {
-    max-width: 1200px;
-    width: 100vw;
-    padding: 40px 60px;
+    max-width: 1800px;
+    width: 98vw;
+    padding: 40px 2vw;
+  }
+  header {
+    max-width: 1800px;
+    width: 98vw;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 2vw;
+    padding-right: 2vw;
   }
   section, .item-card {
     font-size: 1.25rem;
