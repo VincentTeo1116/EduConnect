@@ -49,7 +49,7 @@
             <option value="">Select Role</option>
             <option value="Student">Student</option>
             <option value="Instructor">Instructor</option>
-            <option value="System Admin">System Admin</option>
+            <option value="System Administrator">System Administrator</option>
             <option value="Exam Administrator">Exam Administrator</option>
           </select>
           <button type="submit">Register</button>
@@ -421,7 +421,7 @@
                   <option value="">Select Role</option>
                   <option value="Student">Student</option>
                   <option value="Instructor">Instructor</option>
-                  <option value="System Admin">System Admin</option>
+                  <option value="System Administrator">System Administrator</option>
                   <option value="Exam Administrator">Exam Administrator</option>
                 </select>
                 <button type="submit" className="btn-primary">Create User</button>
@@ -526,7 +526,7 @@
           <header>
             <div style={{ display: 'flex', alignItems: 'center' }}>
               <img src="Images/Logo.png" alt="EduConnect Logo" className="logo" />
-              <h1>Welcome, {currentUser.name} (System Admin)</h1>
+              <h1>Welcome, {currentUser.name} ({currentUser.role})</h1>
             </div>
             <div>
               <button onClick={goToProfile}>Profile</button>
@@ -600,7 +600,7 @@
             name: 'System Administrator',
             email: 'admin@educonnect.com',
             password: 'admin123',
-            role: 'System Admin',
+            role: 'System Administrator',
             active: true
           };
           storedUsers.push(defaultAdmin);
@@ -625,7 +625,7 @@
           setCurrentUser(storedUser);
           if (storedUser.role === 'Student') setPage('student-dashboard');
           else if (storedUser.role === 'Instructor') setPage('instructor-dashboard');
-          else if (storedUser.role === 'System Admin') setPage('system-admin-dashboard');
+          else if (storedUser.role === 'System Administrator') setPage('system-admin-dashboard');
           else if (storedUser.role === 'Exam Administrator') setPage('exam-admin-dashboard');
         } else {
           setPage('login');
@@ -651,7 +651,7 @@
           localStorage.setItem('currentUser', JSON.stringify(user));
           if (user.role === 'Student') setPage('student-dashboard');
           else if (user.role === 'Instructor') setPage('instructor-dashboard');
-          else if (user.role === 'System Admin') setPage('system-admin-dashboard');
+          else if (user.role === 'System Administrator') setPage('system-admin-dashboard');
           else if (user.role === 'Exam Administrator') setPage('exam-admin-dashboard');
         } else {
           alert('Invalid credentials or account deactivated');
@@ -698,7 +698,7 @@
         }
         if (currentUser.role === 'Student') setPage('student-dashboard');
         else if (currentUser.role === 'Instructor') setPage('instructor-dashboard');
-        else if (currentUser.role === 'System Admin') setPage('system-admin-dashboard');
+        else if (currentUser.role === 'System Administrator') setPage('system-admin-dashboard');
         else if (currentUser.role === 'Exam Administrator') setPage('exam-admin-dashboard');
       };
 
@@ -706,7 +706,7 @@
       if (page === 'register') return <RegisterPage registerData={registerData} setRegisterData={setRegisterData} handleRegister={handleRegister} goToLogin={goToLogin} />;
       if (page === 'student-dashboard') return <StudentDashboard currentUser={currentUser} assessments={assessments} submissions={submissions} questions={questions} classes={classes} modules={modules} feedbacks={feedbacks} setSubmissions={setSubmissions} setQuestions={setQuestions} setClasses={setClasses} setFeedbacks={setFeedbacks} handleLogout={handleLogout} goToProfile={goToProfile} />;
       if (page === 'instructor-dashboard') return <InstructorDashboard currentUser={currentUser} assessments={assessments} submissions={submissions} questions={questions} modules={modules} classes={classes} feedbacks={feedbacks} users={users} setAssessments={setAssessments} setSubmissions={setSubmissions} setQuestions={setQuestions} handleLogout={handleLogout} goToProfile={goToProfile} />;
-      if (page === 'system-admin-dashboard') return <SystemAdminDashboard currentUser={currentUser} users={users} modules={modules} classes={classes} setUsers={setUsers} setModules={setModules} setClasses={setClasses} handleLogout={handleLogout} goToProfile={goToProfile} />;
+      if (page === 'system-admin-dashboard') return <AdminDashboard currentUser={currentUser} users={users} modules={modules} classes={classes} setUsers={setUsers} setModules={setModules} setClasses={setClasses} handleLogout={handleLogout} goToProfile={goToProfile} />;
       if (page === 'exam-admin-dashboard') return <ExamAdminDashboard currentUser={currentUser} assessments={assessments} submissions={submissions} users={users} modules={modules} feedbacks={feedbacks} handleLogout={handleLogout} goToProfile={goToProfile} />;
       if (page === 'profile') return <ProfilePage currentUser={currentUser} setCurrentUser={setCurrentUser} users={users} setUsers={setUsers} goBack={goBack} handleLogout={handleLogout} />;
       return <div>Page not found</div>;
