@@ -8,7 +8,7 @@ A React-based learning management system for students, instructors, and administ
 - Role-based dashboards:
   - **Student**: Enroll in classes, view enrolled modules, submit assessments, give feedback to lecturers, ask questions
   - **Instructor**: Create assessments, grade submissions, answer questions, view student feedback for their modules
-  - **Admin**: CRUD users, manage modules, manage classes
+  - **System Admin**: CRUD users, manage modules, manage classes
   - **Exam Administrator**: View module results, feedback from students to lecturers, feedback from lecturers to students, view grading criteria
 - Moodle-like feedback system: Students can give comments to lecturers based on enrolled modules
 - Class enrollment system

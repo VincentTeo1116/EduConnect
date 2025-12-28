@@ -29,16 +29,16 @@ class EduConnect {
     render() {
         const app = document.getElementById('app');
         app.innerHTML = `
-            <header class="header">
-                <div class="nav-container">
-                    <nav class="navbar">
-                        <a href="#" class="logo-section" id="homeLink">
-                            <div class="logo-icon">
-                                <i class="fas fa-graduation-cap"></i>
-                            </div>
-                            <div class="logo-text">EduConnect</div>
-                        </a>
-                        
+            <div class="main-container">
+                <header class="header">
+                    <div style="display: flex; align-items: center;">
+                        <div class="logo-section" id="homeLink">
+                            <img src="Images/Logo.png" alt="EduConnect Logo" class="logo" />
+                        </div>
+                        <h1>EduConnect</h1>
+                    </div>
+                    
+                    <div class="nav-links-container">
                         <ul class="nav-links" id="navLinks">
                             ${this.renderNavLinks()}
                         </ul>
@@ -51,15 +51,15 @@ class EduConnect {
                                 <i class="fas fa-user"></i>
                             </div>
                         </div>
-                    </nav>
-                </div>
-            </header>
-            
-            <main class="main-content" id="mainContent">
-                <div class="loading">
-                    <div class="loading-spinner"></div>
-                </div>
-            </main>
+                    </div>
+                </header>
+                
+                <main class="main-content" id="mainContent">
+                    <div class="loading">
+                        <div class="loading-spinner"></div>
+                    </div>
+                </main>
+            </div>
         `;
     }
     
@@ -283,7 +283,7 @@ class EduConnect {
             
             mainContent.innerHTML = `
                 <div class="fade-in">
-                    <h1 style="font-size: 32px; margin-bottom: 24px; color: var(--primary-color);">
+                    <h1 style="font-size: 20px; margin-bottom: 24px; color: var(--primary-color);">
                         ${pageTitles[page] || 'Page'}
                     </h1>
                     <div class="action-card">
