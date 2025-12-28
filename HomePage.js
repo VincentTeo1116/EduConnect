@@ -17,12 +17,17 @@ const HomePage = () => {
   const [currentUser, setCurrentUser] = useState(null);
   const [loginData, setLoginData] = useState({ email: '', password: '' });
   const [registerData, setRegisterData] = useState({ name: '', email: '', password: '', role: '' });
+  const [isLoading, setIsLoading] = useState(true); // Add loading state
 
   useEffect(() => {
+    console.log('HomePage useEffect running...');
+    
     const storedUsers = JSON.parse(localStorage.getItem('users')) || [];
     const storedAssessments = JSON.parse(localStorage.getItem('assessments')) || [];
     const storedSubmissions = JSON.parse(localStorage.getItem('submissions')) || [];
     const storedQuestions = JSON.parse(localStorage.getItem('questions')) || [];
+    
+    console.log('Loaded users from localStorage:', storedUsers);
     
     // Create default admin if no users exist
     let updatedUsers = storedUsers;
@@ -46,12 +51,15 @@ const HomePage = () => {
     setQuestions(storedQuestions);
     
     const storedUser = JSON.parse(localStorage.getItem('currentUser'));
+    console.log('Stored user from localStorage:', storedUser);
+    
     if (storedUser) {
       setCurrentUser(storedUser);
       if (storedUser.role === 'Student') setPage('student-dashboard');
       else if (storedUser.role === 'Instructor') setPage('instructor-dashboard');
       else if (storedUser.role === 'Exam Administrator') setPage('exam-admin-dashboard');
       else if (storedUser.role === 'System Administrator') setPage('admin-dashboard');
+      else setPage('login'); // Fallback for unknown role
     } else {
       const hasAdmin = updatedUsers.some(u => u.role === 'System Administrator');
       if (updatedUsers.length === 0 || !hasAdmin) {
@@ -60,6 +68,8 @@ const HomePage = () => {
         setPage('login');
       }
     }
+    
+    setIsLoading(false); // Data loaded
   }, []);
 
   const saveData = () => {
@@ -73,6 +83,7 @@ const HomePage = () => {
   const handleLogin = (e) => {
     e.preventDefault();
     console.log('Login attempt with:', loginData.email);
+    console.log('Available users:', users);
     
     const user = users.find(u => 
       u.email === loginData.email && 
@@ -89,6 +100,7 @@ const HomePage = () => {
       else if (user.role === 'Instructor') setPage('instructor-dashboard');
       else if (user.role === 'Exam Administrator') setPage('exam-admin-dashboard');
       else if (user.role === 'System Administrator') setPage('admin-dashboard');
+      else setPage('login'); // Fallback
     } else {
       console.log('Login failed - no matching user found');
       alert('Invalid credentials or account deactivated');
@@ -121,6 +133,7 @@ const HomePage = () => {
     else if (newUser.role === 'Instructor') setPage('instructor-dashboard');
     else if (newUser.role === 'Exam Administrator') setPage('exam-admin-dashboard');
     else if (newUser.role === 'System Administrator') setPage('admin-dashboard');
+    else setPage('login'); // Fallback
   };
 
   const handleLogout = () => {
@@ -142,16 +155,58 @@ const HomePage = () => {
     else if (currentUser.role === 'Instructor') setPage('instructor-dashboard');
     else if (currentUser.role === 'Exam Administrator') setPage('exam-admin-dashboard');
     else if (currentUser.role === 'System Administrator') setPage('admin-dashboard');
+    else setPage('login'); // Fallback
   };
 
-  if (page === 'login') return <LoginPage loginData={loginData} setLoginData={setLoginData} handleLogin={handleLogin} goToRegister={goToRegister} />;
-  if (page === 'register') return <RegisterPage registerData={registerData} setRegisterData={setRegisterData} handleRegister={handleRegister} goToLogin={goToLogin} />;
-  if (page === 'student-dashboard') return <StudentDashboard currentUser={currentUser} assessments={assessments} submissions={submissions} questions={questions} setSubmissions={setSubmissions} setQuestions={setQuestions} handleLogout={handleLogout} goToProfile={goToProfile} />;
-  if (page === 'instructor-dashboard') return <InstructorDashboard currentUser={currentUser} assessments={assessments} submissions={submissions} questions={questions} setAssessments={setAssessments} setSubmissions={setSubmissions} setQuestions={setQuestions} handleLogout={handleLogout} goToProfile={goToProfile} />;
-  if (page === 'exam-admin-dashboard') return <ExamAdminDashboard currentUser={currentUser} assessments={assessments} submissions={submissions} questions={questions} setAssessments={setAssessments} setSubmissions={setSubmissions} setQuestions={setQuestions} handleLogout={handleLogout} goToProfile={goToProfile} />;
-  if (page === 'admin-dashboard') return <AdminDashboard currentUser={currentUser} users={users} assessments={assessments} submissions={submissions} setUsers={setUsers} handleLogout={handleLogout} goToProfile={goToProfile} />;
-  if (page === 'profile') return <ProfilePage currentUser={currentUser} setCurrentUser={setCurrentUser} users={users} setUsers={setUsers} goBack={goBack} handleLogout={handleLogout} />;
-  return <div>Page not found</div>;
+  // Add loading state
+  if (isLoading) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh',
+        fontSize: '18px',
+        color: '#333'
+      }}>
+        Loading EduConnect System...
+      </div>
+    );
+  }
+
+  // Render the appropriate page
+  switch(page) {
+    case 'login':
+      return <LoginPage loginData={loginData} setLoginData={setLoginData} handleLogin={handleLogin} goToRegister={goToRegister} />;
+    case 'register':
+      return <RegisterPage registerData={registerData} setRegisterData={setRegisterData} handleRegister={handleRegister} goToLogin={goToLogin} />;
+    case 'student-dashboard':
+      return <StudentDashboard currentUser={currentUser} assessments={assessments} submissions={submissions} questions={questions} setSubmissions={setSubmissions} setQuestions={setQuestions} handleLogout={handleLogout} goToProfile={goToProfile} />;
+    case 'instructor-dashboard':
+      return <InstructorDashboard currentUser={currentUser} assessments={assessments} submissions={submissions} questions={questions} setAssessments={setAssessments} setSubmissions={setSubmissions} setQuestions={setQuestions} handleLogout={handleLogout} goToProfile={goToProfile} />;
+    case 'exam-admin-dashboard':
+      return <ExamAdminDashboard currentUser={currentUser} assessments={assessments} submissions={submissions} questions={questions} setAssessments={setAssessments} setSubmissions={setSubmissions} setQuestions={setQuestions} handleLogout={handleLogout} goToProfile={goToProfile} />;
+    case 'admin-dashboard':
+      return <AdminDashboard currentUser={currentUser} users={users} assessments={assessments} submissions={submissions} setUsers={setUsers} handleLogout={handleLogout} goToProfile={goToProfile} />;
+    case 'profile':
+      return <ProfilePage currentUser={currentUser} setCurrentUser={setCurrentUser} users={users} setUsers={setUsers} goBack={goBack} handleLogout={handleLogout} />;
+    default:
+      return (
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          height: '100vh',
+          flexDirection: 'column'
+        }}>
+          <h2>Page not found: {page}</h2>
+          <button onClick={() => {
+            localStorage.removeItem('currentUser');
+            setPage('login');
+          }}>Go to Login</button>
+        </div>
+      );
+  }
 };
 
-export default HomePage;
+export default HomePage; 
