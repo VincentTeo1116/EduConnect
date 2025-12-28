@@ -24,6 +24,8 @@ const HomePage = () => {
     const storedSubmissions = JSON.parse(localStorage.getItem('submissions')) || [];
     const storedQuestions = JSON.parse(localStorage.getItem('questions')) || [];
     
+    // Create default admin if no users exist
+    let updatedUsers = storedUsers;
     if (storedUsers.length === 0) {
       const defaultAdmin = {
         id: Date.now(),
@@ -33,12 +35,12 @@ const HomePage = () => {
         role: 'System Administrator',
         active: true
       };
-      storedUsers.push(defaultAdmin);
-      localStorage.setItem('users', JSON.stringify(storedUsers));
+      updatedUsers = [defaultAdmin];
+      localStorage.setItem('users', JSON.stringify(updatedUsers));
       console.log('Default admin created:', defaultAdmin);
     }
     
-    setUsers(storedUsers);
+    setUsers(updatedUsers);
     setAssessments(storedAssessments);
     setSubmissions(storedSubmissions);
     setQuestions(storedQuestions);
@@ -51,8 +53,8 @@ const HomePage = () => {
       else if (storedUser.role === 'Exam Administrator') setPage('exam-admin-dashboard');
       else if (storedUser.role === 'System Administrator') setPage('admin-dashboard');
     } else {
-      const hasAdmin = storedUsers.some(u => u.role === 'System Administrator');
-      if (storedUsers.length === 0 || !hasAdmin) {
+      const hasAdmin = updatedUsers.some(u => u.role === 'System Administrator');
+      if (updatedUsers.length === 0 || !hasAdmin) {
         setPage('register');
       } else {
         setPage('login');
@@ -71,7 +73,6 @@ const HomePage = () => {
   const handleLogin = (e) => {
     e.preventDefault();
     console.log('Login attempt with:', loginData.email);
-    console.log('Available users:', users);
     
     const user = users.find(u => 
       u.email === loginData.email && 
@@ -111,7 +112,10 @@ const HomePage = () => {
     const updatedUsers = [...users, newUser];
     setUsers(updatedUsers);
     setCurrentUser(newUser);
-    saveData();
+    
+    // Save to localStorage
+    localStorage.setItem('users', JSON.stringify(updatedUsers));
+    localStorage.setItem('currentUser', JSON.stringify(newUser));
     
     if (newUser.role === 'Student') setPage('student-dashboard');
     else if (newUser.role === 'Instructor') setPage('instructor-dashboard');
