@@ -135,10 +135,42 @@ header {
   align-items: center;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  padding: 20px 30px;
+  padding: 32px 48px;
   border-radius: 12px;
-  margin-bottom: 30px;
+  margin-bottom: 40px;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  font-size: 1.35rem;
+}
+
+header > div:last-child {
+  display: flex;
+  gap: 20px;
+}
+
+header button {
+  font-size: 1.1rem;
+  padding: 14px 28px;
+}
+
+@media (min-width: 1200px) {
+  .main-container {
+    max-width: 1200px;
+    width: 100vw;
+    padding: 40px 60px;
+  }
+  section, .item-card {
+    font-size: 1.25rem;
+    padding: 40px 32px;
+  }
+  .form-container {
+    font-size: 1.15rem;
+    padding: 40px 32px;
+  }
+  input, select, textarea, button {
+    font-size: 1.1rem !important;
+    padding: 18px !important;
+  }
+}
 }
 
 header h1 {
