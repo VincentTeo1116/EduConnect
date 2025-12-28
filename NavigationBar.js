@@ -31,13 +31,10 @@ class EduConnect {
         app.innerHTML = `
             <div class="main-container">
                 <header class="header">
-                    <div style="display: flex; align-items: center;">
-                        <div class="logo-section" id="homeLink">
-                            <img src="Images/Logo.png" alt="EduConnect Logo" class="logo" />
-                        </div>
+                    <div class="logo-section" id="homeLink">
+                        <img src="Images/Logo.png" alt="EduConnect Logo" class="logo" />
                         <h1>EduConnect</h1>
-                    </div>
-                    
+                    </div>          
                     <div class="nav-links-container">
                         <ul class="nav-links" id="navLinks">
                             ${this.renderNavLinks()}
