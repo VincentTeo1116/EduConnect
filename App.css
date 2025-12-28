@@ -720,6 +720,15 @@ li:last-child {
   color: white;
 }
 
+/* Add to App.css */
+.loading-screen {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
 /* Loading spinner */
 .loading {
   display: flex;
