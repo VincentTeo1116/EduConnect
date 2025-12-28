@@ -26,10 +26,14 @@ const AdminDashboard = ({ currentUser, users, modules, classes, setUsers, setMod
 
   const handleModuleSubmit = (e) => {
     e.preventDefault();
-    // Generate a module code (simple example: first 3 uppercase letters + timestamp)
+    // Generate module code: initials + -MMYYYY
+    const getInitials = (name) => name.split(' ').map(w => w[0]).join('').toUpperCase();
+    const now = new Date();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const yyyy = String(now.getFullYear());
     const code = moduleData.name
-      ? moduleData.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,3) + '-' + Date.now().toString().slice(-6)
-      : 'MOD-' + Date.now().toString().slice(-6);
+      ? `${getInitials(moduleData.name)}-${mm}${yyyy}`
+      : `MOD-${mm}${yyyy}`;
     const newModule = { code, name: moduleData.name, description: moduleData.description, instructorId: null, examAdminId: null };
     setModules(prev => [...prev, newModule]);
     localStorage.setItem('modules', JSON.stringify([...modules, newModule]));
@@ -66,14 +70,14 @@ const AdminDashboard = ({ currentUser, users, modules, classes, setUsers, setMod
           <h1>Welcome, {currentUser.name} (Admin)</h1>
         </div>
         <div>
-          <button onClick={goToProfile}>Profile</button>
-          <button onClick={handleLogout}>Logout</button>
+          <button className="form-container" style={{ width: 'auto', padding: '10px 24px', marginRight: '10px' }} onClick={goToProfile}>Profile</button>
+          <button className="form-container" style={{ width: 'auto', padding: '10px 24px' }} onClick={handleLogout}>Logout</button>
         </div>
       </header>
       <main>
         <section>
           <h3>Create User Account</h3>
-          <form onSubmit={handleUserSubmit}>
+          <form className="form-container" onSubmit={handleUserSubmit}>
             <input type="text" placeholder="Name" value={userData.name} onChange={(e) => setUserData({ ...userData, name: e.target.value })} required />
             <input type="email" placeholder="Email" value={userData.email} onChange={(e) => setUserData({ ...userData, email: e.target.value })} required />
             <input type="password" placeholder="Password" value={userData.password} onChange={(e) => setUserData({ ...userData, password: e.target.value })} required />
@@ -91,18 +95,18 @@ const AdminDashboard = ({ currentUser, users, modules, classes, setUsers, setMod
           <h3>Manage Users</h3>
           <div>
             {users.map(u => (
-              <div key={u.id} style={{ border: '1px solid #ddd', padding: '10px', margin: '10px 0' }}>
-                <p>{u.name} - {u.role} - {u.active ? 'Active' : 'Inactive'}</p>
-                <button onClick={() => toggleUser(u.id)}>{u.active ? 'Deactivate' : 'Activate'}</button>
+              <div key={u.id} className="form-container" style={{ border: '1px solid #e1e5e9', padding: '18px', margin: '10px 0', background: 'rgba(255,255,255,0.95)' }}>
+                <p style={{ fontWeight: '500', color: '#333' }}>{u.name} - {u.role} - {u.active ? 'Active' : 'Inactive'}</p>
+                <button style={{ width: 'auto', padding: '10px 24px', marginTop: '8px' }} onClick={() => toggleUser(u.id)}>{u.active ? 'Deactivate' : 'Activate'}</button>
               </div>
             ))}
           </div>
         </section>
         <section>
           <h3>Create Module</h3>
-          <form onSubmit={handleModuleSubmit}>
+          <form className="form-container" onSubmit={handleModuleSubmit}>
             <input type="text" placeholder="Module Name" value={moduleData.name} onChange={(e) => setModuleData({ ...moduleData, name: e.target.value })} required />
-            <textarea placeholder="Description" value={moduleData.description} onChange={(e) => setModuleData({ ...moduleData, description: e.target.value })} required />
+            <textarea style={{ width: '100%', padding: '15px', margin: '10px 0', border: '2px solid #e1e5e9', borderRadius: '10px', fontSize: '16px', background: 'rgba(255,255,255,0.8)' }} placeholder="Description" value={moduleData.description} onChange={(e) => setModuleData({ ...moduleData, description: e.target.value })} required />
             <button type="submit">Create Module</button>
           </form>
         </section>
@@ -110,16 +114,16 @@ const AdminDashboard = ({ currentUser, users, modules, classes, setUsers, setMod
           <h3>Manage Modules</h3>
           <div>
             {modules.map(m => (
-              <div key={m.code} style={{ border: '1px solid #ddd', padding: '10px', margin: '10px 0' }}>
-                <p>{m.name} - {m.description}</p>
-                <button onClick={() => deleteModule(m.code)}>Delete</button>
+              <div key={m.code} className="form-container" style={{ border: '1px solid #e1e5e9', padding: '18px', margin: '10px 0', background: 'rgba(255,255,255,0.95)' }}>
+                <p style={{ fontWeight: '500', color: '#333' }}>{m.name} - {m.description}</p>
+                <button style={{ width: 'auto', padding: '10px 24px', marginTop: '8px' }} onClick={() => deleteModule(m.code)}>Delete</button>
               </div>
             ))}
           </div>
         </section>
         <section>
           <h3>Create Class</h3>
-          <form onSubmit={handleClassSubmit}>
+          <form className="form-container" onSubmit={handleClassSubmit}>
             <input type="text" placeholder="Class Name" value={classData.name} onChange={(e) => setClassData({ ...classData, name: e.target.value })} required />
             <select value={classData.moduleCode} onChange={(e) => setClassData({ ...classData, moduleCode: e.target.value })} required>
               <option value="">Select Module</option>
