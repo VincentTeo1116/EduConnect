@@ -7,7 +7,6 @@ import InstructorDashboard from './InstructorDashboard.js';
 import AdminDashboard from './AdminDashboard.js';
 import ProfilePage from './ProfilePage.js';
 import ExamAdminDashboard from './ExamAdminDashboard.js';
-import AdminDashboard from './AdminDashboard.js';
 
 const HomePage = () => {
   const [page, setPage] = useState('login');
