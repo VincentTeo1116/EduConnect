@@ -205,4 +205,4 @@ const AdminDashboard = ({ currentUser, users, setUsers, handleLogout, goToProfil
   );
 };
 
-export default AdminDashboard;
+export { AdminDashboard };
