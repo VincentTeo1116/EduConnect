@@ -55,6 +55,7 @@ const SystemAdminDashboard = ({ currentUser, users = [], setUsers, handleLogout,
       setUserData({ name: '', email: '', password: '', role: '' });
       setShowAddUserPopup(false);
       alert('User created successfully');
+      window.location.reload();
     } catch (error) {
       console.error('Error creating user:', error);
       // Fallback to localStorage
@@ -104,6 +105,7 @@ const SystemAdminDashboard = ({ currentUser, users = [], setUsers, handleLogout,
         .join('')
         .toUpperCase()
         .slice(0, 3);
+      window.location.reload();
     };
     
     const now = new Date();

@@ -7,8 +7,8 @@
   <link rel="icon" href="Images/Logo.png" type="image/png">
   <link rel="stylesheet" href="App.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    /* Additional CSS for the fixed popup */
     .global-popup-overlay {
       position: fixed !important;
       top: 0 !important;
@@ -59,9 +59,9 @@
     body.popup-open {
       overflow: hidden !important;
     }
-    
-    /* Demo credentials styling */
-    .demo-credentials {
+
+    /* Login alert styling */
+    .login-alert-credentials {
       background-color: #f8f9fa;
       padding: 15px;
       border-radius: 8px;
@@ -69,12 +69,12 @@
       border-left: 4px solid #667eea;
     }
     
-    .demo-credentials h4 {
+    .login-alert-credentials h4 {
       margin: 0 0 10px 0;
       color: #333;
     }
     
-    .demo-credentials p {
+    .login-alert-credentials p {
       margin: 5px 0;
       font-size: 14px;
       color: #666;
@@ -499,7 +499,7 @@
       );
     };
 
-    // LoginPage Component with Demo Credentials
+    // LoginPage Component with Login Alert Credentials
     const LoginPage = ({ loginData, setLoginData, handleLogin, goToRegister }) => (
       <div className="form-container">
         <div style={{ textAlign: 'center', marginBottom: '20px' }}>
@@ -518,15 +518,6 @@
           Login to EduConnect
         </h2>
         
-        {/* Demo Credentials Section */}
-        <div className="demo-credentials">
-          <h4><i className="fas fa-info-circle"></i> Demo Credentials</h4>
-          <p><strong>System Admin:</strong> admin@educonnect.com / admin123</p>
-          <p><strong>Student:</strong> student@educonnect.com / student123</p>
-          <p><strong>Instructor:</strong> instructor@educonnect.com / instructor123</p>
-          <p><strong>Exam Admin:</strong> exam@educonnect.com / exam123</p>
-        </div>
-        
         <form onSubmit={handleLogin}>
           <input 
             type="email" 
@@ -542,6 +533,13 @@
             onChange={e => setLoginData({ ...loginData, password: e.target.value })} 
             required 
           />
+
+          {/* Login Alert Section */}
+          <div className="login-alert-credentials">
+            <h4><i className="fas fa-info-circle"></i> No Account Access?</h4>
+            <p>Contact the administrator to request account creation.</p>
+          </div>
+
           <button type="submit" className="btn-primary">Login</button>
         </form>
       </div>
@@ -1978,6 +1976,7 @@
           setPopupUserData({ name: '', email: '', password: '', role: '' });
           setShowAddUserPopup(false);
           alert('User created successfully');
+          window.location.reload();
         } catch (error) {
           console.error('Error creating user:', error);
           // Fallback to localStorage
@@ -1999,6 +1998,7 @@
           setPopupUserData({ name: '', email: '', password: '', role: '' });
           setShowAddUserPopup(false);
           alert('User created (local)');
+          window.location.reload();
         }
       };
 
