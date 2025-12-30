@@ -7,9 +7,83 @@
   <link rel="icon" href="Images/Logo.png" type="image/png">
   <link rel="stylesheet" href="App.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* Additional CSS for the fixed popup */
+    .global-popup-overlay {
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      background-color: rgba(0, 0, 0, 0.7) !important;
+      display: flex !important;
+      justify-content: center !important;
+      align-items: center !important;
+      z-index: 9999 !important;
+    }
+    
+    .global-popup-content {
+      background: white !important;
+      padding: 30px !important;
+      border-radius: 15px !important;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2) !important;
+      width: 90% !important;
+      max-width: 500px !important;
+      max-height: 90vh !important;
+      overflow-y: auto !important;
+    }
+    
+    .global-popup-content form {
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 15px !important;
+    }
+    
+    .global-popup-content input,
+    .global-popup-content select {
+      padding: 12px 15px !important;
+      border: 1px solid #ddd !important;
+      border-radius: 8px !important;
+      font-size: 16px !important;
+      transition: border-color 0.3s !important;
+    }
+    
+    .global-popup-content input:focus,
+    .global-popup-content select:focus {
+      outline: none !important;
+      border-color: #667eea !important;
+      box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1) !important;
+    }
+    
+    /* Fix body overflow */
+    body.popup-open {
+      overflow: hidden !important;
+    }
+    
+    /* Demo credentials styling */
+    .demo-credentials {
+      background-color: #f8f9fa;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      border-left: 4px solid #667eea;
+    }
+    
+    .demo-credentials h4 {
+      margin: 0 0 10px 0;
+      color: #333;
+    }
+    
+    .demo-credentials p {
+      margin: 5px 0;
+      font-size: 14px;
+      color: #666;
+    }
+  </style>
 </head>
 <body>
   <div id="root"></div>
+  <div id="global-popup-container"></div>
   
   <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
   <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
@@ -18,7 +92,414 @@
   <script type="text/babel">
     const { useState, useEffect } = React;
 
-    // LoginPage Component
+    const supabaseUrl = 'https://etilwlveocqsozzuizil.supabase.co';
+    const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV0aWx3bHZlb2Nxc296enVpemlsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcxMDc0NTQsImV4cCI6MjA4MjY4MzQ1NH0.VY_acdqcgBFXxXCfUUCIGKKrDRYqZmFTpsNj9_h2pm0';
+    
+    // Create Supabase client
+    const supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
+    
+    // SUPABASE SERVICE FUNCTIONS
+    const SupabaseService = {
+      // Users
+      async getUsers() {
+        try {
+          const { data, error } = await supabase
+            .from('users')
+            .select('*')
+            .order('created_at', { ascending: false });
+          
+          if (error) {
+            console.error('Supabase getUsers error:', error);
+            throw error;
+          }
+          return data || [];
+        } catch (error) {
+          console.error('Error fetching users:', error);
+          return [];
+        }
+      },
+      
+      async createUser(user) {
+        try {
+          const { data, error } = await supabase
+            .from('users')
+            .insert([user])
+            .select();
+          
+          if (error) {
+            console.error('Supabase createUser error:', error);
+            throw error;
+          }
+          return data[0];
+        } catch (error) {
+          console.error('Error creating user:', error);
+          throw error;
+        }
+      },
+      
+      async updateUser(userId, updates) {
+        try {
+          const { data, error } = await supabase
+            .from('users')
+            .update(updates)
+            .eq('id', userId)
+            .select();
+          
+          if (error) throw error;
+          return data[0];
+        } catch (error) {
+          console.error('Error updating user:', error);
+          throw error;
+        }
+      },
+      
+      async userExists(email) {
+        try {
+          const { data, error } = await supabase
+            .from('users')
+            .select('id')
+            .eq('email', email)
+            .single();
+          
+          return !error && data !== null;
+        } catch (error) {
+          return false;
+        }
+      },
+      
+      async loginUser(email, password) {
+        try {
+          const { data, error } = await supabase
+            .from('users')
+            .select('*')
+            .eq('email', email)
+            .eq('password', password)
+            .eq('active', true)
+            .single();
+          
+          if (error) throw error;
+          return data;
+        } catch (error) {
+          console.error('Login error:', error);
+          throw error;
+        }
+      },
+      
+      // Modules
+      async getModules() {
+        try {
+          const { data, error } = await supabase
+            .from('modules')
+            .select('*')
+            .order('created_at', { ascending: false });
+          
+          if (error) throw error;
+          return data || [];
+        } catch (error) {
+          console.error('Error fetching modules:', error);
+          return [];
+        }
+      },
+      
+      async createModule(module) {
+        try {
+          const { data, error } = await supabase
+            .from('modules')
+            .insert([module])
+            .select();
+          
+          if (error) throw error;
+          return data[0];
+        } catch (error) {
+          console.error('Error creating module:', error);
+          throw error;
+        }
+      },
+      
+      async deleteModule(moduleCode) {
+        try {
+          const { error } = await supabase
+            .from('modules')
+            .delete()
+            .eq('code', moduleCode);
+          
+          if (error) throw error;
+        } catch (error) {
+          console.error('Error deleting module:', error);
+          throw error;
+        }
+      },
+      
+      // Classes
+      async getClasses() {
+        try {
+          const { data, error } = await supabase
+            .from('classes')
+            .select('*')
+            .order('created_at', { ascending: false });
+          
+          if (error) throw error;
+          return data || [];
+        } catch (error) {
+          console.error('Error fetching classes:', error);
+          return [];
+        }
+      },
+      
+      async createClass(classData) {
+        try {
+          const { data, error } = await supabase
+            .from('classes')
+            .insert([classData])
+            .select();
+          
+          if (error) throw error;
+          return data[0];
+        } catch (error) {
+          console.error('Error creating class:', error);
+          throw error;
+        }
+      },
+      
+      async deleteClass(classId) {
+        try {
+          const { error } = await supabase
+            .from('classes')
+            .delete()
+            .eq('id', classId);
+          
+          if (error) throw error;
+        } catch (error) {
+          console.error('Error deleting class:', error);
+          throw error;
+        }
+      },
+      
+      // Assessments
+      async getAssessments() {
+        try {
+          const { data, error } = await supabase
+            .from('assessments')
+            .select('*')
+            .order('created_at', { ascending: false });
+          
+          if (error) throw error;
+          return data || [];
+        } catch (error) {
+          console.error('Error fetching assessments:', error);
+          return [];
+        }
+      },
+      
+      async createAssessment(assessment) {
+        try {
+          const { data, error } = await supabase
+            .from('assessments')
+            .insert([assessment])
+            .select();
+          
+          if (error) throw error;
+          return data[0];
+        } catch (error) {
+          console.error('Error creating assessment:', error);
+          throw error;
+        }
+      },
+      
+      // Submissions
+      async getSubmissions() {
+        try {
+          const { data, error } = await supabase
+            .from('submissions')
+            .select('*')
+            .order('created_at', { ascending: false });
+          
+          if (error) throw error;
+          return data || [];
+        } catch (error) {
+          console.error('Error fetching submissions:', error);
+          return [];
+        }
+      },
+      
+      async createSubmission(submission) {
+        try {
+          const { data, error } = await supabase
+            .from('submissions')
+            .insert([submission])
+            .select();
+          
+          if (error) throw error;
+          return data[0];
+        } catch (error) {
+          console.error('Error creating submission:', error);
+          throw error;
+        }
+      },
+      
+      async updateSubmission(submissionId, updates) {
+        try {
+          const { data, error } = await supabase
+            .from('submissions')
+            .update(updates)
+            .eq('id', submissionId)
+            .select();
+          
+          if (error) throw error;
+          return data[0];
+        } catch (error) {
+          console.error('Error updating submission:', error);
+          throw error;
+        }
+      },
+      
+      // Questions
+      async getQuestions() {
+        try {
+          const { data, error } = await supabase
+            .from('questions')
+            .select('*')
+            .order('created_at', { ascending: false });
+          
+          if (error) throw error;
+          return data || [];
+        } catch (error) {
+          console.error('Error fetching questions:', error);
+          return [];
+        }
+      },
+      
+      async createQuestion(question) {
+        try {
+          const { data, error } = await supabase
+            .from('questions')
+            .insert([question])
+            .select();
+          
+          if (error) throw error;
+          return data[0];
+        } catch (error) {
+          console.error('Error creating question:', error);
+          throw error;
+        }
+      },
+      
+      async updateQuestion(questionId, updates) {
+        try {
+          const { data, error } = await supabase
+            .from('questions')
+            .update(updates)
+            .eq('id', questionId)
+            .select();
+          
+          if (error) throw error;
+          return data[0];
+        } catch (error) {
+          console.error('Error updating question:', error);
+          throw error;
+        }
+      }
+    };
+    
+    // ==================== GLOBAL POPUP COMPONENT ====================
+    const GlobalAddUserPopup = ({ 
+      show, 
+      onClose, 
+      userData, 
+      setUserData, 
+      onSubmit 
+    }) => {
+      if (!show) return null;
+      
+      useEffect(() => {
+        document.body.classList.add('popup-open');
+        return () => {
+          document.body.classList.remove('popup-open');
+        };
+      }, []);
+      
+      return ReactDOM.createPortal(
+        <div className="global-popup-overlay">
+          <div className="global-popup-content">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h2 style={{
+                fontSize: '28px',
+                fontWeight: '300',
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                margin: 0
+              }}>
+                Add New User
+              </h2>
+              <button 
+                onClick={onClose}
+                style={{ 
+                  background: 'none', 
+                  border: 'none', 
+                  fontSize: '28px', 
+                  cursor: 'pointer', 
+                  color: '#666',
+                  width: '40px',
+                  height: '40px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: '50%',
+                  transition: 'background-color 0.3s'
+                }}
+                onMouseOver={(e) => e.target.style.backgroundColor = '#f0f0f0'}
+                onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
+              >
+                ×
+              </button>
+            </div>
+            
+            <form onSubmit={onSubmit}>
+              <input 
+                type="text" 
+                placeholder="Full Name" 
+                value={userData.name} 
+                onChange={(e) => setUserData({ ...userData, name: e.target.value })} 
+                required
+              />
+              <input 
+                type="email" 
+                placeholder="Email Address" 
+                value={userData.email} 
+                onChange={(e) => setUserData({ ...userData, email: e.target.value })} 
+                required
+              />
+              <input 
+                type="password" 
+                placeholder="Password" 
+                value={userData.password} 
+                onChange={(e) => setUserData({ ...userData, password: e.target.value })} 
+                required
+              />
+              <select 
+                value={userData.role} 
+                onChange={(e) => setUserData({ ...userData, role: e.target.value })} 
+                required
+              >
+                <option value="">Select Role</option>
+                <option value="Student">Student</option>
+                <option value="Instructor">Instructor</option>
+                <option value="System Administrator">System Administrator</option>
+                <option value="Exam Administrator">Exam Administrator</option>
+              </select>
+              <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+                <button type="submit" className="btn-primary" style={{ flex: 1 }}>Create User</button>
+                <button type="button" onClick={onClose} className="btn-secondary" style={{ flex: 1 }}>Cancel</button>
+              </div>
+            </form>
+          </div>
+        </div>,
+        document.getElementById('global-popup-container')
+      );
+    };
+
+    // LoginPage Component with Demo Credentials
     const LoginPage = ({ loginData, setLoginData, handleLogin, goToRegister }) => (
       <div className="form-container">
         <div style={{ textAlign: 'center', marginBottom: '20px' }}>
@@ -36,6 +517,16 @@
         }}>
           Login to EduConnect
         </h2>
+        
+        {/* Demo Credentials Section */}
+        <div className="demo-credentials">
+          <h4><i className="fas fa-info-circle"></i> Demo Credentials</h4>
+          <p><strong>System Admin:</strong> admin@educonnect.com / admin123</p>
+          <p><strong>Student:</strong> student@educonnect.com / student123</p>
+          <p><strong>Instructor:</strong> instructor@educonnect.com / instructor123</p>
+          <p><strong>Exam Admin:</strong> exam@educonnect.com / exam123</p>
+        </div>
+        
         <form onSubmit={handleLogin}>
           <input 
             type="email" 
@@ -129,37 +620,78 @@
     }) => {
       const [questionData, setQuestionData] = useState({ assessmentId: '', text: '' });
 
-      const submitAssessment = (assessmentId) => {
-        const submission = {
-          id: Date.now(),
-          assessmentId,
-          studentId: currentUser.id,
-          files: 'file.pdf',
-          drafts: [{ version: 1, content: 'file.pdf', timestamp: new Date().toISOString() }],
-          grade: null,
-          feedback: '',
-          status: 'submitted'
-        };
-        const updatedSubmissions = [...submissions, submission];
-        setSubmissions(updatedSubmissions);
-        localStorage.setItem('submissions', JSON.stringify(updatedSubmissions));
-        alert('Submission successful');
+      const submitAssessment = async (assessmentId) => {
+        try {
+          const submission = {
+            id: Date.now(),
+            assessmentId,
+            studentId: currentUser.id,
+            files: 'file.pdf',
+            drafts: [{ version: 1, content: 'file.pdf', timestamp: new Date().toISOString() }],
+            grade: null,
+            feedback: '',
+            status: 'submitted'
+          };
+          
+          // Try Supabase first
+          const createdSubmission = await SupabaseService.createSubmission(submission);
+          const updatedSubmissions = [...submissions, createdSubmission];
+          setSubmissions(updatedSubmissions);
+          localStorage.setItem('submissions', JSON.stringify(updatedSubmissions));
+          alert('Submission successful');
+        } catch (error) {
+          console.error('Error submitting assessment:', error);
+          // Fallback to localStorage
+          const submission = {
+            id: Date.now(),
+            assessmentId,
+            studentId: currentUser.id,
+            files: 'file.pdf',
+            drafts: [{ version: 1, content: 'file.pdf', timestamp: new Date().toISOString() }],
+            grade: null,
+            feedback: '',
+            status: 'submitted'
+          };
+          const updatedSubmissions = [...submissions, submission];
+          setSubmissions(updatedSubmissions);
+          localStorage.setItem('submissions', JSON.stringify(updatedSubmissions));
+          alert('Submission successful (local)');
+        }
       };
 
-      const handleQuestionSubmit = (e) => {
+      const handleQuestionSubmit = async (e) => {
         e.preventDefault();
-        const question = {
-          id: Date.now(),
-          assessmentId: parseInt(questionData.assessmentId),
-          studentId: currentUser.id,
-          question: questionData.text,
-          answers: []
-        };
-        const updatedQuestions = [...questions, question];
-        setQuestions(updatedQuestions);
-        localStorage.setItem('questions', JSON.stringify(updatedQuestions));
-        setQuestionData({ assessmentId: '', text: '' });
-        alert('Question submitted');
+        try {
+          const question = {
+            id: Date.now(),
+            assessmentId: parseInt(questionData.assessmentId),
+            studentId: currentUser.id,
+            question: questionData.text,
+            answers: []
+          };
+          
+          const createdQuestion = await SupabaseService.createQuestion(question);
+          const updatedQuestions = [...questions, createdQuestion];
+          setQuestions(updatedQuestions);
+          localStorage.setItem('questions', JSON.stringify(updatedQuestions));
+          setQuestionData({ assessmentId: '', text: '' });
+          alert('Question submitted');
+        } catch (error) {
+          console.error('Error submitting question:', error);
+          // Fallback
+          const question = {
+            id: Date.now(),
+            assessmentId: parseInt(questionData.assessmentId),
+            studentId: currentUser.id,
+            question: questionData.text,
+            answers: []
+          };
+          const updatedQuestions = [...questions, question];
+          setQuestions(updatedQuestions);
+          localStorage.setItem('questions', JSON.stringify(updatedQuestions));
+          setQuestionData({ assessmentId: '', text: '' });
+          alert('Question submitted (local)');
+        }
       };
 
       return (
@@ -250,55 +782,120 @@
         criteria: '' 
       });
 
-      const handleAssessmentSubmit = (e) => {
+      const handleAssessmentSubmit = async (e) => {
         e.preventDefault();
-        const assessment = {
-          id: Date.now(),
-          title: assessmentData.title,
-          description: assessmentData.description,
-          course: assessmentData.course,
-          deadline: assessmentData.deadline,
-          criteria: assessmentData.criteria,
-          instructorId: currentUser.id,
-          files: []
-        };
-        const updatedAssessments = [...assessments, assessment];
-        setAssessments(updatedAssessments);
-        localStorage.setItem('assessments', JSON.stringify(updatedAssessments));
-        setAssessmentData({ title: '', description: '', course: '', deadline: '', criteria: '' });
-        alert('Assessment created successfully');
+        try {
+          const assessment = {
+            id: Date.now(),
+            title: assessmentData.title,
+            description: assessmentData.description,
+            course: assessmentData.course,
+            deadline: assessmentData.deadline,
+            criteria: assessmentData.criteria,
+            instructorId: currentUser.id,
+            files: []
+          };
+          
+          const createdAssessment = await SupabaseService.createAssessment(assessment);
+          const updatedAssessments = [...assessments, createdAssessment];
+          setAssessments(updatedAssessments);
+          localStorage.setItem('assessments', JSON.stringify(updatedAssessments));
+          setAssessmentData({ title: '', description: '', course: '', deadline: '', criteria: '' });
+          alert('Assessment created successfully');
+        } catch (error) {
+          console.error('Error creating assessment:', error);
+          const assessment = {
+            id: Date.now(),
+            title: assessmentData.title,
+            description: assessmentData.description,
+            course: assessmentData.course,
+            deadline: assessmentData.deadline,
+            criteria: assessmentData.criteria,
+            instructorId: currentUser.id,
+            files: []
+          };
+          const updatedAssessments = [...assessments, assessment];
+          setAssessments(updatedAssessments);
+          localStorage.setItem('assessments', JSON.stringify(updatedAssessments));
+          setAssessmentData({ title: '', description: '', course: '', deadline: '', criteria: '' });
+          alert('Assessment created (local)');
+        }
       };
 
-      const gradeSubmission = (submissionId, grade) => {
-        const updatedSubmissions = submissions.map(s => 
-          s.id === submissionId ? { ...s, grade, status: 'graded' } : s
-        );
-        setSubmissions(updatedSubmissions);
-        localStorage.setItem('submissions', JSON.stringify(updatedSubmissions));
+      const gradeSubmission = async (submissionId, grade) => {
+        try {
+          const updatedSubmission = await SupabaseService.updateSubmission(submissionId, { 
+            grade, 
+            status: 'graded' 
+          });
+          const updatedSubmissions = submissions.map(s => 
+            s.id === submissionId ? updatedSubmission : s
+          );
+          setSubmissions(updatedSubmissions);
+          localStorage.setItem('submissions', JSON.stringify(updatedSubmissions));
+        } catch (error) {
+          console.error('Error grading submission:', error);
+          const updatedSubmissions = submissions.map(s => 
+            s.id === submissionId ? { ...s, grade, status: 'graded' } : s
+          );
+          setSubmissions(updatedSubmissions);
+          localStorage.setItem('submissions', JSON.stringify(updatedSubmissions));
+        }
       };
 
-      const updateFeedback = (submissionId, feedback) => {
-        const updatedSubmissions = submissions.map(s => 
-          s.id === submissionId ? { ...s, feedback } : s
-        );
-        setSubmissions(updatedSubmissions);
-        localStorage.setItem('submissions', JSON.stringify(updatedSubmissions));
+      const updateFeedback = async (submissionId, feedback) => {
+        try {
+          const updatedSubmission = await SupabaseService.updateSubmission(submissionId, { feedback });
+          const updatedSubmissions = submissions.map(s => 
+            s.id === submissionId ? updatedSubmission : s
+          );
+          setSubmissions(updatedSubmissions);
+          localStorage.setItem('submissions', JSON.stringify(updatedSubmissions));
+        } catch (error) {
+          console.error('Error updating feedback:', error);
+          const updatedSubmissions = submissions.map(s => 
+            s.id === submissionId ? { ...s, feedback } : s
+          );
+          setSubmissions(updatedSubmissions);
+          localStorage.setItem('submissions', JSON.stringify(updatedSubmissions));
+        }
       };
 
-      const answerQuestion = (questionId, answer) => {
-        const updatedQuestions = questions.map(q => 
-          q.id === questionId ? { 
-            ...q, 
-            answers: [...q.answers, { 
-              instructorId: currentUser.id, 
-              answer, 
-              official: true, 
-              resolved: false 
-            }] 
-          } : q
-        );
-        setQuestions(updatedQuestions);
-        localStorage.setItem('questions', JSON.stringify(updatedQuestions));
+      const answerQuestion = async (questionId, answer) => {
+        try {
+          const question = questions.find(q => q.id === questionId);
+          const updatedAnswers = [...(question.answers || []), { 
+            instructorId: currentUser.id, 
+            answer, 
+            official: true, 
+            resolved: false 
+          }];
+          
+          const updatedQuestion = await SupabaseService.updateQuestion(questionId, { 
+            answers: updatedAnswers 
+          });
+          
+          const updatedQuestions = questions.map(q => 
+            q.id === questionId ? updatedQuestion : q
+          );
+          setQuestions(updatedQuestions);
+          localStorage.setItem('questions', JSON.stringify(updatedQuestions));
+        } catch (error) {
+          console.error('Error answering question:', error);
+          const updatedQuestions = questions.map(q => 
+            q.id === questionId ? { 
+              ...q, 
+              answers: [...(q.answers || []), { 
+                instructorId: currentUser.id, 
+                answer, 
+                official: true, 
+                resolved: false 
+              }] 
+            } : q
+          );
+          setQuestions(updatedQuestions);
+          localStorage.setItem('questions', JSON.stringify(updatedQuestions));
+        }
       };
 
       return (
@@ -536,33 +1133,67 @@
         password: ''
       });
 
-      const handleUpdate = (e) => {
+      const handleUpdate = async (e) => {
         e.preventDefault();
-        const updatedUser = { 
-          ...currentUser, 
-          name: profileData.name, 
-          email: profileData.email
-        };
-        
-        // Update password if provided
-        if (profileData.password) {
-          updatedUser.password = profileData.password;
+        try {
+          const updatedUser = { 
+            ...currentUser, 
+            name: profileData.name, 
+            email: profileData.email
+          };
+          
+          // Update password if provided
+          if (profileData.password) {
+            updatedUser.password = profileData.password;
+          }
+          
+          // Try Supabase first
+          const supabaseUpdatedUser = await SupabaseService.updateUser(currentUser.id, {
+            name: profileData.name,
+            email: profileData.email,
+            ...(profileData.password && { password: profileData.password })
+          });
+          
+          setCurrentUser(supabaseUpdatedUser);
+          
+          // Update in users array
+          const updatedUsers = users.map(u => 
+            u.id === currentUser.id ? supabaseUpdatedUser : u
+          );
+          setUsers(updatedUsers);
+          
+          // Save to localStorage
+          localStorage.setItem('currentUser', JSON.stringify(supabaseUpdatedUser));
+          localStorage.setItem('users', JSON.stringify(updatedUsers));
+          
+          alert('Profile updated successfully');
+          setProfileData({ ...profileData, password: '' });
+        } catch (error) {
+          console.error('Error updating profile:', error);
+          // Fallback to localStorage
+          const updatedUser = { 
+            ...currentUser, 
+            name: profileData.name, 
+            email: profileData.email
+          };
+          
+          if (profileData.password) {
+            updatedUser.password = profileData.password;
+          }
+          
+          setCurrentUser(updatedUser);
+          
+          const updatedUsers = users.map(u => 
+            u.id === currentUser.id ? updatedUser : u
+          );
+          setUsers(updatedUsers);
+          
+          localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+          localStorage.setItem('users', JSON.stringify(updatedUsers));
+          
+          alert('Profile updated (local)');
+          setProfileData({ ...profileData, password: '' });
         }
-        
-        setCurrentUser(updatedUser);
-        
-        // Update in users array
-        const updatedUsers = users.map(u => 
-          u.id === currentUser.id ? updatedUser : u
-        );
-        setUsers(updatedUsers);
-        
-        // Save to localStorage
-        localStorage.setItem('currentUser', JSON.stringify(updatedUser));
-        localStorage.setItem('users', JSON.stringify(updatedUsers));
-        
-        alert('Profile updated successfully');
-        setProfileData({ ...profileData, password: '' });
       };
 
       return (
@@ -621,7 +1252,7 @@
       );
     };
 
-  // SystemAdminDashboard Component (Complete version)
+    // ==================== SYSTEM ADMIN DASHBOARD ====================
     const SystemAdminDashboard = ({ 
       currentUser, 
       users = [], 
@@ -631,7 +1262,13 @@
       classes = [],
       setClasses,
       handleLogout, 
-      goToProfile 
+      goToProfile,
+      // Popup control props
+      showAddUserPopup,
+      setShowAddUserPopup,
+      popupUserData,
+      setPopupUserData,
+      handlePopupUserSubmit
     }) => {
       // Safety check - if no currentUser
       if (!currentUser) {
@@ -646,106 +1283,161 @@
         );
       }
 
-      const [userData, setUserData] = useState({ name: '', email: '', password: '', role: '' });
       const [moduleData, setModuleData] = useState({ name: '', description: '' });
       const [classData, setClassData] = useState({ name: '', moduleCode: '' });
-      const [showAddUserPopup, setShowAddUserPopup] = useState(false);
 
-      const handleUserSubmit = (e) => {
+      const handleModuleSubmit = async (e) => {
         e.preventDefault();
-        if (users.find(u => u.email === userData.email)) {
-          alert('User already exists');
-          return;
-        }
-        const newUser = { 
-          id: Date.now(), 
-          name: userData.name, 
-          email: userData.email, 
-          password: userData.password, 
-          role: userData.role, 
-          active: true 
-        };
-        const updatedUsers = [...users, newUser];
-        setUsers(updatedUsers);
-        localStorage.setItem('users', JSON.stringify(updatedUsers));
-        setUserData({ name: '', email: '', password: '', role: '' });
-        setShowAddUserPopup(false);
-        alert('User created');
-      };
-
-      const toggleUser = (userId) => {
-        const updatedUsers = users.map(u => 
-          u.id === userId ? { ...u, active: !u.active } : u
-        );
-        setUsers(updatedUsers);
-        localStorage.setItem('users', JSON.stringify(updatedUsers));
-      };
-
-      const handleModuleSubmit = (e) => {
-        e.preventDefault();
-        const getInitials = (name) => {
-          if (!name) return 'MOD';
-          return name.split(' ')
-            .map(w => w[0])
-            .join('')
-            .toUpperCase()
-            .slice(0, 3);
-        };
-        
-        const now = new Date();
-        const mm = String(now.getMonth() + 1).padStart(2, '0');
-        const yyyy = now.getFullYear();
-        const code = `${getInitials(moduleData.name)}-${mm}${yyyy}`;
-        
-        const newModule = { 
-          code, 
-          name: moduleData.name, 
-          description: moduleData.description, 
-          instructorId: null, 
-          examAdminId: null 
-        };
-        
-        const updatedModules = [...modules, newModule];
-        setModules(updatedModules);
-        localStorage.setItem('modules', JSON.stringify(updatedModules));
-        setModuleData({ name: '', description: '' });
-        alert(`Module created with code: ${code}`);
-      };
-
-      const deleteModule = (moduleCode) => {
-        if (window.confirm('Are you sure you want to delete this module?')) {
-          const updatedModules = modules.filter(m => m.code !== moduleCode);
+        try {
+          const getInitials = (name) => {
+            if (!name) return 'MOD';
+            return name.split(' ')
+              .map(w => w[0])
+              .join('')
+              .toUpperCase()
+              .slice(0, 3);
+          };
+          
+          const now = new Date();
+          const mm = String(now.getMonth() + 1).padStart(2, '0');
+          const yyyy = now.getFullYear();
+          const code = `${getInitials(moduleData.name)}-${mm}${yyyy}`;
+          
+          const newModule = { 
+            code, 
+            name: moduleData.name, 
+            description: moduleData.description, 
+            instructorId: null, 
+            examAdminId: null 
+          };
+          
+          const createdModule = await SupabaseService.createModule(newModule);
+          const updatedModules = [...modules, createdModule];
           setModules(updatedModules);
           localStorage.setItem('modules', JSON.stringify(updatedModules));
+          setModuleData({ name: '', description: '' });
+          alert(`Module created with code: ${code}`);
+        } catch (error) {
+          console.error('Error creating module:', error);
+          // Fallback
+          const getInitials = (name) => {
+            if (!name) return 'MOD';
+            return name.split(' ')
+              .map(w => w[0])
+              .join('')
+              .toUpperCase()
+              .slice(0, 3);
+          };
+          
+          const now = new Date();
+          const mm = String(now.getMonth() + 1).padStart(2, '0');
+          const yyyy = now.getFullYear();
+          const code = `${getInitials(moduleData.name)}-${mm}${yyyy}`;
+          
+          const newModule = { 
+            code, 
+            name: moduleData.name, 
+            description: moduleData.description, 
+            instructorId: null, 
+            examAdminId: null 
+          };
+          
+          const updatedModules = [...modules, newModule];
+          setModules(updatedModules);
+          localStorage.setItem('modules', JSON.stringify(updatedModules));
+          setModuleData({ name: '', description: '' });
+          alert(`Module created (local) with code: ${code}`);
         }
       };
 
-      const handleClassSubmit = (e) => {
-        e.preventDefault();
-        const newClass = { 
-          id: Date.now(), 
-          name: classData.name, 
-          moduleCode: classData.moduleCode, 
-          students: [] 
-        };
-        const updatedClasses = [...classes, newClass];
-        setClasses(updatedClasses);
-        localStorage.setItem('classes', JSON.stringify(updatedClasses));
-        setClassData({ name: '', moduleCode: '' });
-        alert('Class created');
+      const deleteModule = async (moduleCode) => {
+        if (window.confirm('Are you sure you want to delete this module?')) {
+          try {
+            await SupabaseService.deleteModule(moduleCode);
+            const updatedModules = modules.filter(m => m.code !== moduleCode);
+            setModules(updatedModules);
+            localStorage.setItem('modules', JSON.stringify(updatedModules));
+          } catch (error) {
+            console.error('Error deleting module:', error);
+            const updatedModules = modules.filter(m => m.code !== moduleCode);
+            setModules(updatedModules);
+            localStorage.setItem('modules', JSON.stringify(updatedModules));
+          }
+        }
       };
 
-      const deleteClass = (classId) => {
-        if (window.confirm('Are you sure you want to delete this class?')) {
-          const updatedClasses = classes.filter(c => c.id !== classId);
+      const handleClassSubmit = async (e) => {
+        e.preventDefault();
+        try {
+          const newClass = { 
+            id: Date.now(), 
+            name: classData.name, 
+            moduleCode: classData.moduleCode, 
+            students: [] 
+          };
+          
+          const createdClass = await SupabaseService.createClass(newClass);
+          const updatedClasses = [...classes, createdClass];
           setClasses(updatedClasses);
           localStorage.setItem('classes', JSON.stringify(updatedClasses));
+          setClassData({ name: '', moduleCode: '' });
+          alert('Class created');
+        } catch (error) {
+          console.error('Error creating class:', error);
+          const newClass = { 
+            id: Date.now(), 
+            name: classData.name, 
+            moduleCode: classData.moduleCode, 
+            students: [] 
+          };
+          const updatedClasses = [...classes, newClass];
+          setClasses(updatedClasses);
+          localStorage.setItem('classes', JSON.stringify(updatedClasses));
+          setClassData({ name: '', moduleCode: '' });
+          alert('Class created (local)');
+        }
+      };
+
+      const deleteClass = async (classId) => {
+        if (window.confirm('Are you sure you want to delete this class?')) {
+          try {
+            await SupabaseService.deleteClass(classId);
+            const updatedClasses = classes.filter(c => c.id !== classId);
+            setClasses(updatedClasses);
+            localStorage.setItem('classes', JSON.stringify(updatedClasses));
+          } catch (error) {
+            console.error('Error deleting class:', error);
+            const updatedClasses = classes.filter(c => c.id !== classId);
+            setClasses(updatedClasses);
+            localStorage.setItem('classes', JSON.stringify(updatedClasses));
+          }
+        }
+      };
+
+      const toggleUser = async (userId) => {
+        try {
+          const user = users.find(u => u.id === userId);
+          const updatedUser = await SupabaseService.updateUser(userId, {
+            active: !user.active
+          });
+          
+          const updatedUsers = users.map(u => 
+            u.id === userId ? updatedUser : u
+          );
+          setUsers(updatedUsers);
+          localStorage.setItem('users', JSON.stringify(updatedUsers));
+        } catch (error) {
+          console.error('Error updating user:', error);
+          const updatedUsers = users.map(u => 
+            u.id === userId ? { ...u, active: !u.active } : u
+          );
+          setUsers(updatedUsers);
+          localStorage.setItem('users', JSON.stringify(updatedUsers));
         }
       };
 
       return (
         <div className="main-container">
-          {/* Header */}
           <header>
             <div style={{ display: 'flex', alignItems: 'center' }}>
               <img src="Images/Logo.png" alt="EduConnect Logo" className="logo" />
@@ -757,7 +1449,6 @@
             </div>
           </header>
 
-          {/* Main Content */}
           <main>
             <section className="welcome-banner">
               <h2 className="welcome-title">System Administrator Dashboard</h2>
@@ -766,11 +1457,10 @@
               </p>
             </section>
 
-            {/* Quick Actions */}
             <section>
               <h3>Quick Actions</h3>
               <div className="quick-actions">
-                <div className="item-card">
+                <div className="action-card">
                   <div className="action-card-icon">
                     <i className="fas fa-user-plus"></i>
                   </div>
@@ -783,7 +1473,7 @@
                   </button>
                 </div>
                 
-                <div className="item-card">
+                <div className="action-card">
                   <div className="action-card-icon">
                     <i className="fas fa-book"></i>
                   </div>
@@ -796,7 +1486,7 @@
                   </button>
                 </div>
                 
-                <div className="item-card">
+                <div className="action-card">
                   <div className="action-card-icon">
                     <i className="fas fa-users"></i>
                   </div>
@@ -810,73 +1500,7 @@
                 </div>
               </div>
             </section>
-
-            {/* Add User Popup */}
-            {showAddUserPopup && (
-              <div className="popup-overlay">
-                <div className="popup-content">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                    <h2 style={{
-                      fontSize: '28px',
-                      fontWeight: '300',
-                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                      WebkitBackgroundClip: 'text',
-                      WebkitTextFillColor: 'transparent',
-                      margin: 0
-                    }}>
-                      Add New User
-                    </h2>
-                    <button 
-                      onClick={() => setShowAddUserPopup(false)}
-                      style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer', color: '#666' }}
-                    >
-                      ×
-                    </button>
-                  </div>
-                  
-                  <form onSubmit={handleUserSubmit}>
-                    <input 
-                      type="text" 
-                      placeholder="Full Name" 
-                      value={userData.name} 
-                      onChange={(e) => setUserData({ ...userData, name: e.target.value })} 
-                      required
-                    />
-                    <input 
-                      type="email" 
-                      placeholder="Email Address" 
-                      value={userData.email} 
-                      onChange={(e) => setUserData({ ...userData, email: e.target.value })} 
-                      required
-                    />
-                    <input 
-                      type="password" 
-                      placeholder="Password" 
-                      value={userData.password} 
-                      onChange={(e) => setUserData({ ...userData, password: e.target.value })} 
-                      required
-                    />
-                    <select 
-                      value={userData.role} 
-                      onChange={(e) => setUserData({ ...userData, role: e.target.value })} 
-                      required
-                    >
-                      <option value="">Select Role</option>
-                      <option value="Student">Student</option>
-                      <option value="Instructor">Instructor</option>
-                      <option value="System Administrator">System Administrator</option>
-                      <option value="Exam Administrator">Exam Administrator</option>
-                    </select>
-                    <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
-                      <button type="submit" className="btn-primary" style={{ flex: 1 }}>Create User</button>
-                      <button type="button" onClick={() => setShowAddUserPopup(false)} className="btn-secondary" style={{ flex: 1 }}>Cancel</button>
-                    </div>
-                  </form>
-                </div>
-              </div>
-            )}
             
-            {/* Manage Users */}
             <section id="manage-users">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                 <h3>Manage Users ({users.length})</h3>
@@ -888,7 +1512,12 @@
                   <i className="fas fa-plus"></i> Add User
                 </button>
               </div>
-              <div className="quick-actions">
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', 
+                gap: '20px', 
+                marginTop: '20px' 
+              }}>
                 {users.map(u => (
                   <div key={u.id} className="item-card">
                     <h4>{u.name}</h4>
@@ -907,7 +1536,6 @@
               </div>
             </section>
             
-            {/* Create Module */}
             <section>
               <h3>Create Module</h3>
               <form onSubmit={handleModuleSubmit} className="form-container" style={{ maxWidth: '600px', margin: '0 auto' }}>
@@ -929,10 +1557,14 @@
               </form>
             </section>
             
-            {/* Manage Modules */}
             <section id="manage-modules">
               <h3>Manage Modules ({modules.length})</h3>
-              <div className="quick-actions">
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', 
+                gap: '20px', 
+                marginTop: '20px' 
+              }}>
                 {modules.map(m => (
                   <div key={m.code} className="item-card">
                     <h4>{m.name}</h4>
@@ -950,7 +1582,6 @@
               </div>
             </section>
             
-            {/* Create Class */}
             <section>
               <h3>Create Class</h3>
               <form onSubmit={handleClassSubmit} className="form-container" style={{ maxWidth: '600px', margin: '0 auto' }}>
@@ -977,10 +1608,14 @@
               </form>
             </section>
             
-            {/* Manage Classes */}
             <section>
               <h3>Manage Classes ({classes.length})</h3>
-              <div className="quick-actions">
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', 
+                gap: '20px', 
+                marginTop: '20px' 
+              }}>
                 {classes.map(c => (
                   <div key={c.id} className="item-card">
                     <h4>{c.name}</h4>
@@ -1003,7 +1638,7 @@
       );
     };
 
-    // HomePage Component (Main App Controller)
+    // ==================== HOMEPAGE (MAIN CONTROLLER) ====================
     const HomePage = () => {
       const [page, setPage] = useState('login');
       const [users, setUsers] = useState([]);
@@ -1016,230 +1651,452 @@
       const [loginData, setLoginData] = useState({ email: '', password: '' });
       const [registerData, setRegisterData] = useState({ name: '', email: '', password: '', role: '' });
       const [isLoading, setIsLoading] = useState(true);
+      
+      // Global popup state
+      const [showAddUserPopup, setShowAddUserPopup] = useState(false);
+      const [popupUserData, setPopupUserData] = useState({ name: '', email: '', password: '', role: '' });
 
       useEffect(() => {
-        console.log('HomePage useEffect running...');
+        const initializeData = async () => {
+          setIsLoading(true);
+          
+          try {
+            // Try to load from Supabase first
+            console.log('Loading data from Supabase...');
+            
+            const [
+              usersData, 
+              assessmentsData, 
+              submissionsData, 
+              questionsData, 
+              modulesData, 
+              classesData
+            ] = await Promise.all([
+              SupabaseService.getUsers(),
+              SupabaseService.getAssessments(),
+              SupabaseService.getSubmissions(),
+              SupabaseService.getQuestions(),
+              SupabaseService.getModules(),
+              SupabaseService.getClasses()
+            ]);
+            
+            console.log('Supabase data loaded:', {
+              users: usersData.length,
+              assessments: assessmentsData.length,
+              submissions: submissionsData.length,
+              questions: questionsData.length,
+              modules: modulesData.length,
+              classes: classesData.length
+            });
+            
+            // If Supabase returns data, use it
+            if (usersData.length > 0 || modulesData.length > 0) {
+              setUsers(usersData);
+              setAssessments(assessmentsData);
+              setSubmissions(submissionsData);
+              setQuestions(questionsData);
+              setModules(modulesData);
+              setClasses(classesData);
+              
+              // Create default data if empty
+              if (usersData.length === 0) {
+                await createDefaultUsers();
+              }
+              if (modulesData.length === 0) {
+                await createDefaultModules();
+              }
+            } else {
+              // Fallback to localStorage
+              loadFromLocalStorage();
+            }
+            
+            // Check for current user session
+            const storedUser = JSON.parse(localStorage.getItem('currentUser'));
+            if (storedUser) {
+              setCurrentUser(storedUser);
+              redirectBasedOnRole(storedUser.role);
+            } else {
+              setPage('login');
+            }
+            
+          } catch (error) {
+            console.error('Error loading data from Supabase:', error);
+            // Fallback to localStorage
+            loadFromLocalStorage();
+          } finally {
+            setIsLoading(false);
+          }
+        };
         
-        try {
-          // Load all data from localStorage
-          const storedUsers = JSON.parse(localStorage.getItem('users')) || [];
-          const storedAssessments = JSON.parse(localStorage.getItem('assessments')) || [];
-          const storedSubmissions = JSON.parse(localStorage.getItem('submissions')) || [];
-          const storedQuestions = JSON.parse(localStorage.getItem('questions')) || [];
-          const storedModules = JSON.parse(localStorage.getItem('modules')) || [];
-          const storedClasses = JSON.parse(localStorage.getItem('classes')) || [];
-          
-          console.log('Loaded users from localStorage:', storedUsers.length);
-          console.log('Loaded modules from localStorage:', storedModules.length);
-          
-          // Create default admin if no users exist
-          let updatedUsers = storedUsers;
-          if (storedUsers.length === 0) {
-            console.log('No users found, creating default admin...');
-            const defaultAdmin = {
-              id: Date.now(),
-              name: 'System Administrator',
-              email: 'admin@educonnect.com',
-              password: 'admin123',
-              role: 'System Administrator',
-              active: true
-            };
-            updatedUsers = [defaultAdmin];
-            localStorage.setItem('users', JSON.stringify(updatedUsers));
-            console.log('Default admin created:', defaultAdmin);
-          }
-          
-          // Create default modules if none exist
-          let updatedModules = storedModules;
-          if (storedModules.length === 0) {
-            console.log('No modules found, creating default modules...');
-            const defaultModules = [
-              { 
-                code: 'NWT-112025', 
-                name: 'Networking Technologies', 
-                description: 'Basic networking concepts and technologies',
-                instructorId: null,
-                examAdminId: null
-              },
-              { 
-                code: 'OOP-112025', 
-                name: 'Object-Oriented Programming', 
-                description: 'Advanced object-oriented programming concepts',
-                instructorId: null,
-                examAdminId: null
-              },
-              { 
-                code: 'SDM-112025', 
-                name: 'Software Development Methods', 
-                description: 'Software development methodologies and practices',
-                instructorId: null,
-                examAdminId: null
-              }
-            ];
-            updatedModules = defaultModules;
-            localStorage.setItem('modules', JSON.stringify(updatedModules));
-          }
-          
-          // Create default classes if none exist
-          let updatedClasses = storedClasses;
-          if (storedClasses.length === 0 && updatedModules.length > 0) {
-            console.log('No classes found, creating default classes...');
-            const defaultClasses = [
-              { 
-                id: Date.now(), 
-                name: 'Networking Technologies Class A', 
-                moduleCode: 'NWT-112025', 
-                students: [] 
-              },
-              { 
-                id: Date.now() + 1, 
-                name: 'Object-Oriented Programming Class B', 
-                moduleCode: 'OOP-112025', 
-                students: [] 
-              },
-              { 
-                id: Date.now() + 2, 
-                name: 'Software Development Methods Class C', 
-                moduleCode: 'SDM-112025', 
-                students: [] 
-              }
-            ];
-            updatedClasses = defaultClasses;
-            localStorage.setItem('classes', JSON.stringify(updatedClasses));
-          }
-          
-          setUsers(updatedUsers);
-          setAssessments(storedAssessments);
-          setSubmissions(storedSubmissions);
-          setQuestions(storedQuestions);
-          setModules(updatedModules);
-          setClasses(updatedClasses);
-          
-          const storedUser = JSON.parse(localStorage.getItem('currentUser'));
-          console.log('Stored user from localStorage:', storedUser);
-          
-          if (storedUser) {
-            setCurrentUser(storedUser);
-            if (storedUser.role === 'Student') {
-              setPage('student-dashboard');
-            } else if (storedUser.role === 'Instructor') {
-              setPage('instructor-dashboard');
-            } else if (storedUser.role === 'Exam Administrator') {
-              setPage('exam-admin-dashboard');
-            } else if (storedUser.role === 'System Administrator') {
-              setPage('admin-dashboard');
-            } else {
-              console.warn('Unknown role:', storedUser.role);
-              setPage('login');
-            }
-          } else {
-            console.log('No stored user found');
-            const hasAdmin = updatedUsers.some(u => u.role === 'System Administrator');
-            if (updatedUsers.length === 0 || !hasAdmin) {
-              setPage('register');
-            } else {
-              setPage('login');
-            }
-          }
-        } catch (error) {
-          console.error('Error loading data:', error);
-          setPage('login');
-        } finally {
-          setIsLoading(false);
-          console.log('Initialization complete, page:', page);
-        }
+        initializeData();
       }, []);
 
-      const saveData = () => {
-        try {
-          localStorage.setItem('users', JSON.stringify(users));
-          localStorage.setItem('assessments', JSON.stringify(assessments));
-          localStorage.setItem('submissions', JSON.stringify(submissions));
-          localStorage.setItem('questions', JSON.stringify(questions));
-          localStorage.setItem('modules', JSON.stringify(modules));
-          localStorage.setItem('classes', JSON.stringify(classes));
-          if (currentUser) {
-            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+      const loadFromLocalStorage = () => {
+        console.log('Loading from localStorage...');
+        const storedUsers = JSON.parse(localStorage.getItem('users')) || [];
+        const storedAssessments = JSON.parse(localStorage.getItem('assessments')) || [];
+        const storedSubmissions = JSON.parse(localStorage.getItem('submissions')) || [];
+        const storedQuestions = JSON.parse(localStorage.getItem('questions')) || [];
+        const storedModules = JSON.parse(localStorage.getItem('modules')) || [];
+        const storedClasses = JSON.parse(localStorage.getItem('classes')) || [];
+        
+        // Create defaults if empty
+        let updatedUsers = storedUsers;
+        if (storedUsers.length === 0) {
+          updatedUsers = createDefaultUsersLocal();
+          localStorage.setItem('users', JSON.stringify(updatedUsers));
+        }
+        
+        let updatedModules = storedModules;
+        if (storedModules.length === 0) {
+          updatedModules = createDefaultModulesLocal();
+          localStorage.setItem('modules', JSON.stringify(updatedModules));
+        }
+        
+        let updatedClasses = storedClasses;
+        if (storedClasses.length === 0 && updatedModules.length > 0) {
+          updatedClasses = createDefaultClassesLocal(updatedModules);
+          localStorage.setItem('classes', JSON.stringify(updatedClasses));
+        }
+        
+        setUsers(updatedUsers);
+        setAssessments(storedAssessments);
+        setSubmissions(storedSubmissions);
+        setQuestions(storedQuestions);
+        setModules(updatedModules);
+        setClasses(updatedClasses);
+      };
+
+      const createDefaultUsers = async () => {
+        const defaultUsers = [
+          {
+            id: 1,
+            name: 'System Administrator',
+            email: 'admin@educonnect.com',
+            password: 'admin123',
+            role: 'System Administrator',
+            active: true
+          },
+          {
+            id: 2,
+            name: 'John Student',
+            email: 'student@educonnect.com',
+            password: 'student123',
+            role: 'Student',
+            active: true
+          },
+          {
+            id: 3,
+            name: 'Dr. Instructor',
+            email: 'instructor@educonnect.com',
+            password: 'instructor123',
+            role: 'Instructor',
+            active: true
+          },
+          {
+            id: 4,
+            name: 'Exam Admin',
+            email: 'exam@educonnect.com',
+            password: 'exam123',
+            role: 'Exam Administrator',
+            active: true
           }
-        } catch (error) {
-          console.error('Error saving data:', error);
+        ];
+        
+        for (const user of defaultUsers) {
+          try {
+            await SupabaseService.createUser(user);
+          } catch (error) {
+            console.error('Error creating default user:', error);
+          }
+        }
+        
+        return defaultUsers;
+      };
+
+      const createDefaultUsersLocal = () => {
+        return [
+          {
+            id: 1,
+            name: 'System Administrator',
+            email: 'admin@educonnect.com',
+            password: 'admin123',
+            role: 'System Administrator',
+            active: true
+          },
+          {
+            id: 2,
+            name: 'John Student',
+            email: 'student@educonnect.com',
+            password: 'student123',
+            role: 'Student',
+            active: true
+          },
+          {
+            id: 3,
+            name: 'Dr. Instructor',
+            email: 'instructor@educonnect.com',
+            password: 'instructor123',
+            role: 'Instructor',
+            active: true
+          },
+          {
+            id: 4,
+            name: 'Exam Admin',
+            email: 'exam@educonnect.com',
+            password: 'exam123',
+            role: 'Exam Administrator',
+            active: true
+          }
+        ];
+      };
+
+      const createDefaultModules = async () => {
+        const defaultModules = [
+          { 
+            code: 'NWT-112025', 
+            name: 'Networking Technologies', 
+            description: 'Basic networking concepts and technologies',
+            instructorId: null,
+            examAdminId: null 
+          },
+          { 
+            code: 'OOP-112025', 
+            name: 'Object-Oriented Programming', 
+            description: 'Advanced object-oriented programming concepts',
+            instructorId: null,
+            examAdminId: null 
+          },
+          { 
+            code: 'SDM-112025', 
+            name: 'Software Development Methods', 
+            description: 'Software development methodologies and practices',
+            instructorId: null,
+            examAdminId: null 
+          }
+        ];
+        
+        for (const module of defaultModules) {
+          try {
+            await SupabaseService.createModule(module);
+          } catch (error) {
+            console.error('Error creating default module:', error);
+          }
+        }
+        
+        return defaultModules;
+      };
+
+      const createDefaultModulesLocal = () => {
+        return [
+          { 
+            code: 'NWT-112025', 
+            name: 'Networking Technologies', 
+            description: 'Basic networking concepts and technologies',
+            instructorId: null,
+            examAdminId: null 
+          },
+          { 
+            code: 'OOP-112025', 
+            name: 'Object-Oriented Programming', 
+            description: 'Advanced object-oriented programming concepts',
+            instructorId: null,
+            examAdminId: null 
+          },
+          { 
+            code: 'SDM-112025', 
+            name: 'Software Development Methods', 
+            description: 'Software development methodologies and practices',
+            instructorId: null,
+            examAdminId: null 
+          }
+        ];
+      };
+
+      const createDefaultClassesLocal = (modules) => {
+        return [
+          { 
+            id: Date.now(), 
+            name: 'Networking Technologies Class A', 
+            moduleCode: 'NWT-112025', 
+            students: [] 
+          },
+          { 
+            id: Date.now() + 1, 
+            name: 'Object-Oriented Programming Class B', 
+            moduleCode: 'OOP-112025', 
+            students: [] 
+          },
+          { 
+            id: Date.now() + 2, 
+            name: 'Software Development Methods Class C', 
+            moduleCode: 'SDM-112025', 
+            students: [] 
+          }
+        ];
+      };
+
+      const redirectBasedOnRole = (role) => {
+        if (role === 'Student') {
+          setPage('student-dashboard');
+        } else if (role === 'Instructor') {
+          setPage('instructor-dashboard');
+        } else if (role === 'Exam Administrator') {
+          setPage('exam-admin-dashboard');
+        } else if (role === 'System Administrator') {
+          setPage('admin-dashboard');
+        } else {
+          console.warn('Unknown role:', role);
+          setPage('login');
         }
       };
 
-      const handleLogin = (e) => {
+      const handlePopupUserSubmit = async (e) => {
         e.preventDefault();
-        console.log('Login attempt with:', loginData.email);
-        console.log('Available users:', users.length);
         
-        const user = users.find(u => 
+        try {
+          // Check if user exists in Supabase
+          const exists = await SupabaseService.userExists(popupUserData.email);
+          if (exists) {
+            alert('User already exists');
+            return;
+          }
+          
+          const newUser = { 
+            id: Date.now(), 
+            name: popupUserData.name, 
+            email: popupUserData.email, 
+            password: popupUserData.password, 
+            role: popupUserData.role, 
+            active: true 
+          };
+          
+          const createdUser = await SupabaseService.createUser(newUser);
+          const updatedUsers = [...users, createdUser];
+          setUsers(updatedUsers);
+          localStorage.setItem('users', JSON.stringify(updatedUsers));
+          setPopupUserData({ name: '', email: '', password: '', role: '' });
+          setShowAddUserPopup(false);
+          alert('User created successfully');
+        } catch (error) {
+          console.error('Error creating user:', error);
+          // Fallback to localStorage
+          if (users.find(u => u.email === popupUserData.email)) {
+            alert('User already exists');
+            return;
+          }
+          const newUser = { 
+            id: Date.now(), 
+            name: popupUserData.name, 
+            email: popupUserData.email, 
+            password: popupUserData.password, 
+            role: popupUserData.role, 
+            active: true 
+          };
+          const updatedUsers = [...users, newUser];
+          setUsers(updatedUsers);
+          localStorage.setItem('users', JSON.stringify(updatedUsers));
+          setPopupUserData({ name: '', email: '', password: '', role: '' });
+          setShowAddUserPopup(false);
+          alert('User created (local)');
+        }
+      };
+
+      const handleLogin = async (e) => {
+        e.preventDefault();
+        
+        try {
+          // Try Supabase login first
+          const user = await SupabaseService.loginUser(loginData.email, loginData.password);
+          
+          if (user) {
+            console.log('User found via Supabase:', user.name);
+            setCurrentUser(user);
+            localStorage.setItem('currentUser', JSON.stringify(user));
+            redirectBasedOnRole(user.role);
+            return;
+          }
+        } catch (supabaseError) {
+          console.log('Supabase login failed, trying local...');
+          // Supabase login failed, try local storage
+        }
+        
+        // Fallback to local storage
+        const localUser = users.find(u => 
           u.email === loginData.email && 
           u.password === loginData.password && 
           u.active !== false
         );
         
-        if (user) {
-          console.log('User found:', user.name);
-          setCurrentUser(user);
-          localStorage.setItem('currentUser', JSON.stringify(user));
-          
-          if (user.role === 'Student') {
-            setPage('student-dashboard');
-          } else if (user.role === 'Instructor') {
-            setPage('instructor-dashboard');
-          } else if (user.role === 'Exam Administrator') {
-            setPage('exam-admin-dashboard');
-          } else if (user.role === 'System Administrator') {
-            setPage('admin-dashboard');
-          } else {
-            console.warn('Unknown role after login:', user.role);
-            setPage('login');
-          }
+        if (localUser) {
+          console.log('User found locally:', localUser.name);
+          setCurrentUser(localUser);
+          localStorage.setItem('currentUser', JSON.stringify(localUser));
+          redirectBasedOnRole(localUser.role);
         } else {
           console.log('Login failed - no matching user found');
-          alert('Invalid credentials or account deactivated');
+          alert('Invalid credentials. Try: admin@educonnect.com / admin123');
         }
       };
 
-      const handleRegister = (e) => {
+      const handleRegister = async (e) => {
         e.preventDefault();
         
-        // Check if user already exists
-        const existingUser = users.find(u => u.email === registerData.email);
-        if (existingUser) {
-          alert('User already exists with this email');
-          return;
-        }
-        
-        const newUser = { 
-          id: Date.now(), 
-          name: registerData.name, 
-          email: registerData.email, 
-          password: registerData.password, 
-          role: registerData.role, 
-          active: true 
-        };
-        
-        const updatedUsers = [...users, newUser];
-        setUsers(updatedUsers);
-        setCurrentUser(newUser);
-        
-        // Save to localStorage
-        localStorage.setItem('users', JSON.stringify(updatedUsers));
-        localStorage.setItem('currentUser', JSON.stringify(newUser));
-        
-        console.log('New user registered:', newUser);
-        
-        if (newUser.role === 'Student') {
-          setPage('student-dashboard');
-        } else if (newUser.role === 'Instructor') {
-          setPage('instructor-dashboard');
-        } else if (newUser.role === 'Exam Administrator') {
-          setPage('exam-admin-dashboard');
-        } else if (newUser.role === 'System Administrator') {
-          setPage('admin-dashboard');
-        } else {
-          console.warn('Unknown role after registration:', newUser.role);
-          setPage('login');
+        try {
+          // Check if user exists in Supabase
+          const exists = await SupabaseService.userExists(registerData.email);
+          if (exists) {
+            alert('User already exists with this email');
+            return;
+          }
+          
+          const newUser = { 
+            id: Date.now(), 
+            name: registerData.name, 
+            email: registerData.email, 
+            password: registerData.password, 
+            role: registerData.role, 
+            active: true 
+          };
+          
+          const createdUser = await SupabaseService.createUser(newUser);
+          const updatedUsers = [...users, createdUser];
+          setUsers(updatedUsers);
+          setCurrentUser(createdUser);
+          
+          localStorage.setItem('users', JSON.stringify(updatedUsers));
+          localStorage.setItem('currentUser', JSON.stringify(createdUser));
+          
+          console.log('New user registered:', createdUser);
+          redirectBasedOnRole(createdUser.role);
+          
+        } catch (error) {
+          console.error('Registration error:', error);
+          // Fallback to localStorage
+          const existingUser = users.find(u => u.email === registerData.email);
+          if (existingUser) {
+            alert('User already exists with this email');
+            return;
+          }
+          
+          const newUser = { 
+            id: Date.now(), 
+            name: registerData.name, 
+            email: registerData.email, 
+            password: registerData.password, 
+            role: registerData.role, 
+            active: true 
+          };
+          
+          const updatedUsers = [...users, newUser];
+          setUsers(updatedUsers);
+          setCurrentUser(newUser);
+          
+          localStorage.setItem('users', JSON.stringify(updatedUsers));
+          localStorage.setItem('currentUser', JSON.stringify(newUser));
+          
+          console.log('New user registered (local):', newUser);
+          redirectBasedOnRole(newUser.role);
         }
       };
 
@@ -1274,18 +2131,7 @@
           setPage('login');
           return;
         }
-        
-        if (currentUser.role === 'Student') {
-          setPage('student-dashboard');
-        } else if (currentUser.role === 'Instructor') {
-          setPage('instructor-dashboard');
-        } else if (currentUser.role === 'Exam Administrator') {
-          setPage('exam-admin-dashboard');
-        } else if (currentUser.role === 'System Administrator') {
-          setPage('admin-dashboard');
-        } else {
-          setPage('login');
-        }
+        redirectBasedOnRole(currentUser.role);
       };
 
       // Show loading screen
@@ -1364,17 +2210,31 @@
           
         case 'admin-dashboard':
           return (
-            <SystemAdminDashboard 
-              currentUser={currentUser} 
-              users={users} 
-              setUsers={setUsers}
-              modules={modules}
-              setModules={setModules}
-              classes={classes}
-              setClasses={setClasses}
-              handleLogout={handleLogout} 
-              goToProfile={goToProfile} 
-            />
+            <>
+              <SystemAdminDashboard 
+                currentUser={currentUser} 
+                users={users} 
+                setUsers={setUsers}
+                modules={modules}
+                setModules={setModules}
+                classes={classes}
+                setClasses={setClasses}
+                handleLogout={handleLogout} 
+                goToProfile={goToProfile}
+                showAddUserPopup={showAddUserPopup}
+                setShowAddUserPopup={setShowAddUserPopup}
+                popupUserData={popupUserData}
+                setPopupUserData={setPopupUserData}
+                handlePopupUserSubmit={handlePopupUserSubmit}
+              />
+              <GlobalAddUserPopup 
+                show={showAddUserPopup}
+                onClose={() => setShowAddUserPopup(false)}
+                userData={popupUserData}
+                setUserData={setPopupUserData}
+                onSubmit={handlePopupUserSubmit}
+              />
+            </>
           );
           
         case 'profile':

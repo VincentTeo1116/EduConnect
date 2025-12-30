@@ -29,34 +29,70 @@ const SystemAdminDashboard = ({ currentUser, users = [], setUsers, handleLogout,
     setClasses(storedClasses);
   }, []);
 
-  const handleUserSubmit = (e) => {
+  // In SystemAdminDashboard component
+  const handleUserSubmit = async (e) => {
     e.preventDefault();
-    if (users.find(u => u.email === userData.email)) {
-      alert('User already exists');
-      return;
+    
+    try {
+      const exists = await SupabaseService.userExists(userData.email);
+      if (exists) {
+        alert('User already exists');
+        return;
+      }
+      
+      const newUser = {
+        id: Date.now(),
+        name: userData.name,
+        email: userData.email,
+        password: userData.password,
+        role: userData.role,
+        active: true
+      };
+      
+      const createdUser = await SupabaseService.createUser(newUser);
+      
+      setUsers([...users, createdUser]);
+      setUserData({ name: '', email: '', password: '', role: '' });
+      setShowAddUserPopup(false);
+      alert('User created successfully');
+    } catch (error) {
+      console.error('Error creating user:', error);
+      // Fallback to localStorage
+      const newUser = {
+        id: Date.now(),
+        name: userData.name,
+        email: userData.email,
+        password: userData.password,
+        role: userData.role,
+        active: true
+      };
+      const updatedUsers = [...users, newUser];
+      setUsers(updatedUsers);
+      localStorage.setItem('users', JSON.stringify(updatedUsers));
+      alert('User created (local storage)');
     }
-    const newUser = { 
-      id: Date.now(), 
-      name: userData.name, 
-      email: userData.email, 
-      password: userData.password, 
-      role: userData.role, 
-      active: true 
-    };
-    const updatedUsers = [...users, newUser];
-    setUsers(updatedUsers);
-    localStorage.setItem('users', JSON.stringify(updatedUsers));
-    setUserData({ name: '', email: '', password: '', role: '' });
-    setShowAddUserPopup(false);
-    alert('User created');
   };
 
-  const toggleUser = (userId) => {
-    const updatedUsers = users.map(u => 
-      u.id === userId ? { ...u, active: !u.active } : u
-    );
-    setUsers(updatedUsers);
-    localStorage.setItem('users', JSON.stringify(updatedUsers));
+  const toggleUser = async (userId) => {
+    try {
+      const user = users.find(u => u.id === userId);
+      const updatedUser = await SupabaseService.updateUser(userId, {
+        active: !user.active
+      });
+      
+      const updatedUsers = users.map(u => 
+        u.id === userId ? updatedUser : u
+      );
+      setUsers(updatedUsers);
+    } catch (error) {
+      console.error('Error updating user:', error);
+      // Fallback to localStorage
+      const updatedUsers = users.map(u => 
+        u.id === userId ? { ...u, active: !u.active } : u
+      );
+      setUsers(updatedUsers);
+      localStorage.setItem('users', JSON.stringify(updatedUsers));
+    }
   };
 
   const handleModuleSubmit = (e) => {
