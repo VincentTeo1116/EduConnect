@@ -4,7 +4,7 @@ import LoginPage from './LoginPage.js';
 import RegisterPage from './RegisterPage.js';
 import StudentDashboard from './StudentDashboard.js';
 import InstructorDashboard from './InstructorDashboard.js';
-import AdminDashboard from './AdminDashboard.js';
+import SystemAdminDashboard from './SystemAdminDashboard.js';
 import ProfilePage from './ProfilePage.js';
 import ExamAdminDashboard from './ExamAdminDashboard.js';
 
@@ -302,7 +302,7 @@ const HomePage = () => {
       
     case 'admin-dashboard':
       return (
-        <AdminDashboard 
+        <SystemAdminDashboard 
           currentUser={currentUser} 
           users={users} 
           setUsers={setUsers} 

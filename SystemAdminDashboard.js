@@ -1,7 +1,7 @@
-// AdminDashboard.js - UPDATED to use App.css classes
+// SystemAdminDashboard.js - UPDATED to use App.css classes
 import React, { useState, useEffect } from 'react';
 
-const AdminDashboard = ({ currentUser, users = [], setUsers, handleLogout, goToProfile }) => {
+const SystemAdminDashboard = ({ currentUser, users = [], setUsers, handleLogout, goToProfile }) => {
   // Safety check - if no currentUser
   if (!currentUser) {
     return (
@@ -362,4 +362,4 @@ const AdminDashboard = ({ currentUser, users = [], setUsers, handleLogout, goToP
   );
 };
 
-export default AdminDashboard;
+export default SystemAdminDashboard;
