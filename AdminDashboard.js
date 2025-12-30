@@ -81,7 +81,7 @@ const AdminDashboard = ({ currentUser, users, setUsers, handleLogout, goToProfil
       <header>
         <div style={{ display: 'flex', alignItems: 'center' }}>
           <img src="Images/Logo.png" alt="EduConnect Logo" className="logo" />
-          <h1>Welcome, {currentUser.name} (System Administrator)</h1>
+          <h1>Welcome, {currentUser?.name || 'Admin'} (System Administrator)</h1>
         </div>
         <div>
           <button onClick={goToProfile}>Profile</button>
@@ -107,9 +107,9 @@ const AdminDashboard = ({ currentUser, users, setUsers, handleLogout, goToProfil
         </section>
         
         <section>
-          <h3>Manage Users ({users.length})</h3>
+          <h3>Manage Users ({users?.length || 0})</h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px', marginTop: '20px' }}>
-            {users.map(u => (
+            {users?.map(u => (
               <div key={u.id} style={{ border: '1px solid #ddd', padding: '15px', borderRadius: '8px', backgroundColor: u.active ? '#f8f9fa' : '#f5f5f5' }}>
                 <h4>{u.name}</h4>
                 <p><strong>Email:</strong> {u.email}</p>
@@ -141,9 +141,9 @@ const AdminDashboard = ({ currentUser, users, setUsers, handleLogout, goToProfil
         </section>
         
         <section>
-          <h3>Manage Modules ({modules.length})</h3>
+          <h3>Manage Modules ({modules?.length || 0})</h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px', marginTop: '20px' }}>
-            {modules.map(m => (
+            {modules?.map(m => (
               <div key={m.code} style={{ border: '1px solid #ddd', padding: '15px', borderRadius: '8px', backgroundColor: '#f8f9fa' }}>
                 <h4>{m.name}</h4>
                 <p><strong>Code:</strong> {m.code}</p>
@@ -170,19 +170,19 @@ const AdminDashboard = ({ currentUser, users, setUsers, handleLogout, goToProfil
             <input type="text" placeholder="Class Name" value={classData.name} onChange={(e) => setClassData({ ...classData, name: e.target.value })} required />
             <select value={classData.moduleCode} onChange={(e) => setClassData({ ...classData, moduleCode: e.target.value })} required>
               <option value="">Select Module</option>
-              {modules.map(m => <option key={m.code} value={m.code}>{m.name} ({m.code})</option>)}
+              {modules?.map(m => <option key={m.code} value={m.code}>{m.name} ({m.code})</option>)}
             </select>
             <button type="submit">Create Class</button>
           </form>
         </section>
         
         <section>
-          <h3>Manage Classes ({classes.length})</h3>
+          <h3>Manage Classes ({classes?.length || 0})</h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px', marginTop: '20px' }}>
-            {classes.map(c => (
+            {classes?.map(c => (
               <div key={c.id} style={{ border: '1px solid #ddd', padding: '15px', borderRadius: '8px', backgroundColor: '#f8f9fa' }}>
                 <h4>{c.name}</h4>
-                <p><strong>Module:</strong> {modules.find(m => m.code === c.moduleCode)?.name || 'Unknown'}</p>
+                <p><strong>Module:</strong> {modules?.find(m => m.code === c.moduleCode)?.name || 'Unknown'}</p>
                 <p><strong>Module Code:</strong> {c.moduleCode}</p>
                 <p><strong>Students:</strong> {c.students?.length || 0}</p>
                 <button onClick={() => deleteClass(c.id)} style={{ 
@@ -205,4 +205,4 @@ const AdminDashboard = ({ currentUser, users, setUsers, handleLogout, goToProfil
   );
 };
 
-export { AdminDashboard };
+export default AdminDashboard;
