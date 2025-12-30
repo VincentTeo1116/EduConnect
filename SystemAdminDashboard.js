@@ -121,148 +121,153 @@ const SystemAdminDashboard = ({ currentUser, users = [], setUsers, handleLogout,
     }
   };
 
+  // Popup component
+  const AddUserPopup = () => {
+    if (!showAddUserPopup) return null;
+    
+    return (
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 10000
+      }}>
+        <div style={{
+          background: 'white',
+          padding: '30px',
+          borderRadius: '15px',
+          boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)',
+          width: '90%',
+          maxWidth: '500px',
+          maxHeight: '90vh',
+          overflowY: 'auto',
+          margin: '20px'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <h2 style={{
+              fontSize: '28px',
+              fontWeight: '300',
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              margin: 0
+            }}>
+              Add New User
+            </h2>
+            <button 
+              onClick={() => setShowAddUserPopup(false)}
+              style={{ 
+                background: 'none', 
+                border: 'none', 
+                fontSize: '28px', 
+                cursor: 'pointer', 
+                color: '#666',
+                width: '40px',
+                height: '40px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: '50%',
+                transition: 'background-color 0.3s'
+              }}
+              onMouseOver={(e) => e.target.style.backgroundColor = '#f0f0f0'}
+              onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
+            >
+              ×
+            </button>
+          </div>
+          
+          <form onSubmit={handleUserSubmit}>
+            <input 
+              type="text" 
+              placeholder="Full Name" 
+              value={userData.name} 
+              onChange={(e) => setUserData({ ...userData, name: e.target.value })} 
+              required
+              style={{
+                padding: '12px 15px',
+                border: '1px solid #ddd',
+                borderRadius: '8px',
+                fontSize: '16px',
+                width: '100%',
+                boxSizing: 'border-box',
+                marginBottom: '15px'
+              }}
+            />
+            <input 
+              type="email" 
+              placeholder="Email Address" 
+              value={userData.email} 
+              onChange={(e) => setUserData({ ...userData, email: e.target.value })} 
+              required
+              style={{
+                padding: '12px 15px',
+                border: '1px solid #ddd',
+                borderRadius: '8px',
+                fontSize: '16px',
+                width: '100%',
+                boxSizing: 'border-box',
+                marginBottom: '15px'
+              }}
+            />
+            <input 
+              type="password" 
+              placeholder="Password" 
+              value={userData.password} 
+              onChange={(e) => setUserData({ ...userData, password: e.target.value })} 
+              required
+              style={{
+                padding: '12px 15px',
+                border: '1px solid #ddd',
+                borderRadius: '8px',
+                fontSize: '16px',
+                width: '100%',
+                boxSizing: 'border-box',
+                marginBottom: '15px'
+              }}
+            />
+            <select 
+              value={userData.role} 
+              onChange={(e) => setUserData({ ...userData, role: e.target.value })} 
+              required
+              style={{
+                padding: '12px 15px',
+                border: '1px solid #ddd',
+                borderRadius: '8px',
+                fontSize: '16px',
+                width: '100%',
+                boxSizing: 'border-box',
+                marginBottom: '15px',
+                backgroundColor: 'white'
+              }}
+            >
+              <option value="">Select Role</option>
+              <option value="Student">Student</option>
+              <option value="Instructor">Instructor</option>
+              <option value="System Administrator">System Administrator</option>
+              <option value="Exam Administrator">Exam Administrator</option>
+            </select>
+            <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+              <button type="submit" className="btn-primary" style={{ flex: 1 }}>Create User</button>
+              <button type="button" onClick={() => setShowAddUserPopup(false)} className="btn-secondary" style={{ flex: 1 }}>Cancel</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <>
-      {/* Add User Popup - Placed outside main container */}
-      {showAddUserPopup && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.7)',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          zIndex: 9999
-        }}>
-          <div style={{
-            background: 'white',
-            padding: '30px',
-            borderRadius: '15px',
-            boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)',
-            width: '90%',
-            maxWidth: '500px',
-            maxHeight: '90vh',
-            overflowY: 'auto',
-            position: 'relative',
-            zIndex: 10000
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h2 style={{
-                fontSize: '28px',
-                fontWeight: '300',
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                margin: 0
-              }}>
-                Add New User
-              </h2>
-              <button 
-                onClick={() => setShowAddUserPopup(false)}
-                style={{ 
-                  background: 'none', 
-                  border: 'none', 
-                  fontSize: '28px', 
-                  cursor: 'pointer', 
-                  color: '#666',
-                  width: '40px',
-                  height: '40px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  borderRadius: '50%',
-                  transition: 'background-color 0.3s'
-                }}
-                onMouseOver={(e) => e.target.style.backgroundColor = '#f0f0f0'}
-                onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
-              >
-                ×
-              </button>
-            </div>
-            
-            <form onSubmit={handleUserSubmit}>
-              <input 
-                type="text" 
-                placeholder="Full Name" 
-                value={userData.name} 
-                onChange={(e) => setUserData({ ...userData, name: e.target.value })} 
-                required
-                style={{
-                  padding: '12px 15px',
-                  border: '1px solid #ddd',
-                  borderRadius: '8px',
-                  fontSize: '16px',
-                  width: '100%',
-                  boxSizing: 'border-box',
-                  marginBottom: '15px'
-                }}
-              />
-              <input 
-                type="email" 
-                placeholder="Email Address" 
-                value={userData.email} 
-                onChange={(e) => setUserData({ ...userData, email: e.target.value })} 
-                required
-                style={{
-                  padding: '12px 15px',
-                  border: '1px solid #ddd',
-                  borderRadius: '8px',
-                  fontSize: '16px',
-                  width: '100%',
-                  boxSizing: 'border-box',
-                  marginBottom: '15px'
-                }}
-              />
-              <input 
-                type="password" 
-                placeholder="Password" 
-                value={userData.password} 
-                onChange={(e) => setUserData({ ...userData, password: e.target.value })} 
-                required
-                style={{
-                  padding: '12px 15px',
-                  border: '1px solid #ddd',
-                  borderRadius: '8px',
-                  fontSize: '16px',
-                  width: '100%',
-                  boxSizing: 'border-box',
-                  marginBottom: '15px'
-                }}
-              />
-              <select 
-                value={userData.role} 
-                onChange={(e) => setUserData({ ...userData, role: e.target.value })} 
-                required
-                style={{
-                  padding: '12px 15px',
-                  border: '1px solid #ddd',
-                  borderRadius: '8px',
-                  fontSize: '16px',
-                  width: '100%',
-                  boxSizing: 'border-box',
-                  marginBottom: '15px',
-                  backgroundColor: 'white'
-                }}
-              >
-                <option value="">Select Role</option>
-                <option value="Student">Student</option>
-                <option value="Instructor">Instructor</option>
-                <option value="System Administrator">System Administrator</option>
-                <option value="Exam Administrator">Exam Administrator</option>
-              </select>
-              <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
-                <button type="submit" className="btn-primary" style={{ flex: 1 }}>Create User</button>
-                <button type="button" onClick={() => setShowAddUserPopup(false)} className="btn-secondary" style={{ flex: 1 }}>Cancel</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Main Dashboard Content */}
+      {/* Render popup as a separate component */}
+      <AddUserPopup />
+      
       <div className="main-container">
         {/* Header - Uses CSS from App.css */}
         <header>
