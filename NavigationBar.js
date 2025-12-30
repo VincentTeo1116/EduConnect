@@ -30,32 +30,32 @@ class EduConnect {
         const app = document.getElementById('app');
         app.innerHTML = `
             <div class="main-container">
-                <header class="header">
-                    <div class="logo-section" id="homeLink">
-                        <img src="Images/Logo.png" alt="EduConnect Logo" class="logo" />
-                        <h1>EduConnect</h1>
-                    </div>          
-                    <div class="nav-links-container">
-                        <ul class="nav-links" id="navLinks">
-                            ${this.renderNavLinks()}
-                        </ul>
-                        
-                        <div class="profile-section">
-                            <div class="role-badge" id="roleBadge">
-                                ${this.currentUser.role === 'student' ? 'Student' : 'Lecturer'}
-                            </div>
-                            <div class="profile-icon ${this.currentUser.notifications > 0 ? 'has-notifications' : ''}" id="profileIcon">
-                                <i class="fas fa-user"></i>
-                            </div>
-                        </div>
-                    </div>
-                </header>
+            <header class="header">
+                <div class="logo-section" id="homeLink">
+                <img src="Images/Logo.png" alt="EduConnect Logo" class="logo" style="width: 180px; height: 50px;" />
+                <h1>EduConnect</h1>
+                </div>          
+                <div class="nav-links-container">
+                <ul class="nav-links" id="navLinks">
+                    ${this.renderNavLinks()}
+                </ul>
                 
-                <main class="main-content" id="mainContent">
-                    <div class="loading">
-                        <div class="loading-spinner"></div>
+                <div class="profile-section">
+                    <div class="role-badge" id="roleBadge">
+                    ${this.currentUser.role === 'student' ? 'Student' : 'Lecturer'}
                     </div>
-                </main>
+                    <div class="profile-icon ${this.currentUser.notifications > 0 ? 'has-notifications' : ''}" id="profileIcon">
+                    <i class="fas fa-user"></i>
+                    </div>
+                </div>
+                </div>
+            </header>
+            
+            <main class="main-content" id="mainContent">
+                <div class="loading">
+                <div class="loading-spinner"></div>
+                </div>
+            </main>
             </div>
         `;
     }
