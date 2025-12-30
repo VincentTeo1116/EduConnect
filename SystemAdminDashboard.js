@@ -1,4 +1,3 @@
-// SystemAdminDashboard.js - UPDATED to use App.css classes
 import React, { useState, useEffect } from 'react';
 
 const SystemAdminDashboard = ({ currentUser, users = [], setUsers, handleLogout, goToProfile }) => {
@@ -20,6 +19,7 @@ const SystemAdminDashboard = ({ currentUser, users = [], setUsers, handleLogout,
   const [classes, setClasses] = useState([]);
   const [moduleData, setModuleData] = useState({ name: '', description: '' });
   const [classData, setClassData] = useState({ name: '', moduleCode: '' });
+  const [showAddUserPopup, setShowAddUserPopup] = useState(false);
 
   // Load modules and classes from localStorage
   useEffect(() => {
@@ -47,6 +47,7 @@ const SystemAdminDashboard = ({ currentUser, users = [], setUsers, handleLogout,
     setUsers(updatedUsers);
     localStorage.setItem('users', JSON.stringify(updatedUsers));
     setUserData({ name: '', email: '', password: '', role: '' });
+    setShowAddUserPopup(false);
     alert('User created');
   };
 
@@ -156,8 +157,8 @@ const SystemAdminDashboard = ({ currentUser, users = [], setUsers, handleLogout,
               <p className="action-card-description">
                 Add new students, instructors, or administrators to the system
               </p>
-              <button className="action-btn" onClick={() => document.getElementById('create-user-form')?.scrollIntoView({ behavior: 'smooth' })}>
-                <i className="fas fa-arrow-right"></i> Go to Create User
+              <button className="action-btn" onClick={() => setShowAddUserPopup(true)}>
+                <i className="fas fa-plus"></i> Add User
               </button>
             </div>
             
@@ -231,7 +232,16 @@ const SystemAdminDashboard = ({ currentUser, users = [], setUsers, handleLogout,
         
         {/* Manage Users */}
         <section id="manage-users">
-          <h3>Manage Users ({users.length})</h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <h3>Manage Users ({users.length})</h3>
+            <button 
+              onClick={() => setShowAddUserPopup(true)}
+              className="btn-primary"
+              style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+            >
+              <i className="fas fa-plus"></i> Add User
+            </button>
+          </div>
           <div style={{ 
             display: 'grid', 
             gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', 
@@ -357,6 +367,86 @@ const SystemAdminDashboard = ({ currentUser, users = [], setUsers, handleLogout,
             ))}
           </div>
         </section>
+
+        {/* Add User Popup */}
+        {showAddUserPopup && (
+          <div className="popup-overlay">
+            <div className="popup-content">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <h2 style={{
+                  fontSize: '28px',
+                  fontWeight: '300',
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  margin: 0
+                }}>
+                  Add New User
+                </h2>
+                <button 
+                  onClick={() => setShowAddUserPopup(false)}
+                  style={{ 
+                    background: 'none', 
+                    border: 'none', 
+                    fontSize: '28px', 
+                    cursor: 'pointer', 
+                    color: '#666',
+                    width: '40px',
+                    height: '40px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: '50%',
+                    transition: 'background-color 0.3s'
+                  }}
+                  onMouseOver={(e) => e.target.style.backgroundColor = '#f0f0f0'}
+                  onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
+                >
+                  ×
+                </button>
+              </div>
+              
+              <form onSubmit={handleUserSubmit}>
+                <input 
+                  type="text" 
+                  placeholder="Full Name" 
+                  value={userData.name} 
+                  onChange={(e) => setUserData({ ...userData, name: e.target.value })} 
+                  required
+                />
+                <input 
+                  type="email" 
+                  placeholder="Email Address" 
+                  value={userData.email} 
+                  onChange={(e) => setUserData({ ...userData, email: e.target.value })} 
+                  required
+                />
+                <input 
+                  type="password" 
+                  placeholder="Password" 
+                  value={userData.password} 
+                  onChange={(e) => setUserData({ ...userData, password: e.target.value })} 
+                  required
+                />
+                <select 
+                  value={userData.role} 
+                  onChange={(e) => setUserData({ ...userData, role: e.target.value })} 
+                  required
+                >
+                  <option value="">Select Role</option>
+                  <option value="Student">Student</option>
+                  <option value="Instructor">Instructor</option>
+                  <option value="System Administrator">System Administrator</option>
+                  <option value="Exam Administrator">Exam Administrator</option>
+                </select>
+                <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+                  <button type="submit" className="btn-primary" style={{ flex: 1 }}>Create User</button>
+                  <button type="button" onClick={() => setShowAddUserPopup(false)} className="btn-secondary" style={{ flex: 1 }}>Cancel</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
