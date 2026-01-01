@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 
 const SystemAdminDashboard = ({ 
   currentUser, 
@@ -9,14 +9,7 @@ const SystemAdminDashboard = ({
   classes = [],
   setClasses,
   handleLogout, 
-  goToProfile,
-  // Popup control props
-  showAddUserPopup,
-  setShowAddUserPopup,
-  popupUserData,
-  setPopupUserData,
-  handlePopupUserSubmit,
-  SupabaseService
+  goToProfile
 }) => {
   // Safety check - if no currentUser
   if (!currentUser) {
@@ -43,115 +36,70 @@ const SystemAdminDashboard = ({
     classType: 'lecture' 
   });
 
-  // Handle module creation with Supabase
-  const handleModuleSubmit = async (e) => {
-    e.preventDefault();
-    
-    try {
-      // Improved module code generation
-      const generateModuleCode = (name) => {
-        if (!name) return 'MOD';
-        
-        // Get first letters of each word, max 3
-        const initials = name
-          .split(' ')
-          .map(word => word[0] || '')
-          .filter(char => char && char.match(/[A-Za-z]/))
-          .join('')
-          .toUpperCase()
-          .slice(0, 3);
-        
-        // Add current month and year
-        const now = new Date();
-        const mm = String(now.getMonth() + 1).padStart(2, '0');
-        const yyyy = now.getFullYear().toString();
-        
-        // Add random suffix to avoid duplicates
-        const randomSuffix = Math.floor(Math.random() * 90 + 10); // 10-99
-        
-        return `${initials || 'MOD'}-${mm}${yyyy}`;
-      };
-      
-      const code = generateModuleCode(moduleData.name);
-      
-      // Prepare module data for Supabase
-      const newModule = { 
-        code, 
-        name: moduleData.name, 
-        description: moduleData.description,
-        instructor_id: moduleData.instructorId ? parseInt(moduleData.instructorId) : null,
-        exam_admin_id: moduleData.examAdminId ? parseInt(moduleData.examAdminId) : null,
-        invitation_code: SupabaseService.generateInvitationCode()
-      };
-      
-      // Try Supabase first
-      const createdModule = await SupabaseService.createModule(newModule);
-      const updatedModules = [...modules, createdModule];
-      setModules(updatedModules);
-      localStorage.setItem('modules', JSON.stringify(updatedModules));
-      setModuleData({ name: '', description: '', instructorId: '', examAdminId: '' });
-      alert(`Module "${moduleData.name}" created with code: ${code}`);
-      window.location.reload();
-    } catch (error) {
-      console.error('Error creating module:', error);
-      // Fallback to localStorage
-      const generateModuleCode = (name) => {
-        if (!name) return 'MOD';
-        
-        const initials = name
-          .split(' ')
-          .map(word => word[0] || '')
-          .filter(char => char && char.match(/[A-Za-z]/))
-          .join('')
-          .toUpperCase()
-          .slice(0, 3);
-        
-        const now = new Date();
-        const mm = String(now.getMonth() + 1).padStart(2, '0');
-        const yyyy = now.getFullYear().toString().slice(-2);
-        const randomSuffix = Math.floor(Math.random() * 90 + 10);
-        
-        return `${initials || 'MOD'}-${mm}${yyyy}-${randomSuffix}`;
-      };
-      
-      const code = generateModuleCode(moduleData.name);
-      
-      const newModule = { 
-        code, 
-        name: moduleData.name, 
-        description: moduleData.description, 
-        instructorId: moduleData.instructorId ? parseInt(moduleData.instructorId) : null, 
-        examAdminId: moduleData.examAdminId ? parseInt(moduleData.examAdminId) : null 
-      };
-      
-      const updatedModules = [...modules, newModule];
-      setModules(updatedModules);
-      localStorage.setItem('modules', JSON.stringify(updatedModules));
-      setModuleData({ name: '', description: '', instructorId: '', examAdminId: '' });
-      alert(`Module created (local) with code: ${code}`);
-      window.location.reload();
+  // Helper function to generate invitation code
+  const generateInvitationCode = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let code = '';
+    for (let i = 0; i < 8; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
     }
+    return code;
   };
 
-  const handleGenerateInvitationCode = async (moduleCode) => {
-    try {
-      const newCode = SupabaseService.generateUniqueInvitationCode();
+  // Handle module creation
+  const handleModuleSubmit = (e) => {
+    e.preventDefault();
+    
+    // Generate module code
+    const generateModuleCode = (name) => {
+      if (!name) return 'MOD';
+      
+      const initials = name
+        .split(' ')
+        .map(word => word[0] || '')
+        .filter(char => char && char.match(/[A-Za-z]/))
+        .join('')
+        .toUpperCase()
+        .slice(0, 3);
+      
+      const now = new Date();
+      const mm = String(now.getMonth() + 1).padStart(2, '0');
+      const yyyy = now.getFullYear().toString();
+      const randomSuffix = Math.floor(Math.random() * 90 + 10);
+      
+      return `${initials || 'MOD'}-${mm}${yyyy}-${randomSuffix}`;
+    };
+    
+    const code = generateModuleCode(moduleData.name);
+    const invitationCode = generateInvitationCode();
+    
+    const newModule = { 
+      code, 
+      name: moduleData.name, 
+      description: moduleData.description,
+      instructorId: moduleData.instructorId ? parseInt(moduleData.instructorId) : null,
+      examAdminId: moduleData.examAdminId ? parseInt(moduleData.examAdminId) : null,
+      invitation_code: invitationCode
+    };
+    
+    const updatedModules = [...modules, newModule];
+    setModules(updatedModules);
+    localStorage.setItem('modules', JSON.stringify(updatedModules));
+    setModuleData({ name: '', description: '', instructorId: '', examAdminId: '' });
+    alert(`Module "${moduleData.name}" created with code: ${code}\nInvitation Code: ${invitationCode}`);
+  };
 
-      console.log('Generating new invitation code:', newCode, 'for module:', moduleCode);
-      const updatedModule = await SupabaseService.updateModuleInvitationCode(moduleCode, newCode);
-      
-      // Update local state
-      const updatedModules = modules.map(m => 
-        m.code === moduleCode ? { ...m, invitation_code: newCode } : m
-      );
-      setModules(updatedModules);
-      localStorage.setItem('modules', JSON.stringify(updatedModules));
-      
-      alert(`New invitation code generated: ${newCode}`);
-    } catch (error) {
-      console.error('Error generating invitation code:', error);
-      alert('Failed to generate invitation code');
-    }
+  const handleGenerateInvitationCode = (moduleCode) => {
+    const newCode = generateInvitationCode();
+    
+    // Update module
+    const updatedModules = modules.map(m => 
+      m.code === moduleCode ? { ...m, invitation_code: newCode } : m
+    );
+    setModules(updatedModules);
+    localStorage.setItem('modules', JSON.stringify(updatedModules));
+    
+    alert(`New invitation code generated: ${newCode}`);
   };
 
   const copyToClipboard = (text) => {
@@ -172,24 +120,16 @@ const SystemAdminDashboard = ({
       });
   };
 
-  const deleteModule = async (moduleCode) => {
+  const deleteModule = (moduleCode) => {
     if (window.confirm('Are you sure you want to delete this module?')) {
-      try {
-        await SupabaseService.deleteModule(moduleCode);
-        const updatedModules = modules.filter(m => m.code !== moduleCode);
-        setModules(updatedModules);
-        localStorage.setItem('modules', JSON.stringify(updatedModules));
-      } catch (error) {
-        console.error('Error deleting module:', error);
-        const updatedModules = modules.filter(m => m.code !== moduleCode);
-        setModules(updatedModules);
-        localStorage.setItem('modules', JSON.stringify(updatedModules));
-      }
+      const updatedModules = modules.filter(m => m.code !== moduleCode);
+      setModules(updatedModules);
+      localStorage.setItem('modules', JSON.stringify(updatedModules));
     }
   };
 
-  // UPDATED: Class creation with Supabase integration
-  const handleClassSubmit = async (e) => {
+  // Class creation
+  const handleClassSubmit = (e) => {
     e.preventDefault();
     
     if (!classData.moduleCode || !classData.classType || !classData.name) {
@@ -197,100 +137,47 @@ const SystemAdminDashboard = ({
       return;
     }
     
-    try {
-      // Get count of existing classes for this module and type
-      const existingClasses = await SupabaseService.getClasses();
-      const existingClassesOfSameType = existingClasses.filter(c => 
-        c.module_code === classData.moduleCode && c.class_type === classData.classType
-      );
-      const classNumber = existingClassesOfSameType.length + 1;
-      
-      // Generate class code: [moduleCode]_[classType]_[number]
-      const classCode = `${classData.moduleCode}_${classData.classType}_${classNumber}`;
-      
-      // Prepare class data for Supabase
-      const newClass = { 
-        name: classData.name, 
-        code: classCode,
-        module_code: classData.moduleCode,
-        class_type: classData.classType,
-        instructor_id: null // Can be assigned later
-      };
-      
-      // Create class in Supabase
-      const createdClass = await SupabaseService.createClass(newClass);
-      const updatedClasses = [...classes, createdClass];
-      setClasses(updatedClasses);
-      localStorage.setItem('classes', JSON.stringify(updatedClasses));
-      
-      setClassData({ name: '', moduleCode: '', classType: 'lecture' });
-      alert(`Class "${classData.name}" created with code: ${classCode}`);
-    } catch (error) {
-      console.error('Error creating class:', error);
-      // Fallback to localStorage
-      const existingClassesOfSameType = classes.filter(c => 
-        c.module_code === classData.moduleCode && c.class_type === classData.classType
-      );
-      const classNumber = existingClassesOfSameType.length + 1;
-      const classCode = `${classData.moduleCode}_${classData.classType}_${classNumber}`;
-      
-      const newClass = { 
-        id: Date.now(), 
-        name: classData.name, 
-        code: classCode,
-        module_code: classData.moduleCode,
-        class_type: classData.classType,
-        instructor_id: null
-      };
-      
-      const updatedClasses = [...classes, newClass];
-      setClasses(updatedClasses);
-      localStorage.setItem('classes', JSON.stringify(updatedClasses));
-      
-      setClassData({ name: '', moduleCode: '', classType: 'lecture' });
-      alert(`Class created (local) with code: ${classCode}`);
-    }
+    // Get count of existing classes for this module and type
+    const existingClassesOfSameType = classes.filter(c => 
+      c.module_code === classData.moduleCode
+    );
+    const classNumber = existingClassesOfSameType.length + 1;
+    const displayName = `${classData.name} - ${classData.classType.charAt(0).toUpperCase() + classData.classType.slice(1)} ${classNumber}`;
+    
+    const newClass = { 
+      id: Date.now(), 
+      name: displayName,
+      module_code: classData.moduleCode,
+      class_type: classData.classType,
+      students: [],
+      display_code: `${classData.moduleCode}_${classData.classType}_${classNumber}`,
+      created_at: new Date().toISOString()
+    };
+    
+    const updatedClasses = [...classes, newClass];
+    setClasses(updatedClasses);
+    localStorage.setItem('classes', JSON.stringify(updatedClasses));
+    
+    setClassData({ name: '', moduleCode: '', classType: 'lecture' });
+    alert(`Class "${displayName}" created!`);
   };
 
-  // UPDATED: Class deletion with Supabase integration
-  const deleteClass = async (classId) => {
+  // Class deletion
+  const deleteClass = (classId) => {
     if (window.confirm('Are you sure you want to delete this class?')) {
-      try {
-        await SupabaseService.deleteClass(classId);
-        const updatedClasses = classes.filter(c => c.id !== classId);
-        setClasses(updatedClasses);
-        localStorage.setItem('classes', JSON.stringify(updatedClasses));
-        alert('Class deleted successfully from database');
-      } catch (error) {
-        console.error('Error deleting class:', error);
-        const updatedClasses = classes.filter(c => c.id !== classId);
-        setClasses(updatedClasses);
-        localStorage.setItem('classes', JSON.stringify(updatedClasses));
-        alert('Class deleted (local storage only)');
-      }
+      const updatedClasses = classes.filter(c => c.id !== classId);
+      setClasses(updatedClasses);
+      localStorage.setItem('classes', JSON.stringify(updatedClasses));
+      alert('Class deleted successfully');
     }
   };
 
-  const toggleUser = async (userId) => {
-    try {
-      const user = users.find(u => u.id === userId);
-      const updatedUser = await SupabaseService.updateUser(userId, {
-        active: !user.active
-      });
-      
-      const updatedUsers = users.map(u => 
-        u.id === userId ? updatedUser : u
-      );
-      setUsers(updatedUsers);
-      localStorage.setItem('users', JSON.stringify(updatedUsers));
-    } catch (error) {
-      console.error('Error updating user:', error);
-      const updatedUsers = users.map(u => 
-        u.id === userId ? { ...u, active: !u.active } : u
-      );
-      setUsers(updatedUsers);
-      localStorage.setItem('users', JSON.stringify(updatedUsers));
-    }
+  const toggleUser = (userId) => {
+    const updatedUsers = users.map(u => 
+      u.id === userId ? { ...u, active: !u.active } : u
+    );
+    setUsers(updatedUsers);
+    localStorage.setItem('users', JSON.stringify(updatedUsers));
   };
 
   // Helper function to get user name by ID
@@ -335,60 +222,9 @@ const SystemAdminDashboard = ({
           </p>
         </section>
 
-        <section>
-          <h3>Quick Actions</h3>
-          <div className="quick-actions">
-            <div className="action-card">
-              <div className="action-card-icon">
-                <i className="fas fa-user-plus"></i>
-              </div>
-              <h4 className="action-card-title">Create User Account</h4>
-              <p className="action-card-description">
-                Add new students, instructors, or administrators to the system
-              </p>
-              <button className="action-btn" onClick={() => setShowAddUserPopup(true)}>
-                <i className="fas fa-plus"></i> Add User
-              </button>
-            </div>
-            
-            <div className="action-card">
-              <div className="action-card-icon">
-                <i className="fas fa-book"></i>
-              </div>
-              <h4 className="action-card-title">Manage Modules</h4>
-              <p className="action-card-description">
-                Create and manage course modules for the academic system
-              </p>
-              <button className="action-btn" onClick={() => document.getElementById('manage-modules')?.scrollIntoView({ behavior: 'smooth' })}>
-                <i className="fas fa-arrow-right"></i> View Modules
-              </button>
-            </div>
-            
-            <div className="action-card">
-              <div className="action-card-icon">
-                <i className="fas fa-users"></i>
-              </div>
-              <h4 className="action-card-title">Class Management</h4>
-              <p className="action-card-description">
-                Create and manage classes (lecture, tutorial, lab) for modules
-              </p>
-              <button className="action-btn" onClick={() => document.getElementById('create-class-form')?.scrollIntoView({ behavior: 'smooth' })}>
-                <i className="fas fa-arrow-right"></i> Create Class
-              </button>
-            </div>
-          </div>
-        </section>
-        
         <section id="manage-users">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
             <h3>Manage Users ({users.length})</h3>
-            <button 
-              onClick={() => setShowAddUserPopup(true)}
-              className="btn-primary"
-              style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
-            >
-              <i className="fas fa-plus"></i> Add User
-            </button>
           </div>
           <div style={{ 
             display: 'grid', 
@@ -450,6 +286,7 @@ const SystemAdminDashboard = ({
                   backgroundColor: 'white'
                 }}
               >
+                <option value="">Select Instructor</option>
                 {users
                   .filter(user => user.role === 'Instructor' && user.active)
                   .map(instructor => (
@@ -479,6 +316,7 @@ const SystemAdminDashboard = ({
                   backgroundColor: 'white'
                 }}
               >
+                <option value="">Select Exam Administrator</option>
                 {users
                   .filter(user => user.role === 'Exam Administrator' && user.active)
                   .map(admin => (
@@ -528,13 +366,68 @@ const SystemAdminDashboard = ({
           </div>
         </section>
 
-        {/* UPDATED: Create Class form with Supabase integration */}
+        <section id="module-invitation">
+          <h3>Module Invitation Codes</h3>
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', 
+            gap: '20px', 
+            marginTop: '20px' 
+          }}>
+            {modules.map(m => {
+              const instructorId = m.instructor_id || m.instructorId;
+              const moduleClasses = classes.filter(c => c.module_code === m.code);
+              
+              return (
+                <div key={m.code} className="item-card">
+                  <h4>{m.name}</h4>
+                  <p><strong>Code:</strong> {m.code}</p>
+                  <div className="invitation-code-display">
+                    {m.invitation_code || 'No code generated'}
+                  </div>
+                  
+                  <div className="invite-actions">
+                    <button 
+                      onClick={() => handleGenerateInvitationCode(m.code)}
+                      className="refresh-btn"
+                    >
+                      <i className="fas fa-sync-alt"></i>
+                      {m.invitation_code ? 'Regenerate' : 'Generate'}
+                    </button>
+                    
+                    {m.invitation_code && (
+                      <button 
+                        onClick={() => copyToClipboard(m.invitation_code)}
+                        className="copy-btn"
+                      >
+                        <i className="fas fa-copy"></i>
+                        Copy Code
+                      </button>
+                    )}
+                  </div>
+                  
+                  <div style={{ marginTop: '15px' }}>
+                    <p><strong>How to invite students:</strong></p>
+                    <ol style={{ margin: '10px 0', paddingLeft: '20px', fontSize: '14px' }}>
+                      <li>Generate an invitation code</li>
+                      <li>Share the code with students</li>
+                      <li>Students enter the code in their dashboard</li>
+                      <li>Students are automatically added to module classes</li>
+                    </ol>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+        
+        {/* Create Class form */}
         <section id="create-class-form">
           <h3>Create Class</h3>
           <form onSubmit={handleClassSubmit} className="form-container" style={{ maxWidth: '600px', margin: '0 auto' }}>
             <input 
               type="text" 
-              placeholder="Class Display Name (e.g., SDM Class A)" 
+              placeholder="Class Base Name (e.g., SDM Class)" 
               value={classData.name} 
               onChange={(e) => setClassData({ ...classData, name: e.target.value })} 
               required
@@ -591,8 +484,8 @@ const SystemAdminDashboard = ({
               </select>
             </div>
             
-            {/* Preview of generated class code */}
-            {classData.moduleCode && classData.classType && (
+            {/* Preview of generated class */}
+            {classData.moduleCode && classData.classType && classData.name && (
               <div style={{ 
                 padding: '12px 15px', 
                 marginBottom: '15px',
@@ -601,35 +494,30 @@ const SystemAdminDashboard = ({
                 backgroundColor: '#f8f9fa',
                 fontSize: '14px'
               }}>
-                <p style={{ margin: '0', fontWeight: '500' }}>Auto-generated Class Code:</p>
+                <p style={{ margin: '0', fontWeight: '500' }}>Class Preview:</p>
                 <p style={{ 
                   margin: '5px 0 0 0', 
                   fontSize: '16px', 
                   fontWeight: '600',
                   color: '#667eea'
                 }}>
-                  {classData.moduleCode}_{classData.classType}_
-                  {classes.filter(c => 
-                    c.module_code === classData.moduleCode && 
-                    c.class_type === classData.classType
-                  ).length + 1}
+                  {classData.name} - {classData.classType.charAt(0).toUpperCase() + classData.classType.slice(1)} {classes.filter(c => c.module_code === classData.moduleCode).length + 1}
                 </p>
                 <p style={{ 
                   margin: '5px 0 0 0', 
-                  fontSize: '12px', 
-                  color: '#666',
-                  fontStyle: 'italic'
+                  fontSize: '14px', 
+                  color: '#666'
                 }}>
-                  Format: [Module Code]_[Class Type]_[Sequence Number]
+                  <strong>Display Code:</strong> {classData.moduleCode}_{classData.classType}_{classes.filter(c => c.module_code === classData.moduleCode).length + 1}
                 </p>
               </div>
             )}
             
-            <button type="submit" className="btn-primary">Create Class (Save to Database)</button>
+            <button type="submit" className="btn-primary">Create Class</button>
           </form>
         </section>
         
-        {/* UPDATED: Manage Classes with Supabase data */}
+        {/* Manage Classes */}
         <section id="manage-classes">
           <h3>Manage Classes ({classes.length})</h3>
           <div style={{ 
@@ -640,7 +528,8 @@ const SystemAdminDashboard = ({
           }}>
             {classes.map(c => {
               const module = modules.find(m => m.code === c.module_code);
-              const badge = getClassTypeBadge(c.class_type);
+              const classType = c.class_type || 'lecture';
+              const badge = getClassTypeBadge(classType);
               
               return (
                 <div key={c.id} className="item-card">
@@ -658,11 +547,11 @@ const SystemAdminDashboard = ({
                     </span>
                   </div>
                   <p><strong>Module:</strong> {module?.name || 'Unknown'}</p>
-                  <p><strong>Class Code:</strong> {c.code || 'N/A'}</p>
                   <p><strong>Module Code:</strong> {c.module_code || 'N/A'}</p>
-                  <p><strong>Class Type:</strong> {badge.label}</p>
-                  <p><strong>Instructor:</strong> {getUserName(c.instructor_id)}</p>
-                  <p><strong>Created:</strong> {new Date(c.created_at).toLocaleDateString()}</p>
+                  <p><strong>Students:</strong> {c.students?.length || 0}</p>
+                  {c.created_at && (
+                    <p><strong>Created:</strong> {new Date(c.created_at).toLocaleDateString()}</p>
+                  )}
                   <button 
                     onClick={() => deleteClass(c.id)}
                     className="btn-danger"
