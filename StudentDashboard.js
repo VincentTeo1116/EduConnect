@@ -1,3 +1,5 @@
+import React, { useState, useEffect } from 'react';
+
 // StudentDashboard Component
 const StudentDashboard = ({ 
   currentUser, 
