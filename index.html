@@ -913,9 +913,132 @@
       setSubmissions, 
       setQuestions, 
       handleLogout, 
-      goToProfile 
+      goToProfile,
+      // Add these missing props:
+      modules = [],
+      classes = [],
+      setClasses = () => {}
     }) => {
       const [questionData, setQuestionData] = useState({ assessmentId: '', text: '' });
+      const [invitationCode, setInvitationCode] = useState('');
+      const [userModules, setUserModules] = useState([]);
+
+      // Load user's modules on component mount
+      useEffect(() => {
+        loadUserModules();
+      }, [classes, currentUser, modules]);
+
+      const loadUserModules = () => {
+        // Find modules where user is enrolled in any class
+        const enrolledModules = [];
+        modules.forEach(module => {
+          const moduleClasses = classes.filter(c => 
+            c.module_code === module.code && 
+            c.students && 
+            c.students.includes(currentUser.id)
+          );
+          if (moduleClasses.length > 0) {
+            enrolledModules.push({
+              ...module,
+              classCount: moduleClasses.length
+            });
+          }
+        });
+        setUserModules(enrolledModules);
+      };
+
+      const handleJoinModule = async (e) => {
+        e.preventDefault();
+        const noClassElement = document.getElementById('no-class-found');
+        if (noClassElement) {
+          noClassElement.style.display = 'none';
+        }
+        
+        try {
+          // Find module by invitation_code
+          const module = await SupabaseService.findModuleByInvitationCode(invitationCode);
+          
+          if (!module) {
+            if (noClassElement) {
+              noClassElement.innerHTML = `
+                <i class="fas fa-exclamation-circle"></i> 
+                <strong> No module found with invitation code: ${invitationCode}</strong>
+                <div style="font-size: 14px; margin-top: 5px;">
+                  Please check the code and try again, or contact your instructor.
+                </div>
+              `;
+              noClassElement.style.display = 'block';
+            }
+            return;
+          }
+          
+          // Get classes for this module
+          const moduleClasses = await SupabaseService.getClassesForModule(module.code);
+          
+          if (moduleClasses.length === 0) {
+            alert(`Module "${module.name}" has no classes set up yet. Please contact the instructor.`);
+            return;
+          }
+          
+          // Add student to all classes in the module
+          let enrolledCount = 0;
+          let alreadyEnrolledCount = 0;
+          
+          for (const classItem of moduleClasses) {
+            try {
+              const result = await SupabaseService.addStudentToClass(classItem.id, currentUser.id);
+              
+              // Check if student was newly added
+              const students = result.students || [];
+              if (students.includes(parseInt(currentUser.id))) {
+                enrolledCount++;
+              } else {
+                alreadyEnrolledCount++;
+              }
+            } catch (error) {
+              console.error(`Error adding to class ${classItem.id}:`, error);
+            }
+          }
+          
+          // Update local state
+          const updatedClasses = [...classes];
+          moduleClasses.forEach(classItem => {
+            const index = updatedClasses.findIndex(c => c.id === classItem.id);
+            if (index !== -1) {
+              const students = updatedClasses[index].students || [];
+              if (!students.includes(parseInt(currentUser.id))) {
+                students.push(parseInt(currentUser.id));
+                updatedClasses[index] = { ...updatedClasses[index], students };
+              }
+            }
+          });
+          
+          setClasses(updatedClasses);
+          localStorage.setItem('classes', JSON.stringify(updatedClasses));
+          
+          // Reload user modules
+          loadUserModules();
+          
+          setInvitationCode('');
+          
+          let message = `Successfully joined module: ${module.name}\n`;
+          message += `Module Code: ${module.code}\n`;
+          message += `Invitation Code: ${module.invitation_code}\n\n`;
+          
+          if (enrolledCount > 0) {
+            message += `You've been added to ${enrolledCount} new class(es).\n`;
+          }
+          if (alreadyEnrolledCount > 0) {
+            message += `You were already enrolled in ${alreadyEnrolledCount} class(es).\n`;
+          }
+          
+          alert(message);
+          
+        } catch (error) {
+          console.error('Error joining module:', error);
+          alert('Failed to join module. Please try again or contact support.');
+        }
+      };
 
       const submitAssessment = async (assessmentId) => {
         try {
@@ -1063,16 +1186,22 @@
                     type="text" 
                     placeholder="Enter invitation code (e.g., ABC123XY)" 
                     value={invitationCode}
-                    onChange={(e) => setInvitationCode(e.target.value.toUpperCase())}
+                    onChange={(e) => {
+                      const value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+                      setInvitationCode(value.slice(0, 8));
+                    }}
                     required
                     style={{ 
                       width: '100%', 
                       padding: '12px 15px',
                       marginBottom: '10px',
                       fontSize: '16px',
-                      letterSpacing: '1px',
-                      textAlign: 'center'
+                      letterSpacing: '2px',
+                      textAlign: 'center',
+                      fontFamily: 'monospace',
+                      fontWeight: 'bold'
                     }}
+                    maxLength="8"
                   />
                   <button type="submit" className="btn-primary" style={{ width: '100%' }}>
                     <i className="fas fa-sign-in-alt"></i> Join Module
@@ -1080,18 +1209,19 @@
                 </form>
                 
                 <div id="no-class-found" className="no-class-found">
-                  <i className="fas fa-exclamation-circle"></i> No class found with this invitation code.
+                  <i className="fas fa-exclamation-circle"></i> No module found with this invitation code.
                 </div>
               </div>
               
               <div style={{ marginTop: '20px' }}>
-                <h4>My Modules</h4>
+                <h4>My Enrolled Modules</h4>
                 {userModules.length > 0 ? (
                   <div className="quick-actions">
                     {userModules.map(module => (
                       <div key={module.code} className="item-card">
                         <h5>{module.name}</h5>
-                        <p><strong>Code:</strong> {module.code}</p>
+                        <p><strong>Module Code:</strong> {module.code}</p>
+                        <p><strong>Invitation Code:</strong> {module.invitation_code}</p>
                         <p><strong>Classes enrolled:</strong> {module.classCount}</p>
                       </div>
                     ))}
@@ -1695,6 +1825,24 @@
         } catch (error) {
           console.error('Error creating module:', error);
           // Fallback with local unique code generation
+          const generateModuleCode = (name) => {
+            if (!name) return 'MOD';
+            
+            const initials = name
+              .split(' ')
+              .map(word => word[0] || '')
+              .filter(char => char && char.match(/[A-Za-z]/))
+              .join('')
+              .toUpperCase()
+              .slice(0, 3);
+            
+            const now = new Date();
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            const yyyy = now.getFullYear().toString();
+            
+            return `${initials || 'MOD'}-${mm}${yyyy}`;
+          };
+          
           const moduleCode = generateModuleCode(moduleData.name);
           const invitationCode = SupabaseService.generateInvitationCode();
           
@@ -1713,25 +1861,49 @@
           
           setModuleData({ name: '', description: '', instructorId: '', examAdminId: '' });
           alert(`Module created (local storage)\n\nModule Code: ${moduleCode}\nInvitation Code: ${invitationCode}`);
-          };
+        }
+      };
+
+      // Add the missing handleGenerateInvitationCode function
+      const handleGenerateInvitationCode = async (moduleCode) => {
+        try {
+          const newCode = await SupabaseService.generateUniqueInvitationCode();
+          console.log('Generating new invitation code:', newCode, 'for module:', moduleCode);
           
-          const code = generateModuleCode(moduleData.name);
+          // Update in Supabase
+          const updatedModule = await SupabaseService.updateModuleInvitationCode(moduleCode, newCode);
           
-          const newModule = { 
-            code, 
-            name: moduleData.name, 
-            description: moduleData.description, 
-            instructorId: moduleData.instructorId ? parseInt(moduleData.instructorId) : null, 
-            examAdminId: moduleData.examAdminId ? parseInt(moduleData.examAdminId) : null 
-          };
-          
-          const updatedModules = [...modules, newModule];
+          // Update local state
+          const updatedModules = modules.map(m => 
+            m.code === moduleCode ? { ...m, invitation_code: newCode } : m
+          );
           setModules(updatedModules);
           localStorage.setItem('modules', JSON.stringify(updatedModules));
-          setModuleData({ name: '', description: '', instructorId: '', examAdminId: '' });
-          alert(`Module created (local) with code: ${code}`);
-          window.location.reload();
+          
+          alert(`New invitation code generated: ${newCode}`);
+        } catch (error) {
+          console.error('Error generating invitation code:', error);
+          alert('Failed to generate invitation code');
         }
+      };
+
+      // Add the missing copyToClipboard function
+      const copyToClipboard = (text) => {
+        navigator.clipboard.writeText(text)
+          .then(() => {
+            alert('Invitation code copied to clipboard!');
+          })
+          .catch(err => {
+            console.error('Failed to copy: ', err);
+            // Fallback method
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            alert('Invitation code copied!');
+          });
       };
 
       const deleteModule = async (moduleCode) => {
@@ -2900,7 +3072,10 @@
               setSubmissions={setSubmissions} 
               setQuestions={setQuestions} 
               handleLogout={handleLogout} 
-              goToProfile={goToProfile} 
+              goToProfile={goToProfile}
+              modules={modules}
+              classes={classes}
+              setClasses={setClasses}
             />
           );
           
@@ -2996,6 +3171,7 @@
 
     // Render the app
     ReactDOM.render(<App />, document.getElementById('root'));
+  }
   </script>
 </body>
 </html>
