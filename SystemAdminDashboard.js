@@ -45,7 +45,6 @@ const SystemAdminDashboard = ({
     }
     return code;
   };
-
   // Handle module creation
   const handleModuleSubmit = (e) => {
     e.preventDefault();
@@ -271,7 +270,7 @@ const SystemAdminDashboard = ({
             {/* Instructor Selection */}
             <div>
               <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500', color: '#333' }}>
-                Select Instructor (Optional)
+                Select Instructor
               </label>
               <select 
                 value={moduleData.instructorId} 
@@ -301,7 +300,7 @@ const SystemAdminDashboard = ({
             {/* Exam Administrator Selection */}
             <div>
               <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500', color: '#333' }}>
-                Select Exam Administrator (Optional)
+                Select Exam Administrator
               </label>
               <select 
                 value={moduleData.examAdminId} 

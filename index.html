@@ -2352,6 +2352,7 @@
                       backgroundColor: 'white'
                     }}
                   >
+                  <option value="">Select Instructor</option>
                     {users
                       .filter(user => user.role === 'Instructor' && user.active)
                       .map(instructor => (
@@ -2381,6 +2382,7 @@
                       backgroundColor: 'white'
                     }}
                   >
+                  <option value="">Select Exam Administrator</option>
                     {users
                       .filter(user => user.role === 'Exam Administrator' && user.active)
                       .map(admin => (
