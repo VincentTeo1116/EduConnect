@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
+    /* Global popup styles */
     .global-popup-overlay {
       position: fixed !important;
       top: 0 !important;
@@ -103,6 +104,7 @@
       margin-bottom: 20px;
     }
 
+    /* Invitation code styles */
     .invitation-code-display {
       font-family: 'Courier New', monospace;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -132,6 +134,7 @@
       display: flex;
       align-items: center;
       gap: 5px;
+      transition: background-color 0.3s;
     }
     
     .copy-btn:hover {
@@ -148,6 +151,7 @@
       display: flex;
       align-items: center;
       gap: 5px;
+      transition: background-color 0.3s;
     }
     
     .refresh-btn:hover {
@@ -171,8 +175,99 @@
       display: none;
     }
 
+    /* Tab styles */
+    .tab-btn {
+      padding: 12px 24px;
+      background: none;
+      border: none;
+      border-bottom: 3px solid transparent;
+      font-size: 16px;
+      font-weight: 500;
+      color: #666;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.3s ease;
+      white-space: nowrap;
+    }
+
+    .tab-btn:hover {
+      color: #667eea;
+      background-color: rgba(102, 126, 234, 0.05);
+    }
+
+    .tab-btn.active {
+      color: #667eea;
+      border-bottom-color: #667eea;
+      font-weight: 600;
+    }
+
+    .tab-content {
+      animation: fadeIn 0.3s ease-out;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      background-color: #f8f9fa;
+      border-radius: 12px;
+      border: 2px dashed #dee2e6;
+    }
+
+    .empty-state h4 {
+      color: #495057;
+      margin-bottom: 10px;
+    }
+
+    .empty-state p {
+      color: #6c757d;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    /* Status badges */
+    .status-badge {
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      display: inline-block;
+    }
+
+    .status-draft { background-color: #f39c12; color: white; }
+    .status-submitted { background-color: #3498db; color: white; }
+    .status-graded { background-color: #f39c12; color: white; }
+    .status-released { background-color: #2ecc71; color: white; }
+    .status-needs_revision { background-color: #e74c3c; color: white; }
+
+    /* Type badges */
+    .type-badge {
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      display: inline-block;
+    }
+
+    .type-assignment { background-color: #3498db; color: white; }
+    .type-quiz { background-color: #9b59b6; color: white; }
+    .type-exam { background-color: #e74c3c; color: white; }
+    .type-project { background-color: #1abc9c; color: white; }
+
     @keyframes spin {
       to { transform: rotate(360deg); }
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
   </style>
 </head>
@@ -187,13 +282,13 @@
   <script type="text/babel">
     const { useState, useEffect } = React;
 
+    // Supabase configuration
     const supabaseUrl = 'https://etilwlveocqsozzuizil.supabase.co';
     const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV0aWx3bHZlb2Nxc296enVpemlsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcxMDc0NTQsImV4cCI6MjA4MjY4MzQ1NH0.VY_acdqcgBFXxXCfUUCIGKKrDRYqZmFTpsNj9_h2pm0';
     
-    // Create Supabase client
     const supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
     
-    // SUPABASE SERVICE FUNCTIONS
+    // ==================== SUPABASE SERVICE ====================
     const SupabaseService = {
       // Users
       async getUsers() {
@@ -203,10 +298,7 @@
             .select('*')
             .order('created_at', { ascending: false });
           
-          if (error) {
-            console.error('Supabase getUsers error:', error);
-            throw error;
-          }
+          if (error) throw error;
           return data || [];
         } catch (error) {
           console.error('Error fetching users:', error);
@@ -221,10 +313,7 @@
             .insert([user])
             .select();
           
-          if (error) {
-            console.error('Supabase createUser error:', error);
-            throw error;
-          }
+          if (error) throw error;
           return data[0];
         } catch (error) {
           console.error('Error creating user:', error);
@@ -298,9 +387,6 @@
       
       async createModule(module) {
         try {
-          console.log('Creating module with data:', module);
-          
-          // Map camelCase to snake_case for Supabase
           const supabaseModule = {
             code: module.code,
             name: module.name,
@@ -315,10 +401,7 @@
             .insert([supabaseModule])
             .select();
           
-          if (error) {
-            console.error('Supabase createModule error details:', error);
-            throw error;
-          }
+          if (error) throw error;
           return data[0];
         } catch (error) {
           console.error('Error creating module:', error);
@@ -358,29 +441,18 @@
       
       async createClass(classData) {
         try {
-          console.log('Creating class with data (matching your schema):', classData);
-          
-          // Map to your actual database columns
           const supabaseClass = {
             name: classData.name,
             module_code: classData.module_code,
             students: classData.students || []
           };
           
-          console.log('Sending to Supabase (your schema):', supabaseClass);
-          
           const { data, error } = await supabase
             .from('classes')
             .insert([supabaseClass])
             .select();
           
-          if (error) {
-            console.error('Supabase createClass error:', error);
-            console.error('Error details:', error.message);
-            throw error;
-          }
-          
-          console.log('Class created successfully:', data);
+          if (error) throw error;
           return data[0];
         } catch (error) {
           console.error('Error creating class:', error);
@@ -429,6 +501,36 @@
           return data[0];
         } catch (error) {
           console.error('Error creating assessment:', error);
+          throw error;
+        }
+      },
+
+      async updateAssessment(assessmentId, updates) {
+        try {
+          const { data, error } = await supabase
+            .from('assessments')
+            .update(updates)
+            .eq('id', assessmentId)
+            .select();
+          
+          if (error) throw error;
+          return data[0];
+        } catch (error) {
+          console.error('Error updating assessment:', error);
+          throw error;
+        }
+      },
+
+      async deleteAssessment(assessmentId) {
+        try {
+          const { error } = await supabase
+            .from('assessments')
+            .delete()
+            .eq('id', assessmentId);
+          
+          if (error) throw error;
+        } catch (error) {
+          console.error('Error deleting assessment:', error);
           throw error;
         }
       },
@@ -527,6 +629,51 @@
         }
       },
 
+      // Teaching Materials
+      async getTeachingMaterials() {
+        try {
+          const { data, error } = await supabase
+            .from('teaching_materials')
+            .select('*')
+            .order('uploaded_at', { ascending: false });
+          
+          if (error) throw error;
+          return data || [];
+        } catch (error) {
+          console.error('Error fetching teaching materials:', error);
+          return [];
+        }
+      },
+      
+      async createTeachingMaterial(material) {
+        try {
+          const { data, error } = await supabase
+            .from('teaching_materials')
+            .insert([material])
+            .select();
+          
+          if (error) throw error;
+          return data[0];
+        } catch (error) {
+          console.error('Error creating teaching material:', error);
+          throw error;
+        }
+      },
+      
+      async deleteTeachingMaterial(materialId) {
+        try {
+          const { error } = await supabase
+            .from('teaching_materials')
+            .delete()
+            .eq('id', materialId);
+          
+          if (error) throw error;
+        } catch (error) {
+          console.error('Error deleting teaching material:', error);
+          throw error;
+        }
+      },
+
       // Invitation Code Functions
       generateInvitationCode() {
         const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -547,15 +694,10 @@
           
           return data !== null;
         } catch (error) {
-          if (error.code === 'PGRST116') {
-            return false; // Code doesn't exist
-          }
-          console.error('Error checking invitation code:', error);
-          return true; // Assume exists on error to be safe
+          return false;
         }
       },
       
-      // Generate unique invitation code with retry logic
       async generateUniqueInvitationCode(maxAttempts = 10) {
         let attempts = 0;
         
@@ -564,24 +706,19 @@
           const exists = await this.checkInvitationCodeExists(code);
           
           if (!exists) {
-            return code; // Found unique code
+            return code;
           }
           
           attempts++;
-          console.log(`Invitation code ${code} already exists, trying again... (attempt ${attempts})`);
         }
         
-        // Fallback: add timestamp to ensure uniqueness
         const timestamp = Date.now().toString().slice(-4);
         const baseCode = this.generateInvitationCode().slice(0, 4);
         return baseCode + timestamp;
       },
       
-      // Update module invitation code
       async updateModuleInvitationCode(moduleCode, invitationCode) {
         try {
-          console.log('Updating invitation code for module:', moduleCode, 'New code:', invitationCode);
-          
           const { data, error } = await supabase
             .from('modules')
             .update({ 
@@ -591,10 +728,7 @@
             .eq('code', moduleCode)
             .select();
           
-          if (error) {
-            console.error('Supabase update error:', error);
-            throw error;
-          }
+          if (error) throw error;
           return data[0];
         } catch (error) {
           console.error('Error updating invitation code:', error);
@@ -602,33 +736,21 @@
         }
       },
       
-      // Find module by invitation code
       async findModuleByInvitationCode(invitationCode) {
         try {
-          console.log('Searching for module with invitation code:', invitationCode);
-          
           const { data, error } = await supabase
             .from('modules')
             .select('*')
             .eq('invitation_code', invitationCode)
             .single();
           
-          if (error) {
-            if (error.code === 'PGRST116') { // No rows found
-              console.log('No module found with invitation code:', invitationCode);
-              return null;
-            }
-            throw error;
-          }
-          console.log('Found module:', data);
+          if (error) return null;
           return data;
         } catch (error) {
-          console.error('Error finding module by invitation code:', error);
           return null;
         }
       },
       
-      // Get module by code
       async getModuleByCode(moduleCode) {
         try {
           const { data, error } = await supabase
@@ -645,12 +767,8 @@
         }
       },
       
-      // Add student to class
       async addStudentToClass(classId, studentId) {
         try {
-          console.log('Adding student', studentId, 'to class', classId);
-          
-          // First get the current class
           const { data: classData, error: fetchError } = await supabase
             .from('classes')
             .select('students')
@@ -659,7 +777,6 @@
           
           if (fetchError) throw fetchError;
           
-          // Add student to students array if not already there
           const students = classData.students || [];
           if (!students.includes(parseInt(studentId))) {
             students.push(parseInt(studentId));
@@ -676,14 +793,13 @@
             if (error) throw error;
             return data[0];
           }
-          return classData; // Already in class
+          return classData;
         } catch (error) {
           console.error('Error adding student to class:', error);
           throw error;
         }
       },
       
-      // Get classes for a module
       async getClassesForModule(moduleCode) {
         try {
           const { data, error } = await supabase
@@ -701,13 +817,7 @@
     };
 
     // ==================== GLOBAL POPUP COMPONENT ====================
-    const GlobalAddUserPopup = ({ 
-      show, 
-      onClose, 
-      userData, 
-      setUserData, 
-      onSubmit 
-    }) => {
+    const GlobalAddUserPopup = ({ show, onClose, userData, setUserData, onSubmit }) => {
       if (!show) return null;
       
       useEffect(() => {
@@ -747,8 +857,6 @@
                   borderRadius: '50%',
                   transition: 'background-color 0.3s'
                 }}
-                onMouseOver={(e) => e.target.style.backgroundColor = '#f0f0f0'}
-                onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
               >
                 ×
               </button>
@@ -759,26 +867,26 @@
                 type="text" 
                 placeholder="Full Name" 
                 value={userData.name} 
-                onChange={(e) => setUserData({ ...userData, name: e.target.value })} 
+                onChange={e => setUserData({ ...userData, name: e.target.value })} 
                 required
               />
               <input 
                 type="email" 
                 placeholder="Email Address" 
                 value={userData.email} 
-                onChange={(e) => setUserData({ ...userData, email: e.target.value })} 
+                onChange={e => setUserData({ ...userData, email: e.target.value })} 
                 required
               />
               <input 
                 type="password" 
                 placeholder="Password" 
                 value={userData.password} 
-                onChange={(e) => setUserData({ ...userData, password: e.target.value })} 
+                onChange={e => setUserData({ ...userData, password: e.target.value })} 
                 required
               />
               <select 
                 value={userData.role} 
-                onChange={(e) => setUserData({ ...userData, role: e.target.value })} 
+                onChange={e => setUserData({ ...userData, role: e.target.value })} 
                 required
               >
                 <option value="">Select Role</option>
@@ -798,113 +906,1369 @@
       );
     };
 
-    // LoginPage Component with Login Alert Credentials
-    const LoginPage = ({ loginData, setLoginData, handleLogin, goToRegister }) => (
-      <div className="form-container">
-        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-          <img src="Images/Logo.png" alt="EduConnect Logo" className="logo" />
-        </div>
-        <h2 style={{
-          fontSize: '32px',
-          fontWeight: '300',
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          marginBottom: '25px',
-          textAlign: 'center',
-          letterSpacing: '0.5px'
-        }}>
-          Login to EduConnect
-        </h2>
+    // ==================== MODULE CARD COMPONENT ====================
+    const ModuleCard = ({ 
+      module, 
+      userRole, 
+      currentUser, 
+      classes = [], 
+      assessments = [],
+      submissions = [],
+      onClick
+    }) => {
+      const getModuleStats = () => {
+        const moduleAssessments = assessments.filter(a => 
+          a.moduleCode === module.code || a.course === module.name
+        );
+        const moduleClasses = classes.filter(c => c.module_code === module.code);
         
-        <form onSubmit={handleLogin}>
-          <input 
-            type="email" 
-            placeholder="Email" 
-            value={loginData.email} 
-            onChange={e => setLoginData({ ...loginData, email: e.target.value })} 
-            required 
-          />
-          <input 
-            type="password" 
-            placeholder="Password" 
-            value={loginData.password} 
-            onChange={e => setLoginData({ ...loginData, password: e.target.value })} 
-            required 
-          />
+        if (userRole === 'Student') {
+          const studentSubmissions = submissions.filter(s => 
+            s.studentId === currentUser.id && 
+            moduleAssessments.some(a => a.id === s.assessmentId)
+          );
+          const pendingGrades = studentSubmissions.filter(s => !s.releasedToStudent && s.grade !== null);
+          const releasedGrades = studentSubmissions.filter(s => s.releasedToStudent);
+          
+          return {
+            totalAssessments: moduleAssessments.length,
+            yourSubmissions: studentSubmissions.length,
+            pendingGrades: pendingGrades.length,
+            releasedGrades: releasedGrades.length,
+            classesEnrolled: moduleClasses.filter(c => 
+              c.students && c.students.includes(parseInt(currentUser.id))
+            ).length
+          };
+        } else if (userRole === 'Instructor') {
+          const moduleSubmissions = submissions.filter(s => 
+            moduleAssessments.some(a => a.id === s.assessmentId)
+          );
+          const pendingGrading = moduleSubmissions.filter(s => s.status === 'submitted');
+          const needsRevision = moduleSubmissions.filter(s => s.status === 'needs_revision');
+          
+          return {
+            totalAssessments: moduleAssessments.length,
+            totalClasses: moduleClasses.length,
+            pendingGrading: pendingGrading.length,
+            needsRevision: needsRevision.length,
+            graded: moduleSubmissions.filter(s => s.status === 'graded').length
+          };
+        } else if (userRole === 'Exam Administrator') {
+          const moduleSubmissions = submissions.filter(s => 
+            moduleAssessments.some(a => a.id === s.assessmentId)
+          );
+          const pendingApproval = moduleSubmissions.filter(s => s.status === 'graded' && !s.approvedByExamAdmin);
+          const approved = moduleSubmissions.filter(s => s.approvedByExamAdmin);
+          
+          return {
+            totalAssessments: moduleAssessments.length,
+            pendingApproval: pendingApproval.length,
+            approved: approved.length,
+            released: moduleSubmissions.filter(s => s.releasedToStudent).length
+          };
+        }
+        
+        return {};
+      };
 
-          {/* Login Alert Section */}
-          <div className="login-alert-credentials">
-            <h4><i className="fas fa-info-circle"></i> No Account Access?</h4>
-            <p>Contact the administrator to request account creation.</p>
+      const stats = getModuleStats();
+      
+      return (
+        <div className="item-card" onClick={onClick} style={{ cursor: 'pointer' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div style={{ flex: 1 }}>
+              <h4>{module.name}</h4>
+              <p style={{ color: '#666', marginBottom: '10px' }}>{module.code}</p>
+              <p style={{ fontSize: '14px', marginBottom: '15px' }}>{module.description}</p>
+            </div>
+            <span style={{
+              padding: '4px 8px',
+              backgroundColor: '#667eea',
+              color: 'white',
+              borderRadius: '4px',
+              fontSize: '12px',
+              fontWeight: '600'
+            }}>
+              {userRole}
+            </span>
           </div>
-
-          <button type="submit" className="btn-primary">Login</button>
-        </form>
-      </div>
-    );
-
-    // RegisterPage Component
-    const RegisterPage = ({ registerData, setRegisterData, handleRegister, goToLogin }) => (
-      <div className="form-container">
-        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-          <img src="Images/Logo.png" alt="EduConnect Logo" className="logo" />
+          
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', 
+            gap: '10px',
+            marginTop: '15px',
+            paddingTop: '15px',
+            borderTop: '1px solid #eee'
+          }}>
+            {userRole === 'Student' && (
+              <>
+                <div style={{ textAlign: 'center' }}>
+                  <p style={{ margin: '0', fontSize: '12px', color: '#666' }}>Assessments</p>
+                  <p style={{ margin: '5px 0 0 0', fontSize: '18px', fontWeight: '600', color: '#3498db' }}>
+                    {stats.totalAssessments}
+                  </p>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <p style={{ margin: '0', fontSize: '12px', color: '#666' }}>Your Submissions</p>
+                  <p style={{ margin: '5px 0 0 0', fontSize: '18px', fontWeight: '600', color: '#2ecc71' }}>
+                    {stats.yourSubmissions}
+                  </p>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <p style={{ margin: '0', fontSize: '12px', color: '#666' }}>Pending Grades</p>
+                  <p style={{ margin: '5px 0 0 0', fontSize: '18px', fontWeight: '600', color: '#f39c12' }}>
+                    {stats.pendingGrades}
+                  </p>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <p style={{ margin: '0', fontSize: '12px', color: '#666' }}>Released</p>
+                  <p style={{ margin: '5px 0 0 0', fontSize: '18px', fontWeight: '600', color: '#9b59b6' }}>
+                    {stats.releasedGrades}
+                  </p>
+                </div>
+              </>
+            )}
+            
+            {userRole === 'Instructor' && (
+              <>
+                <div style={{ textAlign: 'center' }}>
+                  <p style={{ margin: '0', fontSize: '12px', color: '#666' }}>Classes</p>
+                  <p style={{ margin: '5px 0 0 0', fontSize: '18px', fontWeight: '600', color: '#3498db' }}>
+                    {stats.totalClasses}
+                  </p>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <p style={{ margin: '0', fontSize: '12px', color: '#666' }}>To Grade</p>
+                  <p style={{ margin: '5px 0 0 0', fontSize: '18px', fontWeight: '600', color: '#e74c3c' }}>
+                    {stats.pendingGrading}
+                  </p>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <p style={{ margin: '0', fontSize: '12px', color: '#666' }}>Needs Revision</p>
+                  <p style={{ margin: '5px 0 0 0', fontSize: '18px', fontWeight: '600', color: '#f39c12' }}>
+                    {stats.needsRevision}
+                  </p>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <p style={{ margin: '0', fontSize: '12px', color: '#666' }}>Graded</p>
+                  <p style={{ margin: '5px 0 0 0', fontSize: '18px', fontWeight: '600', color: '#2ecc71' }}>
+                    {stats.graded}
+                  </p>
+                </div>
+              </>
+            )}
+            
+            {userRole === 'Exam Administrator' && (
+              <>
+                <div style={{ textAlign: 'center' }}>
+                  <p style={{ margin: '0', fontSize: '12px', color: '#666' }}>Assessments</p>
+                  <p style={{ margin: '5px 0 0 0', fontSize: '18px', fontWeight: '600', color: '#3498db' }}>
+                    {stats.totalAssessments}
+                  </p>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <p style={{ margin: '0', fontSize: '12px', color: '#666' }}>To Approve</p>
+                  <p style={{ margin: '5px 0 0 0', fontSize: '18px', fontWeight: '600', color: '#e74c3c' }}>
+                    {stats.pendingApproval}
+                  </p>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <p style={{ margin: '0', fontSize: '12px', color: '#666' }}>Approved</p>
+                  <p style={{ margin: '5px 0 0 0', fontSize: '18px', fontWeight: '600', color: '#2ecc71' }}>
+                    {stats.approved}
+                  </p>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <p style={{ margin: '0', fontSize: '12px', color: '#666' }}>Released</p>
+                  <p style={{ margin: '5px 0 0 0', fontSize: '18px', fontWeight: '600', color: '#9b59b6' }}>
+                    {stats.released}
+                  </p>
+                </div>
+              </>
+            )}
+          </div>
+          
+          <div style={{ marginTop: '15px', textAlign: 'center' }}>
+            <button className="btn-primary" style={{ width: '100%' }}>
+              <i className="fas fa-external-link-alt"></i> Open Module
+            </button>
+          </div>
         </div>
-        <h2
-          style={{
-            fontSize: '32px',
-            fontWeight: '300',
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            marginBottom: '25px',
-            textAlign: 'center',
-            letterSpacing: '0.5px'
-          }}
-        >Register for EduConnect</h2>
-        <form onSubmit={handleRegister}>
-          <input 
-            type="text" 
-            placeholder="Full Name" 
-            value={registerData.name} 
-            onChange={e => setRegisterData({ ...registerData, name: e.target.value })} 
-            required 
-          />
-          <input 
-            type="email" 
-            placeholder="Email Address" 
-            value={registerData.email} 
-            onChange={e => setRegisterData({ ...registerData, email: e.target.value })} 
-            required 
-          />
-          <input 
-            type="password" 
-            placeholder="Password" 
-            value={registerData.password} 
-            onChange={e => setRegisterData({ ...registerData, password: e.target.value })} 
-            required 
-          />
-          <select 
-            value={registerData.role} 
-            onChange={e => setRegisterData({ ...registerData, role: e.target.value })} 
-            required
-          >
-            <option value="">Select Role</option>
-            <option value="Student">Student</option>
-            <option value="Instructor">Instructor</option>
-            <option value="System Administrator">System Administrator</option>
-            <option value="Exam Administrator">Exam Administrator</option>
-          </select>
-          <button type="submit" className="btn-primary">Register</button>
-        </form>
-        <p>
-          Already have an account?{' '}
-          <button onClick={goToLogin} className="btn-secondary">Login</button>
-        </p>
-      </div>
-    );
+      );
+    };
 
-    // StudentDashboard Component
+    // ==================== MODULE PAGE COMPONENT ====================
+    const ModulePage = ({ 
+      currentUser, 
+      modules = [], 
+      assessments = [], 
+      submissions = [], 
+      questions = [], 
+      users = [],
+      teachingMaterials = [],
+      setAssessments = () => {},
+      setSubmissions = () => {},
+      setTeachingMaterials = () => {},
+      setQuestions = () => {},
+      handleLogout = () => {},
+      goToProfile = () => {},
+      goBack = () => {}
+    }) => {
+      const [currentModule, setCurrentModule] = useState(null);
+      const [activeTab, setActiveTab] = useState('overview');
+      const [newMaterial, setNewMaterial] = useState({ title: '', description: '', file: null });
+      const [newAssessment, setNewAssessment] = useState({ 
+        title: '', 
+        description: '', 
+        type: 'assignment', 
+        dueDate: '', 
+        maxMarks: 100,
+        criteria: '',
+        file: null 
+      });
+      const [selectedFile, setSelectedFile] = useState(null);
+      const [gradingData, setGradingData] = useState({});
+      const [approvalStatus, setApprovalStatus] = useState({});
+
+      useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const moduleCode = urlParams.get('module');
+        
+        if (moduleCode) {
+          const module = modules.find(m => m.code === moduleCode);
+          if (module) {
+            setCurrentModule(module);
+            
+            if (currentUser.role === 'Student') {
+              // Check enrollment via classes
+              const moduleClasses = modules.filter(m => m.code === moduleCode);
+              const isEnrolled = true; // Simplified check
+              if (!isEnrolled) {
+                alert('You are not enrolled in this module');
+                goBack();
+              }
+            } else if (currentUser.role === 'Instructor') {
+              const instructorId = module.instructor_id || module.instructorId;
+              if (instructorId !== currentUser.id) {
+                alert('You are not assigned to this module');
+                goBack();
+              }
+            } else if (currentUser.role === 'Exam Administrator') {
+              const examAdminId = module.exam_admin_id || module.examAdminId;
+              if (examAdminId !== currentUser.id) {
+                alert('You are not assigned to this module');
+                goBack();
+              }
+            }
+          } else {
+            alert('Module not found');
+            goBack();
+          }
+        }
+      }, [modules, currentUser, goBack]);
+
+      const moduleAssessments = assessments.filter(a => 
+        a.moduleCode === currentModule?.code || a.course === currentModule?.name
+      );
+      const moduleTeachingMaterials = teachingMaterials.filter(tm => 
+        tm.moduleCode === currentModule?.code
+      );
+      const moduleSubmissions = submissions.filter(s => 
+        moduleAssessments.some(a => a.id === s.assessmentId)
+      );
+      const moduleQuestions = questions.filter(q => 
+        moduleAssessments.some(a => a.id === q.assessmentId)
+      );
+
+      const addTeachingMaterial = async (e) => {
+        e.preventDefault();
+        
+        if (!newMaterial.title || !newMaterial.description) {
+          alert('Please fill in all required fields');
+          return;
+        }
+
+        const material = {
+          id: Date.now(),
+          moduleCode: currentModule.code,
+          title: newMaterial.title,
+          description: newMaterial.description,
+          type: newMaterial.file ? 'file' : 'text',
+          fileName: newMaterial.file ? newMaterial.file.name : null,
+          fileUrl: newMaterial.file ? URL.createObjectURL(newMaterial.file) : null,
+          uploadedBy: currentUser.id,
+          uploadedAt: new Date().toISOString(),
+          views: 0
+        };
+
+        try {
+          const createdMaterial = await SupabaseService.createTeachingMaterial(material);
+          const updatedMaterials = [...teachingMaterials, createdMaterial];
+          setTeachingMaterials(updatedMaterials);
+          localStorage.setItem('teachingMaterials', JSON.stringify(updatedMaterials));
+          alert('Teaching material added successfully');
+          setNewMaterial({ title: '', description: '', file: null });
+          setSelectedFile(null);
+          setActiveTab('materials');
+        } catch (error) {
+          const updatedMaterials = [...teachingMaterials, material];
+          setTeachingMaterials(updatedMaterials);
+          localStorage.setItem('teachingMaterials', JSON.stringify(updatedMaterials));
+          alert('Teaching material added');
+          setNewMaterial({ title: '', description: '', file: null });
+          setSelectedFile(null);
+          setActiveTab('materials');
+        }
+      };
+
+      const addAssessment = async (e) => {
+        e.preventDefault();
+        
+        if (!newAssessment.title || !newAssessment.dueDate) {
+          alert('Please fill in all required fields');
+          return;
+        }
+
+        const assessment = {
+          id: Date.now(),
+          moduleCode: currentModule.code,
+          title: newAssessment.title,
+          description: newAssessment.description,
+          type: newAssessment.type,
+          dueDate: newAssessment.dueDate,
+          maxMarks: parseInt(newAssessment.maxMarks),
+          criteria: newAssessment.criteria,
+          instructorId: currentUser.id,
+          fileName: newAssessment.file ? newAssessment.file.name : null,
+          fileUrl: newAssessment.file ? URL.createObjectURL(newAssessment.file) : null,
+          createdAt: new Date().toISOString(),
+          status: 'draft',
+          approvedByExamAdmin: false
+        };
+
+        try {
+          const createdAssessment = await SupabaseService.createAssessment(assessment);
+          const updatedAssessments = [...assessments, createdAssessment];
+          setAssessments(updatedAssessments);
+          localStorage.setItem('assessments', JSON.stringify(updatedAssessments));
+          alert('Assessment created successfully');
+          setNewAssessment({ 
+            title: '', 
+            description: '', 
+            type: 'assignment', 
+            dueDate: '', 
+            maxMarks: 100,
+            criteria: '',
+            file: null 
+          });
+          setActiveTab('assessments');
+        } catch (error) {
+          const updatedAssessments = [...assessments, assessment];
+          setAssessments(updatedAssessments);
+          localStorage.setItem('assessments', JSON.stringify(updatedAssessments));
+          alert('Assessment created');
+          setNewAssessment({ 
+            title: '', 
+            description: '', 
+            type: 'assignment', 
+            dueDate: '', 
+            maxMarks: 100,
+            criteria: '',
+            file: null 
+          });
+          setActiveTab('assessments');
+        }
+      };
+
+      const submitAssessment = async (assessmentId) => {
+        if (!selectedFile) {
+          alert('Please select a file to submit');
+          return;
+        }
+
+        const submission = {
+          id: Date.now(),
+          assessmentId,
+          studentId: currentUser.id,
+          fileName: selectedFile.name,
+          fileUrl: URL.createObjectURL(selectedFile),
+          submittedAt: new Date().toISOString(),
+          status: 'submitted',
+          grade: null,
+          feedback: '',
+          markedBy: null,
+          markedAt: null,
+          approvedByExamAdmin: false,
+          releasedToStudent: false
+        };
+
+        try {
+          const createdSubmission = await SupabaseService.createSubmission(submission);
+          const updatedSubmissions = [...submissions, createdSubmission];
+          setSubmissions(updatedSubmissions);
+          localStorage.setItem('submissions', JSON.stringify(updatedSubmissions));
+          alert('Assessment submitted successfully');
+          setSelectedFile(null);
+        } catch (error) {
+          const updatedSubmissions = [...submissions, submission];
+          setSubmissions(updatedSubmissions);
+          localStorage.setItem('submissions', JSON.stringify(updatedSubmissions));
+          alert('Assessment submitted');
+          setSelectedFile(null);
+        }
+      };
+
+      const gradeSubmission = async (submissionId, grade, feedback) => {
+        try {
+          const submission = submissions.find(s => s.id === submissionId);
+          const updatedSubmission = {
+            ...submission,
+            grade: parseFloat(grade),
+            feedback,
+            markedBy: currentUser.id,
+            markedAt: new Date().toISOString(),
+            status: 'graded',
+            approvedByExamAdmin: false
+          };
+
+          const supabaseUpdated = await SupabaseService.updateSubmission(submissionId, updatedSubmission);
+          const updatedSubmissions = submissions.map(s => 
+            s.id === submissionId ? supabaseUpdated : s
+          );
+          setSubmissions(updatedSubmissions);
+          localStorage.setItem('submissions', JSON.stringify(updatedSubmissions));
+          alert('Submission graded successfully');
+        } catch (error) {
+          const updatedSubmissions = submissions.map(s => 
+            s.id === submissionId ? { 
+              ...s, 
+              grade: parseFloat(grade), 
+              feedback,
+              markedBy: currentUser.id,
+              markedAt: new Date().toISOString(),
+              status: 'graded',
+              approvedByExamAdmin: false
+            } : s
+          );
+          setSubmissions(updatedSubmissions);
+          localStorage.setItem('submissions', JSON.stringify(updatedSubmissions));
+          alert('Submission graded');
+        }
+      };
+
+      const handleGradeApproval = async (submissionId, approved) => {
+        try {
+          const submission = submissions.find(s => s.id === submissionId);
+          const updatedSubmission = {
+            ...submission,
+            approvedByExamAdmin: approved,
+            releasedToStudent: approved,
+            status: approved ? 'released' : 'needs_revision'
+          };
+
+          const supabaseUpdated = await SupabaseService.updateSubmission(submissionId, updatedSubmission);
+          const updatedSubmissions = submissions.map(s => 
+            s.id === submissionId ? supabaseUpdated : s
+          );
+          setSubmissions(updatedSubmissions);
+          localStorage.setItem('submissions', JSON.stringify(updatedSubmissions));
+          
+          setApprovalStatus(prev => ({
+            ...prev,
+            [submissionId]: approved ? 'approved' : 'rejected'
+          }));
+          
+          alert(`Grade ${approved ? 'approved and released' : 'rejected'}`);
+        } catch (error) {
+          const updatedSubmissions = submissions.map(s => 
+            s.id === submissionId ? { 
+              ...s, 
+              approvedByExamAdmin: approved,
+              releasedToStudent: approved,
+              status: approved ? 'released' : 'needs_revision'
+            } : s
+          );
+          setSubmissions(updatedSubmissions);
+          localStorage.setItem('submissions', JSON.stringify(updatedSubmissions));
+          
+          setApprovalStatus(prev => ({
+            ...prev,
+            [submissionId]: approved ? 'approved' : 'rejected'
+          }));
+          
+          alert(`Grade ${approved ? 'approved' : 'rejected'}`);
+        }
+      };
+
+      const deleteTeachingMaterial = async (materialId) => {
+        if (window.confirm('Are you sure you want to delete this teaching material?')) {
+          try {
+            await SupabaseService.deleteTeachingMaterial(materialId);
+            const updatedMaterials = teachingMaterials.filter(tm => tm.id !== materialId);
+            setTeachingMaterials(updatedMaterials);
+            localStorage.setItem('teachingMaterials', JSON.stringify(updatedMaterials));
+            alert('Teaching material deleted');
+          } catch (error) {
+            const updatedMaterials = teachingMaterials.filter(tm => tm.id !== materialId);
+            setTeachingMaterials(updatedMaterials);
+            localStorage.setItem('teachingMaterials', JSON.stringify(updatedMaterials));
+            alert('Teaching material deleted');
+          }
+        }
+      };
+
+      const deleteAssessment = async (assessmentId) => {
+        if (window.confirm('Are you sure you want to delete this assessment? All submissions will also be deleted.')) {
+          try {
+            await SupabaseService.deleteAssessment(assessmentId);
+            const updatedAssessments = assessments.filter(a => a.id !== assessmentId);
+            setAssessments(updatedAssessments);
+            localStorage.setItem('assessments', JSON.stringify(updatedAssessments));
+            
+            const updatedSubmissions = submissions.filter(s => s.assessmentId !== assessmentId);
+            setSubmissions(updatedSubmissions);
+            localStorage.setItem('submissions', JSON.stringify(updatedSubmissions));
+            
+            alert('Assessment and related submissions deleted');
+          } catch (error) {
+            const updatedAssessments = assessments.filter(a => a.id !== assessmentId);
+            setAssessments(updatedAssessments);
+            localStorage.setItem('assessments', JSON.stringify(updatedAssessments));
+            
+            const updatedSubmissions = submissions.filter(s => s.assessmentId !== assessmentId);
+            setSubmissions(updatedSubmissions);
+            localStorage.setItem('submissions', JSON.stringify(updatedSubmissions));
+            
+            alert('Assessment deleted');
+          }
+        }
+      };
+
+      if (!currentModule) {
+        return (
+          <div className="loading-screen">
+            <div className="loading-spinner"></div>
+            <p>Loading module...</p>
+          </div>
+        );
+      }
+
+      return (
+        <div className="main-container">
+          <header>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+              <button onClick={goBack} className="btn-secondary" style={{ padding: '8px 16px' }}>
+                <i className="fas fa-arrow-left"></i> Back
+              </button>
+              <div>
+                <h1>{currentModule.name}</h1>
+                <p style={{ margin: '5px 0 0 0', color: '#666', fontSize: '16px' }}>
+                  Code: {currentModule.code} • {currentUser.role}
+                </p>
+              </div>
+            </div>
+            <div>
+              <button onClick={goToProfile} className="btn-secondary">Profile</button>
+              <button onClick={handleLogout} className="btn-danger">Logout</button>
+            </div>
+          </header>
+
+          <main>
+            <section className="welcome-banner">
+              <h2 className="welcome-title">{currentModule.name}</h2>
+              <p className="welcome-subtitle">{currentModule.description}</p>
+              <div style={{ 
+                display: 'flex', 
+                gap: '20px', 
+                marginTop: '20px',
+                flexWrap: 'wrap' 
+              }}>
+                <div style={{ 
+                  backgroundColor: 'rgba(255,255,255,0.2)', 
+                  padding: '10px 20px', 
+                  borderRadius: '8px' 
+                }}>
+                  <strong>Assessments:</strong> {moduleAssessments.length}
+                </div>
+                <div style={{ 
+                  backgroundColor: 'rgba(255,255,255,0.2)', 
+                  padding: '10px 20px', 
+                  borderRadius: '8px' 
+                }}>
+                  <strong>Materials:</strong> {moduleTeachingMaterials.length}
+                </div>
+                <div style={{ 
+                  backgroundColor: 'rgba(255,255,255,0.2)', 
+                  padding: '10px 20px', 
+                  borderRadius: '8px' 
+                }}>
+                  <strong>Submissions:</strong> {moduleSubmissions.length}
+                </div>
+              </div>
+            </section>
+
+            <div style={{ 
+              display: 'flex', 
+              borderBottom: '1px solid #ddd',
+              marginBottom: '30px',
+              overflowX: 'auto'
+            }}>
+              <button
+                className={`tab-btn ${activeTab === 'overview' ? 'active' : ''}`}
+                onClick={() => setActiveTab('overview')}
+              >
+                <i className="fas fa-home"></i> Overview
+              </button>
+              <button
+                className={`tab-btn ${activeTab === 'materials' ? 'active' : ''}`}
+                onClick={() => setActiveTab('materials')}
+              >
+                <i className="fas fa-book"></i> Teaching Materials
+              </button>
+              <button
+                className={`tab-btn ${activeTab === 'assessments' ? 'active' : ''}`}
+                onClick={() => setActiveTab('assessments')}
+              >
+                <i className="fas fa-tasks"></i> Assessments
+              </button>
+              {(currentUser.role === 'Instructor' || currentUser.role === 'Exam Administrator') && (
+                <button
+                  className={`tab-btn ${activeTab === 'grading' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('grading')}
+                >
+                  <i className="fas fa-graduation-cap"></i> Grading
+                </button>
+              )}
+              {currentUser.role === 'Student' && (
+                <button
+                  className={`tab-btn ${activeTab === 'my-work' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('my-work')}
+                >
+                  <i className="fas fa-user-check"></i> My Work
+                </button>
+              )}
+            </div>
+
+            <div className="tab-content">
+              {activeTab === 'overview' && (
+                <section>
+                  <h3>Module Overview</h3>
+                  <div className="quick-actions">
+                    <div className="item-card">
+                      <h4><i className="fas fa-info-circle" style={{ color: '#667eea' }}></i> Module Information</h4>
+                      <p><strong>Code:</strong> {currentModule.code}</p>
+                      <p><strong>Name:</strong> {currentModule.name}</p>
+                      <p><strong>Description:</strong> {currentModule.description}</p>
+                      {currentModule.invitation_code && (
+                        <p><strong>Invitation Code:</strong> {currentModule.invitation_code}</p>
+                      )}
+                    </div>
+                    
+                    <div className="item-card">
+                      <h4><i className="fas fa-chart-line" style={{ color: '#2ecc71' }}></i> Quick Stats</h4>
+                      <p><strong>Total Assessments:</strong> {moduleAssessments.length}</p>
+                      <p><strong>Teaching Materials:</strong> {moduleTeachingMaterials.length}</p>
+                      <p><strong>Total Submissions:</strong> {moduleSubmissions.length}</p>
+                      <p><strong>Released Grades:</strong> {moduleSubmissions.filter(s => s.releasedToStudent).length}</p>
+                    </div>
+
+                    {(currentUser.role === 'Instructor' || currentUser.role === 'Exam Administrator') && (
+                      <div className="item-card">
+                        <h4><i className="fas fa-bell" style={{ color: '#e74c3c' }}></i> Action Required</h4>
+                        {currentUser.role === 'Instructor' && (
+                          <>
+                            <p><strong>Submissions to grade:</strong> {moduleSubmissions.filter(s => s.status === 'submitted').length}</p>
+                            <p><strong>Grades needing revision:</strong> {moduleSubmissions.filter(s => s.status === 'needs_revision').length}</p>
+                          </>
+                        )}
+                        {currentUser.role === 'Exam Administrator' && (
+                          <>
+                            <p><strong>Grades to approve:</strong> {moduleSubmissions.filter(s => s.status === 'graded' && !s.approvedByExamAdmin).length}</p>
+                            <p><strong>Approved grades:</strong> {moduleSubmissions.filter(s => s.approvedByExamAdmin).length}</p>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </section>
+              )}
+
+              {activeTab === 'materials' && (
+                <section>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                    <h3>Teaching Materials</h3>
+                    {currentUser.role === 'Instructor' && (
+                      <button 
+                        className="btn-primary"
+                        onClick={() => setActiveTab('add-material')}
+                      >
+                        <i className="fas fa-plus"></i> Add Material
+                      </button>
+                    )}
+                  </div>
+                  
+                  {moduleTeachingMaterials.length === 0 ? (
+                    <div className="empty-state">
+                      <i className="fas fa-book-open" style={{ fontSize: '48px', color: '#ccc', marginBottom: '20px' }}></i>
+                      <h4>No teaching materials yet</h4>
+                      <p>Check back later or contact your instructor.</p>
+                    </div>
+                  ) : (
+                    <div className="quick-actions">
+                      {moduleTeachingMaterials.map(material => (
+                        <div key={material.id} className="item-card">
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <div style={{ flex: 1 }}>
+                              <h4>{material.title}</h4>
+                              <p>{material.description}</p>
+                              <p style={{ fontSize: '14px', color: '#666', marginTop: '10px' }}>
+                                <i className="far fa-calendar"></i> Uploaded: {new Date(material.uploadedAt).toLocaleDateString()}
+                              </p>
+                            </div>
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                              {material.fileUrl && (
+                                <a href={material.fileUrl} download className="btn-secondary" style={{ padding: '8px 12px' }}>
+                                  <i className="fas fa-download"></i>
+                                </a>
+                              )}
+                              {currentUser.role === 'Instructor' && (
+                                <button 
+                                  onClick={() => deleteTeachingMaterial(material.id)}
+                                  className="btn-danger"
+                                  style={{ padding: '8px 12px' }}
+                                >
+                                  <i className="fas fa-trash"></i>
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </section>
+              )}
+
+              {activeTab === 'add-material' && currentUser.role === 'Instructor' && (
+                <section>
+                  <h3>Add Teaching Material</h3>
+                  <form onSubmit={addTeachingMaterial} className="form-container">
+                    <input
+                      type="text"
+                      placeholder="Title *"
+                      value={newMaterial.title}
+                      onChange={e => setNewMaterial({ ...newMaterial, title: e.target.value })}
+                      required
+                    />
+                    <textarea
+                      placeholder="Description *"
+                      value={newMaterial.description}
+                      onChange={e => setNewMaterial({ ...newMaterial, description: e.target.value })}
+                      rows="4"
+                      required
+                    />
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '10px', fontWeight: '500' }}>
+                        Upload File (Optional)
+                      </label>
+                      <input
+                        type="file"
+                        onChange={(e) => setNewMaterial({ ...newMaterial, file: e.target.files[0] })}
+                        style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px' }}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+                      <button type="submit" className="btn-primary" style={{ flex: 1 }}>
+                        <i className="fas fa-upload"></i> Upload Material
+                      </button>
+                      <button type="button" onClick={() => setActiveTab('materials')} className="btn-secondary" style={{ flex: 1 }}>
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                </section>
+              )}
+
+              {activeTab === 'assessments' && (
+                <section>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                    <h3>Assessments</h3>
+                    {currentUser.role === 'Instructor' && (
+                      <button 
+                        className="btn-primary"
+                        onClick={() => setActiveTab('add-assessment')}
+                      >
+                        <i className="fas fa-plus"></i> Create Assessment
+                      </button>
+                    )}
+                  </div>
+                  
+                  {moduleAssessments.length === 0 ? (
+                    <div className="empty-state">
+                      <i className="fas fa-tasks" style={{ fontSize: '48px', color: '#ccc', marginBottom: '20px' }}></i>
+                      <h4>No assessments yet</h4>
+                      <p>Check back later or contact your instructor.</p>
+                    </div>
+                  ) : (
+                    <div className="quick-actions">
+                      {moduleAssessments.map(assessment => {
+                        const studentSubmission = moduleSubmissions.find(s => 
+                          s.assessmentId === assessment.id && s.studentId === currentUser.id
+                        );
+                        
+                        return (
+                          <div key={assessment.id} className="item-card">
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                                  <h4 style={{ margin: 0 }}>{assessment.title}</h4>
+                                  <span className={`type-badge type-${assessment.type}`}>
+                                    {assessment.type.toUpperCase()}
+                                  </span>
+                                </div>
+                                <p>{assessment.description}</p>
+                                <div style={{ 
+                                  display: 'flex', 
+                                  gap: '20px', 
+                                  marginTop: '15px',
+                                  fontSize: '14px',
+                                  color: '#666'
+                                }}>
+                                  <div>
+                                    <i className="far fa-calendar"></i> Due: {new Date(assessment.dueDate).toLocaleDateString()}
+                                  </div>
+                                  <div>
+                                    <i className="fas fa-star"></i> Max Marks: {assessment.maxMarks}
+                                  </div>
+                                  {studentSubmission && (
+                                    <div>
+                                      <span className={`status-badge status-${studentSubmission.status}`}>
+                                        {studentSubmission.status}
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                                
+                                {currentUser.role === 'Student' && (
+                                  <div style={{ marginTop: '20px' }}>
+                                    {!studentSubmission ? (
+                                      <>
+                                        <div style={{ marginBottom: '10px' }}>
+                                          <input
+                                            type="file"
+                                            id={`file-${assessment.id}`}
+                                            onChange={(e) => setSelectedFile(e.target.files[0])}
+                                            style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+                                          />
+                                        </div>
+                                        <button 
+                                          onClick={() => submitAssessment(assessment.id)}
+                                          className="btn-primary"
+                                          style={{ width: '100%' }}
+                                          disabled={!selectedFile}
+                                        >
+                                          Submit Assessment
+                                        </button>
+                                      </>
+                                    ) : (
+                                      <div style={{ 
+                                        padding: '15px', 
+                                        backgroundColor: '#f8f9fa',
+                                        borderRadius: '8px',
+                                        border: '1px solid #e9ecef'
+                                      }}>
+                                        <h5>Your Submission</h5>
+                                        <p><strong>Submitted:</strong> {new Date(studentSubmission.submittedAt).toLocaleDateString()}</p>
+                                        <p><strong>Status:</strong> 
+                                          <span className={`status-badge status-${studentSubmission.status}`} style={{ marginLeft: '10px' }}>
+                                            {studentSubmission.status}
+                                          </span>
+                                        </p>
+                                        {studentSubmission.grade !== null && (
+                                          <p><strong>Grade:</strong> {studentSubmission.grade}/{assessment.maxMarks}</p>
+                                        )}
+                                        {studentSubmission.feedback && (
+                                          <p><strong>Feedback:</strong> {studentSubmission.feedback}</p>
+                                        )}
+                                        <a 
+                                          href={studentSubmission.fileUrl} 
+                                          download 
+                                          className="btn-secondary"
+                                          style={{ marginTop: '10px' }}
+                                        >
+                                          <i className="fas fa-download"></i> Download Submission
+                                        </a>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                              
+                              {currentUser.role === 'Instructor' && (
+                                <div style={{ display: 'flex', gap: '10px' }}>
+                                  <button 
+                                    onClick={() => {
+                                      setActiveTab('grading');
+                                    }}
+                                    className="btn-secondary"
+                                    style={{ padding: '8px 12px' }}
+                                  >
+                                    <i className="fas fa-graduation-cap"></i> Grade
+                                  </button>
+                                  <button 
+                                    onClick={() => deleteAssessment(assessment.id)}
+                                    className="btn-danger"
+                                    style={{ padding: '8px 12px' }}
+                                  >
+                                    <i className="fas fa-trash"></i>
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </section>
+              )}
+
+              {activeTab === 'add-assessment' && currentUser.role === 'Instructor' && (
+                <section>
+                  <h3>Create Assessment</h3>
+                  <form onSubmit={addAssessment} className="form-container">
+                    <input
+                      type="text"
+                      placeholder="Assessment Title *"
+                      value={newAssessment.title}
+                      onChange={e => setNewAssessment({ ...newAssessment, title: e.target.value })}
+                      required
+                    />
+                    <textarea
+                      placeholder="Description *"
+                      value={newAssessment.description}
+                      onChange={e => setNewAssessment({ ...newAssessment, description: e.target.value })}
+                      rows="4"
+                      required
+                    />
+                    <select
+                      value={newAssessment.type}
+                      onChange={e => setNewAssessment({ ...newAssessment, type: e.target.value })}
+                      required
+                    >
+                      <option value="assignment">Assignment</option>
+                      <option value="quiz">Quiz</option>
+                      <option value="exam">Exam</option>
+                      <option value="project">Project</option>
+                    </select>
+                    <input
+                      type="datetime-local"
+                      placeholder="Due Date *"
+                      value={newAssessment.dueDate}
+                      onChange={e => setNewAssessment({ ...newAssessment, dueDate: e.target.value })}
+                      required
+                    />
+                    <input
+                      type="number"
+                      placeholder="Maximum Marks *"
+                      value={newAssessment.maxMarks}
+                      onChange={e => setNewAssessment({ ...newAssessment, maxMarks: e.target.value })}
+                      min="0"
+                      max="1000"
+                      required
+                    />
+                    <textarea
+                      placeholder="Grading Criteria"
+                      value={newAssessment.criteria}
+                      onChange={e => setNewAssessment({ ...newAssessment, criteria: e.target.value })}
+                      rows="3"
+                    />
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '10px', fontWeight: '500' }}>
+                        Assessment File (Optional)
+                      </label>
+                      <input
+                        type="file"
+                        onChange={(e) => setNewAssessment({ ...newAssessment, file: e.target.files[0] })}
+                        style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px' }}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+                      <button type="submit" className="btn-primary" style={{ flex: 1 }}>
+                        <i className="fas fa-plus-circle"></i> Create Assessment
+                      </button>
+                      <button type="button" onClick={() => setActiveTab('assessments')} className="btn-secondary" style={{ flex: 1 }}>
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                </section>
+              )}
+
+              {(activeTab === 'grading' && (currentUser.role === 'Instructor' || currentUser.role === 'Exam Administrator')) && (
+                <section>
+                  <h3>Grading & Approval</h3>
+                  
+                  {currentUser.role === 'Instructor' && (
+                    <>
+                      <div className="quick-actions">
+                        {moduleSubmissions.filter(s => s.status === 'submitted' || s.status === 'needs_revision').map(submission => {
+                          const assessment = moduleAssessments.find(a => a.id === submission.assessmentId);
+                          const student = users.find(u => u.id === submission.studentId);
+                          
+                          return (
+                            <div key={submission.id} className="item-card">
+                              <h4>{assessment?.title || 'Unknown Assessment'}</h4>
+                              <p><strong>Student:</strong> {student?.name || 'Unknown'}</p>
+                              <p><strong>Submitted:</strong> {new Date(submission.submittedAt).toLocaleDateString()}</p>
+                              <p><strong>Current Status:</strong> 
+                                <span className={`status-badge status-${submission.status}`} style={{ marginLeft: '10px' }}>
+                                  {submission.status}
+                                </span>
+                              </p>
+                              
+                              <div style={{ marginTop: '15px' }}>
+                                <div style={{ marginBottom: '10px' }}>
+                                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>Grade (/{assessment?.maxMarks || 100})</label>
+                                  <input
+                                    type="number"
+                                    placeholder="Enter grade"
+                                    min="0"
+                                    max={assessment?.maxMarks || 100}
+                                    value={gradingData[submission.id]?.grade || submission.grade || ''}
+                                    onChange={e => setGradingData(prev => ({
+                                      ...prev,
+                                      [submission.id]: { ...prev[submission.id], grade: e.target.value }
+                                    }))}
+                                    style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+                                  />
+                                </div>
+                                
+                                <div style={{ marginBottom: '10px' }}>
+                                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>Feedback</label>
+                                  <textarea
+                                    placeholder="Provide feedback..."
+                                    value={gradingData[submission.id]?.feedback || submission.feedback || ''}
+                                    onChange={e => setGradingData(prev => ({
+                                      ...prev,
+                                      [submission.id]: { ...prev[submission.id], feedback: e.target.value }
+                                    }))}
+                                    rows="3"
+                                    style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+                                  />
+                                </div>
+                                
+                                <div style={{ display: 'flex', gap: '10px' }}>
+                                  <button
+                                    onClick={() => gradeSubmission(
+                                      submission.id,
+                                      gradingData[submission.id]?.grade || submission.grade,
+                                      gradingData[submission.id]?.feedback || submission.feedback
+                                    )}
+                                    className="btn-primary"
+                                    style={{ flex: 1 }}
+                                  >
+                                    <i className="fas fa-check"></i> Submit Grade
+                                  </button>
+                                  <a href={submission.fileUrl} download className="btn-secondary" style={{ padding: '8px 16px' }}>
+                                    <i className="fas fa-download"></i>
+                                  </a>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      
+                      <div style={{ marginTop: '30px' }}>
+                        <h4>Graded Submissions</h4>
+                        <div className="quick-actions">
+                          {moduleSubmissions.filter(s => s.status === 'graded').map(submission => {
+                            const assessment = moduleAssessments.find(a => a.id === submission.assessmentId);
+                            const student = users.find(u => u.id === submission.studentId);
+                            
+                            return (
+                              <div key={submission.id} className="item-card">
+                                <h4>{assessment?.title || 'Unknown Assessment'}</h4>
+                                <p><strong>Student:</strong> {student?.name || 'Unknown'}</p>
+                                <p><strong>Grade:</strong> {submission.grade}/{assessment?.maxMarks || 100}</p>
+                                <p><strong>Status:</strong> 
+                                  {submission.approvedByExamAdmin ? 
+                                    <span className="status-badge status-released" style={{ marginLeft: '10px' }}>Approved by Exam Admin</span> : 
+                                    <span className="status-badge status-graded" style={{ marginLeft: '10px' }}>Pending Exam Admin Approval</span>
+                                  }
+                                </p>
+                                <p><strong>Feedback:</strong> {submission.feedback || 'No feedback provided'}</p>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {currentUser.role === 'Exam Administrator' && (
+                    <>
+                      <div className="quick-actions">
+                        {moduleSubmissions.filter(s => s.status === 'graded' && !s.approvedByExamAdmin).map(submission => {
+                          const assessment = moduleAssessments.find(a => a.id === submission.assessmentId);
+                          const student = users.find(u => u.id === submission.studentId);
+                          const instructor = users.find(u => u.id === submission.markedBy);
+                          
+                          return (
+                            <div key={submission.id} className="item-card">
+                              <h4>{assessment?.title || 'Unknown Assessment'}</h4>
+                              <div style={{ 
+                                display: 'grid', 
+                                gridTemplateColumns: '1fr 1fr', 
+                                gap: '10px',
+                                marginBottom: '15px'
+                              }}>
+                                <div>
+                                  <p><strong>Student:</strong> {student?.name || 'Unknown'}</p>
+                                  <p><strong>Instructor:</strong> {instructor?.name || 'Unknown'}</p>
+                                </div>
+                                <div>
+                                  <p><strong>Grade:</strong> {submission.grade}/{assessment?.maxMarks || 100}</p>
+                                  <p><strong>Marked:</strong> {new Date(submission.markedAt).toLocaleDateString()}</p>
+                                </div>
+                              </div>
+                              
+                              <div style={{ 
+                                padding: '15px', 
+                                backgroundColor: '#f8f9fa',
+                                borderRadius: '8px',
+                                marginBottom: '15px'
+                              }}>
+                                <h5 style={{ marginTop: '0' }}>Instructor Feedback</h5>
+                                <p>{submission.feedback || 'No feedback provided'}</p>
+                              </div>
+                              
+                              <div style={{ display: 'flex', gap: '10px' }}>
+                                <button
+                                  onClick={() => handleGradeApproval(submission.id, true)}
+                                  className="btn-success"
+                                  style={{ flex: 1 }}
+                                >
+                                  <i className="fas fa-check-circle"></i> Approve & Release
+                                </button>
+                                <button
+                                  onClick={() => handleGradeApproval(submission.id, false)}
+                                  className="btn-danger"
+                                  style={{ flex: 1 }}
+                                >
+                                  <i className="fas fa-times-circle"></i> Reject & Return
+                                </button>
+                                <a href={submission.fileUrl} download className="btn-secondary" style={{ padding: '8px 16px' }}>
+                                  <i className="fas fa-download"></i>
+                                </a>
+                              </div>
+                              
+                              {approvalStatus[submission.id] && (
+                                <div style={{
+                                  marginTop: '10px',
+                                  padding: '10px',
+                                  backgroundColor: approvalStatus[submission.id] === 'approved' ? '#d4edda' : '#f8d7da',
+                                  color: approvalStatus[submission.id] === 'approved' ? '#155724' : '#721c24',
+                                  borderRadius: '4px',
+                                  textAlign: 'center'
+                                }}>
+                                  <i className={`fas fa-${approvalStatus[submission.id] === 'approved' ? 'check' : 'times'}`}></i>
+                                  {' '}
+                                  Grade {approvalStatus[submission.id]} successfully
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      
+                      <div style={{ marginTop: '30px' }}>
+                        <h4>Approved Grades</h4>
+                        <div className="quick-actions">
+                          {moduleSubmissions.filter(s => s.approvedByExamAdmin).map(submission => {
+                            const assessment = moduleAssessments.find(a => a.id === submission.assessmentId);
+                            const student = users.find(u => u.id === submission.studentId);
+                            
+                            return (
+                              <div key={submission.id} className="item-card">
+                                <div style={{ 
+                                  display: 'flex', 
+                                  justifyContent: 'space-between', 
+                                  alignItems: 'center' 
+                                }}>
+                                  <div>
+                                    <h4 style={{ margin: '0 0 5px 0' }}>{assessment?.title || 'Unknown Assessment'}</h4>
+                                    <p style={{ margin: '0', color: '#666' }}>{student?.name || 'Unknown'}</p>
+                                  </div>
+                                  <span className="status-badge status-released">
+                                    RELEASED
+                                  </span>
+                                </div>
+                                <div style={{ 
+                                  display: 'grid', 
+                                  gridTemplateColumns: '1fr 1fr', 
+                                  gap: '10px',
+                                  marginTop: '10px'
+                                }}>
+                                  <div>
+                                    <p><strong>Grade:</strong> {submission.grade}/{assessment?.maxMarks || 100}</p>
+                                    <p><strong>Approved:</strong> {new Date(submission.markedAt).toLocaleDateString()}</p>
+                                  </div>
+                                  <div>
+                                    <p><strong>Status:</strong> Released to Student</p>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </section>
+              )}
+
+              {activeTab === 'my-work' && currentUser.role === 'Student' && (
+                <section>
+                  <h3>My Work & Grades</h3>
+                  
+                  <div className="quick-actions">
+                    {moduleSubmissions.filter(s => s.studentId === currentUser.id).map(submission => {
+                      const assessment = moduleAssessments.find(a => a.id === submission.assessmentId);
+                      
+                      return (
+                        <div key={submission.id} className="item-card">
+                          <div style={{ 
+                            display: 'flex', 
+                            justifyContent: 'space-between', 
+                            alignItems: 'flex-start',
+                            marginBottom: '15px'
+                          }}>
+                            <div>
+                              <h4 style={{ margin: '0 0 5px 0' }}>{assessment?.title || 'Unknown Assessment'}</h4>
+                              <p style={{ margin: '0', color: '#666' }}>
+                                Submitted: {new Date(submission.submittedAt).toLocaleDateString()}
+                              </p>
+                            </div>
+                            <span className={`status-badge status-${submission.status}`}>
+                              {submission.status.toUpperCase()}
+                            </span>
+                          </div>
+                          
+                          <div style={{ 
+                            padding: '15px', 
+                            backgroundColor: '#f8f9fa',
+                            borderRadius: '8px',
+                            border: '1px solid #e9ecef'
+                          }}>
+                            {submission.releasedToStudent ? (
+                              <>
+                                <div style={{ 
+                                  display: 'grid', 
+                                  gridTemplateColumns: '1fr 1fr', 
+                                  gap: '15px',
+                                  marginBottom: '15px'
+                                }}>
+                                  <div>
+                                    <p style={{ margin: '0 0 5px 0', color: '#666' }}>Your Grade</p>
+                                    <h3 style={{ margin: '0', color: '#2ecc71' }}>
+                                      {submission.grade}/{assessment?.maxMarks || 100}
+                                    </h3>
+                                  </div>
+                                  <div>
+                                    <p style={{ margin: '0 0 5px 0', color: '#666' }}>Percentage</p>
+                                    <h3 style={{ margin: '0', color: '#3498db' }}>
+                                      {((submission.grade / (assessment?.maxMarks || 100)) * 100).toFixed(1)}%
+                                    </h3>
+                                  </div>
+                                </div>
+                                
+                                {submission.feedback && (
+                                  <div>
+                                    <h5 style={{ margin: '0 0 10px 0', color: '#333' }}>Instructor Feedback</h5>
+                                    <p style={{ margin: '0', color: '#666' }}>{submission.feedback}</p>
+                                  </div>
+                                )}
+                              </>
+                            ) : submission.status === 'graded' ? (
+                              <div style={{ textAlign: 'center', padding: '20px' }}>
+                                <i className="fas fa-clock" style={{ fontSize: '48px', color: '#f39c12', marginBottom: '15px' }}></i>
+                                <h4>Grade Pending Approval</h4>
+                                <p>Your grade has been marked but is awaiting exam administrator approval.</p>
+                              </div>
+                            ) : (
+                              <div style={{ textAlign: 'center', padding: '20px' }}>
+                                <i className="fas fa-hourglass-half" style={{ fontSize: '48px', color: '#3498db', marginBottom: '15px' }}></i>
+                                <h4>Submission Received</h4>
+                                <p>Your submission has been received and is awaiting grading.</p>
+                              </div>
+                            )}
+                          </div>
+                          
+                          <div style={{ marginTop: '15px', display: 'flex', gap: '10px' }}>
+                            <a href={submission.fileUrl} download className="btn-secondary" style={{ flex: 1 }}>
+                              <i className="fas fa-download"></i> Download Submission
+                            </a>
+                            {assessment?.fileUrl && (
+                              <a href={assessment.fileUrl} download className="btn-primary" style={{ flex: 1 }}>
+                                <i className="fas fa-file-download"></i> Download Assessment
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  
+                  {moduleSubmissions.filter(s => s.studentId === currentUser.id && s.releasedToStudent).length > 0 && (
+                    <div style={{ marginTop: '30px' }}>
+                      <h4>Overall Performance</h4>
+                      <div className="item-card">
+                        <div style={{ 
+                          display: 'grid', 
+                          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+                          gap: '20px'
+                        }}>
+                          <div style={{ textAlign: 'center' }}>
+                            <p style={{ margin: '0 0 5px 0', color: '#666' }}>Total Submissions</p>
+                            <h3 style={{ margin: '0', color: '#3498db' }}>
+                              {moduleSubmissions.filter(s => s.studentId === currentUser.id).length}
+                            </h3>
+                          </div>
+                          <div style={{ textAlign: 'center' }}>
+                            <p style={{ margin: '0 0 5px 0', color: '#666' }}>Released Grades</p>
+                            <h3 style={{ margin: '0', color: '#2ecc71' }}>
+                              {moduleSubmissions.filter(s => s.studentId === currentUser.id && s.releasedToStudent).length}
+                            </h3>
+                          </div>
+                          <div style={{ textAlign: 'center' }}>
+                            <p style={{ margin: '0 0 5px 0', color: '#666' }}>Average Grade</p>
+                            <h3 style={{ margin: '0', color: '#9b59b6' }}>
+                              {(() => {
+                                const releasedGrades = moduleSubmissions.filter(s => 
+                                  s.studentId === currentUser.id && s.releasedToStudent && s.grade !== null
+                                );
+                                if (releasedGrades.length === 0) return 'N/A';
+                                const total = releasedGrades.reduce((sum, s) => sum + parseFloat(s.grade), 0);
+                                return (total / releasedGrades.length).toFixed(1);
+                              })()}
+                            </h3>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </section>
+              )}
+            </div>
+          </main>
+        </div>
+      );
+    };
+
+    // ==================== STUDENT DASHBOARD ====================
     const StudentDashboard = ({ 
       currentUser, 
       assessments, 
@@ -921,20 +2285,19 @@
       const [questionData, setQuestionData] = useState({ assessmentId: '', text: '' });
       const [invitationCode, setInvitationCode] = useState('');
       const [userModules, setUserModules] = useState([]);
+      const [selectedFile, setSelectedFile] = useState(null);
 
-      // Load user's modules on component mount
       useEffect(() => {
         loadUserModules();
       }, [classes, currentUser, modules]);
 
       const loadUserModules = () => {
-        // Find modules where user is enrolled in any class
         const enrolledModules = [];
         modules.forEach(module => {
           const moduleClasses = classes.filter(c => 
             c.module_code === module.code && 
             c.students && 
-            c.students.includes(currentUser.id)
+            c.students.includes(parseInt(currentUser.id))
           );
           if (moduleClasses.length > 0) {
             enrolledModules.push({
@@ -959,15 +2322,12 @@
             status: 'submitted'
           };
           
-          // Try Supabase first
           const createdSubmission = await SupabaseService.createSubmission(submission);
           const updatedSubmissions = [...submissions, createdSubmission];
           setSubmissions(updatedSubmissions);
           localStorage.setItem('submissions', JSON.stringify(updatedSubmissions));
           alert('Submission successful');
         } catch (error) {
-          console.error('Error submitting assessment:', error);
-          // Fallback to localStorage
           const submission = {
             id: Date.now(),
             assessmentId,
@@ -981,7 +2341,7 @@
           const updatedSubmissions = [...submissions, submission];
           setSubmissions(updatedSubmissions);
           localStorage.setItem('submissions', JSON.stringify(updatedSubmissions));
-          alert('Submission successful (local)');
+          alert('Submission successful');
         }
       };
 
@@ -1003,8 +2363,6 @@
           setQuestionData({ assessmentId: '', text: '' });
           alert('Question submitted');
         } catch (error) {
-          console.error('Error submitting question:', error);
-          // Fallback
           const question = {
             id: Date.now(),
             assessmentId: parseInt(questionData.assessmentId),
@@ -1016,7 +2374,7 @@
           setQuestions(updatedQuestions);
           localStorage.setItem('questions', JSON.stringify(updatedQuestions));
           setQuestionData({ assessmentId: '', text: '' });
-          alert('Question submitted (local)');
+          alert('Question submitted');
         }
       };
 
@@ -1025,7 +2383,6 @@
         const noClassElement = document.getElementById('no-class-found');
         noClassElement.style.display = 'none';
         
-        // Validate invitation code
         if (!invitationCode || invitationCode.length < 6) {
           noClassElement.innerHTML = `
             <i class="fas fa-exclamation-circle"></i> 
@@ -1039,7 +2396,6 @@
         }
         
         try {
-          // Find module by invitation_code
           const module = await SupabaseService.findModuleByInvitationCode(invitationCode);
           
           if (!module) {
@@ -1054,7 +2410,6 @@
             return;
           }
           
-          // Get classes for this module
           const moduleClasses = await SupabaseService.getClassesForModule(module.code);
           
           if (moduleClasses.length === 0) {
@@ -1062,7 +2417,6 @@
             return;
           }
           
-          // Add student to all classes in the module
           let enrolledCount = 0;
           let alreadyEnrolledCount = 0;
           
@@ -1070,7 +2424,6 @@
             try {
               const result = await SupabaseService.addStudentToClass(classItem.id, currentUser.id);
               
-              // Check if student was newly added
               const students = result.students || [];
               if (students.includes(parseInt(currentUser.id))) {
                 enrolledCount++;
@@ -1082,7 +2435,6 @@
             }
           }
           
-          // Update local state
           const updatedClasses = [...classes];
           moduleClasses.forEach(classItem => {
             const index = updatedClasses.findIndex(c => c.id === classItem.id);
@@ -1098,7 +2450,6 @@
           setClasses(updatedClasses);
           localStorage.setItem('classes', JSON.stringify(updatedClasses));
           
-          // Reload user modules
           loadUserModules();
           
           setInvitationCode('');
@@ -1120,6 +2471,10 @@
           console.error('Error joining module:', error);
           alert('Failed to join module. Please try again or contact support.');
         }
+      };
+
+      const openModule = (moduleCode) => {
+        window.location.href = `?page=module&module=${moduleCode}`;
       };
 
       return (
@@ -1144,22 +2499,54 @@
             
             <section>
               <h3>My Assessments ({assessments.length})</h3>
-              <div className="quick-actions">
-                {assessments.map(a => (
-                  <div key={a.id} className="item-card">
-                    <h4>{a.title}</h4>
-                    <p>{a.description}</p>
-                    <p><strong>Deadline:</strong> {a.deadline}</p>
-                    <button 
-                      onClick={() => submitAssessment(a.id)}
-                      className="btn-primary"
-                      style={{ marginTop: '10px', width: '100%' }}
-                    >
-                      Submit Assessment
-                    </button>
-                  </div>
-                ))}
-              </div>
+              {assessments.length === 0 ? (
+                <div className="empty-state">
+                  <i className="fas fa-tasks" style={{ fontSize: '48px', color: '#ccc', marginBottom: '20px' }}></i>
+                  <h4>No assessments yet</h4>
+                  <p>Your instructors haven't created any assessments yet.</p>
+                </div>
+              ) : (
+                <div className="quick-actions">
+                  {assessments.map(a => {
+                    const submission = submissions.find(s => s.assessmentId === a.id && s.studentId === currentUser.id);
+                    return (
+                      <div key={a.id} className="item-card">
+                        <h4>{a.title}</h4>
+                        <p>{a.description}</p>
+                        <p><strong>Deadline:</strong> {new Date(a.deadline).toLocaleDateString()}</p>
+                        {submission ? (
+                          <div style={{ marginTop: '10px' }}>
+                            <p><strong>Status:</strong> 
+                              <span className={`status-badge status-${submission.status}`} style={{ marginLeft: '10px' }}>
+                                {submission.status}
+                              </span>
+                            </p>
+                            {submission.grade && (
+                              <p><strong>Grade:</strong> {submission.grade}/100</p>
+                            )}
+                          </div>
+                        ) : (
+                          <>
+                            <input
+                              type="file"
+                              onChange={(e) => setSelectedFile(e.target.files[0])}
+                              style={{ width: '100%', padding: '8px', marginTop: '10px', border: '1px solid #ddd', borderRadius: '4px' }}
+                            />
+                            <button 
+                              onClick={() => submitAssessment(a.id)}
+                              className="btn-primary"
+                              style={{ marginTop: '10px', width: '100%' }}
+                              disabled={!selectedFile}
+                            >
+                              Submit Assessment
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </section>
             
             <section>
@@ -1222,20 +2609,28 @@
               </div>
               
               <div style={{ marginTop: '20px' }}>
-                <h4>My Enrolled Modules</h4>
+                <h4>My Enrolled Modules ({userModules.length})</h4>
                 {userModules.length > 0 ? (
                   <div className="quick-actions">
                     {userModules.map(module => (
-                      <div key={module.code} className="item-card">
-                        <h5>{module.name}</h5>
-                        <p><strong>Module Code:</strong> {module.code}</p>
-                        <p><strong>Invitation Code:</strong> {module.invitation_code}</p>
-                        <p><strong>Classes enrolled:</strong> {module.classCount}</p>
-                      </div>
+                      <ModuleCard
+                        key={module.code}
+                        module={module}
+                        userRole={currentUser.role}
+                        currentUser={currentUser}
+                        classes={classes}
+                        assessments={assessments}
+                        submissions={submissions}
+                        onClick={() => openModule(module.code)}
+                      />
                     ))}
                   </div>
                 ) : (
-                  <p>You haven't joined any modules yet. Enter an invitation code above.</p>
+                  <div className="empty-state">
+                    <i className="fas fa-book" style={{ fontSize: '48px', color: '#ccc', marginBottom: '20px' }}></i>
+                    <h4>No modules enrolled</h4>
+                    <p>Join a module using an invitation code above.</p>
+                  </div>
                 )}
               </div>
             </section>
@@ -1244,7 +2639,7 @@
       );
     };
 
-    // InstructorDashboard Component
+    // ==================== INSTRUCTOR DASHBOARD ====================
     const InstructorDashboard = ({ 
       currentUser, 
       assessments, 
@@ -1256,7 +2651,9 @@
       handleLogout, 
       goToProfile,
       modules = [],
-      setModules = () => {}
+      setModules = () => {},
+      teachingMaterials = [],
+      setTeachingMaterials = () => {}
     }) => {
       const [assessmentData, setAssessmentData] = useState({ 
         title: '', 
@@ -1265,6 +2662,18 @@
         deadline: '', 
         criteria: '' 
       });
+      const [userModules, setUserModules] = useState([]);
+
+      useEffect(() => {
+        loadUserModules();
+      }, [modules, currentUser]);
+
+      const loadUserModules = () => {
+        const instructorModules = modules.filter(m => 
+          m.instructor_id === currentUser.id || m.instructorId === currentUser.id
+        );
+        setUserModules(instructorModules);
+      };
 
       const handleAssessmentSubmit = async (e) => {
         e.preventDefault();
@@ -1287,7 +2696,6 @@
           setAssessmentData({ title: '', description: '', course: '', deadline: '', criteria: '' });
           alert('Assessment created successfully');
         } catch (error) {
-          console.error('Error creating assessment:', error);
           const assessment = {
             id: Date.now(),
             title: assessmentData.title,
@@ -1302,7 +2710,7 @@
           setAssessments(updatedAssessments);
           localStorage.setItem('assessments', JSON.stringify(updatedAssessments));
           setAssessmentData({ title: '', description: '', course: '', deadline: '', criteria: '' });
-          alert('Assessment created (local)');
+          alert('Assessment created');
         }
       };
 
@@ -1318,7 +2726,6 @@
           setSubmissions(updatedSubmissions);
           localStorage.setItem('submissions', JSON.stringify(updatedSubmissions));
         } catch (error) {
-          console.error('Error grading submission:', error);
           const updatedSubmissions = submissions.map(s => 
             s.id === submissionId ? { ...s, grade, status: 'graded' } : s
           );
@@ -1336,7 +2743,6 @@
           setSubmissions(updatedSubmissions);
           localStorage.setItem('submissions', JSON.stringify(updatedSubmissions));
         } catch (error) {
-          console.error('Error updating feedback:', error);
           const updatedSubmissions = submissions.map(s => 
             s.id === submissionId ? { ...s, feedback } : s
           );
@@ -1365,7 +2771,6 @@
           setQuestions(updatedQuestions);
           localStorage.setItem('questions', JSON.stringify(updatedQuestions));
         } catch (error) {
-          console.error('Error answering question:', error);
           const updatedQuestions = questions.map(q => 
             q.id === questionId ? { 
               ...q, 
@@ -1382,13 +2787,11 @@
         }
       };
 
-      // Invitation code functions for Instructor
       const generateInvitationCode = async (moduleCode) => {
         try {
           const newCode = await SupabaseService.generateUniqueInvitationCode();
           const updatedModule = await SupabaseService.updateModuleInvitationCode(moduleCode, newCode);
           
-          // Update local modules
           const updatedModules = modules.map(m => 
             m.code === moduleCode ? { ...m, invitation_code: newCode } : m
           );
@@ -1397,7 +2800,6 @@
           
           alert(`Invitation code generated: ${newCode}`);
         } catch (error) {
-          console.error('Error generating invitation code:', error);
           alert('Failed to generate invitation code');
         }
       };
@@ -1411,7 +2813,6 @@
           const newCode = await SupabaseService.generateUniqueInvitationCode();
           const updatedModule = await SupabaseService.updateModuleInvitationCode(moduleCode, newCode);
           
-          // Update local modules
           const updatedModules = modules.map(m => 
             m.code === moduleCode ? { ...m, invitation_code: newCode } : m
           );
@@ -1420,7 +2821,6 @@
           
           alert(`New invitation code generated: ${newCode}\n\nShare this new code with students.`);
         } catch (error) {
-          console.error('Error regenerating invitation code:', error);
           alert('Failed to regenerate invitation code');
         }
       };
@@ -1432,7 +2832,6 @@
           })
           .catch(err => {
             console.error('Failed to copy: ', err);
-            // Fallback
             const textArea = document.createElement('textarea');
             textArea.value = text;
             document.body.appendChild(textArea);
@@ -1441,6 +2840,10 @@
             document.body.removeChild(textArea);
             alert('Invitation code copied!');
           });
+      };
+
+      const openModule = (moduleCode) => {
+        window.location.href = `?page=module&module=${moduleCode}`;
       };
 
       return (
@@ -1455,11 +2858,12 @@
               <button onClick={handleLogout} className="btn-danger">Logout</button>
             </div>
           </header>
+          
           <main>
             <section className="welcome-banner">
               <h2 className="welcome-title">Instructor Dashboard</h2>
               <p className="welcome-subtitle">
-                Create assessments, grade submissions, and answer student questions
+                Create assessments, grade submissions, manage modules, and answer student questions
               </p>
             </section>
             
@@ -1505,127 +2909,218 @@
             </section>
             
             <section>
-              <h3>Student Submissions ({submissions.length})</h3>
-              <div className="quick-actions">
-                {submissions.filter(s => 
-                  assessments.find(a => a.id === s.assessmentId && a.instructorId === currentUser.id)
-                ).map(s => (
-                  <div key={s.id} className="item-card">
-                    <h4>Submission #{s.id}</h4>
-                    <p><strong>Student ID:</strong> {s.studentId}</p>
-                    <p><strong>Status:</strong> {s.status}</p>
-                    <p><strong>Current Grade:</strong> {s.grade || 'Not graded'}</p>
-                    <div style={{ marginTop: '15px' }}>
-                      <input 
-                        type="number" 
-                        placeholder="Enter grade" 
-                        onChange={e => gradeSubmission(s.id, e.target.value)}
-                        style={{ marginBottom: '10px', width: '100%', padding: '8px' }}
-                      />
-                      <textarea 
-                        placeholder="Provide feedback..." 
-                        value={s.feedback || ''}
-                        onChange={e => updateFeedback(s.id, e.target.value)}
-                        style={{ width: '100%', padding: '8px', marginBottom: '10px' }}
-                        rows="3"
-                      />
+              <h3>Student Submissions ({submissions.filter(s => 
+                assessments.find(a => a.id === s.assessmentId && a.instructorId === currentUser.id)
+              ).length})</h3>
+              {submissions.filter(s => 
+                assessments.find(a => a.id === s.assessmentId && a.instructorId === currentUser.id)
+              ).length === 0 ? (
+                <div className="empty-state">
+                  <i className="fas fa-inbox" style={{ fontSize: '48px', color: '#ccc', marginBottom: '20px' }}></i>
+                  <h4>No submissions yet</h4>
+                  <p>Student submissions will appear here once they submit their work.</p>
+                </div>
+              ) : (
+                <div className="quick-actions">
+                  {submissions.filter(s => 
+                    assessments.find(a => a.id === s.assessmentId && a.instructorId === currentUser.id)
+                  ).map(s => (
+                    <div key={s.id} className="item-card">
+                      <h4>Submission #{s.id}</h4>
+                      <p><strong>Student ID:</strong> {s.studentId}</p>
+                      <p><strong>Status:</strong> 
+                        <span className={`status-badge status-${s.status}`} style={{ marginLeft: '10px' }}>
+                          {s.status}
+                        </span>
+                      </p>
+                      <p><strong>Current Grade:</strong> {s.grade || 'Not graded'}</p>
+                      <div style={{ marginTop: '15px' }}>
+                        <input 
+                          type="number" 
+                          placeholder="Enter grade" 
+                          onChange={e => gradeSubmission(s.id, e.target.value)}
+                          style={{ marginBottom: '10px', width: '100%', padding: '8px' }}
+                        />
+                        <textarea 
+                          placeholder="Provide feedback..." 
+                          value={s.feedback || ''}
+                          onChange={e => updateFeedback(s.id, e.target.value)}
+                          style={{ width: '100%', padding: '8px', marginBottom: '10px' }}
+                          rows="3"
+                        />
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </section>
             
             <section>
-              <h3>My Modules & Invitation Codes</h3>
-              <div className="quick-actions">
-                {modules.filter(m => m.instructor_id === currentUser.id).map(module => (
-                  <div key={module.code} className="item-card">
-                    <h4>{module.name}</h4>
-                    <p><strong>Code:</strong> {module.code}</p>
-                    
-                    {module.invitation_code ? (
-                      <>
-                        <div className="invitation-code-display">
-                          {module.invitation_code}
+              <h3>My Modules ({userModules.length})</h3>
+              {userModules.length === 0 ? (
+                <div className="empty-state">
+                  <i className="fas fa-book" style={{ fontSize: '48px', color: '#ccc', marginBottom: '20px' }}></i>
+                  <h4>No modules assigned</h4>
+                  <p>Contact the system administrator to get assigned to modules.</p>
+                </div>
+              ) : (
+                <div className="quick-actions">
+                  {userModules.map(module => (
+                    <div key={module.code} className="item-card">
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div style={{ flex: 1 }}>
+                          <h4>{module.name}</h4>
+                          <p><strong>Code:</strong> {module.code}</p>
+                          <p><strong>Description:</strong> {module.description}</p>
                         </div>
-                        <div className="invite-actions">
-                          <button 
-                            onClick={() => regenerateInvitationCode(module.code)}
-                            className="refresh-btn"
-                          >
-                            <i className="fas fa-sync-alt"></i> Regenerate Code
-                          </button>
-                          <button 
-                            onClick={() => copyToClipboard(module.invitation_code)}
-                            className="copy-btn"
-                          >
-                            <i className="fas fa-copy"></i> Copy
-                          </button>
-                        </div>
-                      </>
-                    ) : (
-                      <div>
-                        <p style={{ color: '#666', marginBottom: '10px' }}>
-                          No invitation code generated yet.
-                        </p>
                         <button 
-                          onClick={() => generateInvitationCode(module.code)}
+                          onClick={() => openModule(module.code)}
                           className="btn-primary"
-                          style={{ width: '100%' }}
+                          style={{ padding: '8px 16px' }}
                         >
-                          <i className="fas fa-key"></i> Generate Invitation Code
+                          <i className="fas fa-external-link-alt"></i> Open
                         </button>
                       </div>
-                    )}
-                    
-                    <div style={{ marginTop: '15px', fontSize: '14px', color: '#666' }}>
-                      <p><strong>Share this code with students to join your module.</strong></p>
-                      <p>Students will be automatically added to all classes in this module.</p>
+                      
+                      {module.invitation_code ? (
+                        <>
+                          <div className="invitation-code-display">
+                            {module.invitation_code}
+                          </div>
+                          <div className="invite-actions">
+                            <button 
+                              onClick={() => regenerateInvitationCode(module.code)}
+                              className="refresh-btn"
+                            >
+                              <i className="fas fa-sync-alt"></i> Regenerate Code
+                            </button>
+                            <button 
+                              onClick={() => copyToClipboard(module.invitation_code)}
+                              className="copy-btn"
+                            >
+                              <i className="fas fa-copy"></i> Copy
+                            </button>
+                          </div>
+                        </>
+                      ) : (
+                        <div>
+                          <p style={{ color: '#666', marginBottom: '10px' }}>
+                            No invitation code generated yet.
+                          </p>
+                          <button 
+                            onClick={() => generateInvitationCode(module.code)}
+                            className="btn-primary"
+                            style={{ width: '100%' }}
+                          >
+                            <i className="fas fa-key"></i> Generate Invitation Code
+                          </button>
+                        </div>
+                      )}
+                      
+                      <div style={{ marginTop: '15px', fontSize: '14px', color: '#666' }}>
+                        <p><strong>How to invite students:</strong></p>
+                        <ol style={{ margin: '10px 0', paddingLeft: '20px' }}>
+                          <li>Generate an invitation code</li>
+                          <li>Share the code with students</li>
+                          <li>Students enter the code in their dashboard</li>
+                          <li>Students are automatically added to all classes in this module</li>
+                        </ol>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </section>
             
             <section>
               <h3>Student Questions ({questions.length})</h3>
-              <div className="quick-actions">
-                {questions.map(q => (
-                  <div key={q.id} className="item-card">
-                    <h4>Question #{q.id}</h4>
-                    <p><strong>Question:</strong> {q.question}</p>
-                    <textarea 
-                      placeholder="Type your answer here..." 
-                      onChange={e => answerQuestion(q.id, e.target.value)}
-                      style={{ width: '100%', padding: '8px', marginTop: '10px' }}
-                      rows="3"
-                    />
-                    <button 
-                      onClick={() => answerQuestion(q.id, document.querySelector(`textarea[placeholder="Type your answer here..."]`).value)}
-                      className="btn-primary"
-                      style={{ marginTop: '10px', width: '100%' }}
-                    >
-                      Submit Answer
-                    </button>
-                  </div>
-                ))}
-              </div>
+              {questions.length === 0 ? (
+                <div className="empty-state">
+                  <i className="fas fa-question-circle" style={{ fontSize: '48px', color: '#ccc', marginBottom: '20px' }}></i>
+                  <h4>No questions yet</h4>
+                  <p>Student questions will appear here once they ask them.</p>
+                </div>
+              ) : (
+                <div className="quick-actions">
+                  {questions.map(q => (
+                    <div key={q.id} className="item-card">
+                      <h4>Question #{q.id}</h4>
+                      <p><strong>Question:</strong> {q.question}</p>
+                      <p><strong>Assessment ID:</strong> {q.assessmentId}</p>
+                      {q.answers && q.answers.length > 0 && (
+                        <div style={{ marginTop: '10px' }}>
+                          <p><strong>Previous Answers:</strong></p>
+                          {q.answers.map((answer, idx) => (
+                            <div key={idx} style={{ 
+                              padding: '8px', 
+                              margin: '5px 0', 
+                              backgroundColor: '#f8f9fa',
+                              borderRadius: '4px',
+                              fontSize: '14px'
+                            }}>
+                              <p><strong>Answer {idx + 1}:</strong> {answer.answer}</p>
+                              <p><em>{answer.official ? '(Official Answer)' : '(Peer Answer)'}</em></p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <textarea 
+                        placeholder="Type your answer here..." 
+                        onChange={(e) => {
+                          const textarea = e.target;
+                          textarea.dataset.answer = e.target.value;
+                        }}
+                        style={{ width: '100%', padding: '8px', marginTop: '10px' }}
+                        rows="3"
+                      />
+                      <button 
+                        onClick={(e) => {
+                          const textarea = e.target.previousElementSibling;
+                          if (textarea && textarea.dataset.answer) {
+                            answerQuestion(q.id, textarea.dataset.answer);
+                            alert('Answer submitted!');
+                            textarea.value = '';
+                            textarea.dataset.answer = '';
+                          }
+                        }}
+                        className="btn-primary"
+                        style={{ marginTop: '10px', width: '100%' }}
+                      >
+                        Submit Answer
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </section>
           </main>
         </div>
       );
     };
 
-    // ExamAdminDashboard Component
+    // ==================== EXAM ADMIN DASHBOARD ====================
     const ExamAdminDashboard = ({ 
       currentUser, 
       assessments, 
       submissions, 
       users, 
       handleLogout, 
-      goToProfile 
+      goToProfile,
+      modules = []
     }) => {
-      // Group submissions by assessment
+      const [userModules, setUserModules] = useState([]);
+
+      useEffect(() => {
+        loadUserModules();
+      }, [modules, currentUser]);
+
+      const loadUserModules = () => {
+        const examAdminModules = modules.filter(m => 
+          m.exam_admin_id === currentUser.id || m.examAdminId === currentUser.id
+        );
+        setUserModules(examAdminModules);
+      };
+
       const groupedSubmissions = {};
       assessments.forEach(assessment => {
         const assessmentSubmissions = submissions.filter(s => s.assessmentId === assessment.id);
@@ -1637,7 +3132,6 @@
         }
       });
 
-      // Calculate average grades per assessment
       const assessmentStats = assessments.map(assessment => {
         const assessmentSubmissions = submissions.filter(s => s.assessmentId === assessment.id && s.grade);
         const totalGrade = assessmentSubmissions.reduce((sum, s) => sum + parseFloat(s.grade || 0), 0);
@@ -1649,6 +3143,10 @@
           averageGrade: averageGrade.toFixed(2)
         };
       });
+
+      const openModule = (moduleCode) => {
+        window.location.href = `?page=module&module=${moduleCode}`;
+      };
 
       return (
         <div className="main-container">
@@ -1671,58 +3169,115 @@
             </section>
             
             <section>
+              <h3>My Modules ({userModules.length})</h3>
+              {userModules.length === 0 ? (
+                <div className="empty-state">
+                  <i className="fas fa-book" style={{ fontSize: '48px', color: '#ccc', marginBottom: '20px' }}></i>
+                  <h4>No modules assigned</h4>
+                  <p>Contact the system administrator to get assigned to modules.</p>
+                </div>
+              ) : (
+                <div className="quick-actions">
+                  {userModules.map(module => (
+                    <div key={module.code} className="item-card">
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div style={{ flex: 1 }}>
+                          <h4>{module.name}</h4>
+                          <p><strong>Code:</strong> {module.code}</p>
+                          <p><strong>Description:</strong> {module.description}</p>
+                        </div>
+                        <button 
+                          onClick={() => openModule(module.code)}
+                          className="btn-primary"
+                          style={{ padding: '8px 16px' }}
+                        >
+                          <i className="fas fa-external-link-alt"></i> Open
+                        </button>
+                      </div>
+                      
+                      <div style={{ marginTop: '15px', fontSize: '14px', color: '#666' }}>
+                        <p><strong>Module Access:</strong> You can view and approve grades for this module.</p>
+                        <p>Open the module to review graded submissions and approve/release grades to students.</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+            
+            <section>
               <h3>Assessment Statistics ({assessments.length})</h3>
-              <div className="quick-actions">
-                {assessmentStats.map(stat => (
-                  <div key={stat.id} className="item-card">
-                    <h4>{stat.title}</h4>
-                    <p><strong>Course:</strong> {stat.course}</p>
-                    <p><strong>Submissions:</strong> {stat.submissionCount}</p>
-                    <p><strong>Average Grade:</strong> {stat.averageGrade}%</p>
-                    <p><strong>Deadline:</strong> {stat.deadline}</p>
-                  </div>
-                ))}
-              </div>
+              {assessments.length === 0 ? (
+                <div className="empty-state">
+                  <i className="fas fa-chart-bar" style={{ fontSize: '48px', color: '#ccc', marginBottom: '20px' }}></i>
+                  <h4>No assessments yet</h4>
+                  <p>Assessment statistics will appear here once instructors create assessments.</p>
+                </div>
+              ) : (
+                <div className="quick-actions">
+                  {assessmentStats.map(stat => (
+                    <div key={stat.id} className="item-card">
+                      <h4>{stat.title}</h4>
+                      <p><strong>Course:</strong> {stat.course}</p>
+                      <p><strong>Submissions:</strong> {stat.submissionCount}</p>
+                      <p><strong>Average Grade:</strong> {stat.averageGrade}%</p>
+                      <p><strong>Deadline:</strong> {new Date(stat.deadline).toLocaleDateString()}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </section>
             
             <section>
               <h3>Detailed Submission Results ({submissions.length})</h3>
-              <div className="quick-actions">
-                {Object.values(groupedSubmissions).map(({ assessment, submissions: assessmentSubmissions }) => (
-                  <div key={assessment.id} className="item-card">
-                    <h4>{assessment.title}</h4>
-                    <p><strong>Grading Criteria:</strong> {assessment.criteria}</p>
-                    <div style={{ marginTop: '15px' }}>
-                      <h5>Student Submissions:</h5>
-                      {assessmentSubmissions.map(submission => {
-                        const student = users.find(u => u.id === submission.studentId);
-                        return (
-                          <div key={submission.id} style={{ 
-                            padding: '10px', 
-                            margin: '5px 0', 
-                            backgroundColor: 'rgba(102, 126, 234, 0.05)',
-                            borderRadius: '5px'
-                          }}>
-                            <p><strong>Student:</strong> {student?.name || 'Unknown'}</p>
-                            <p><strong>Grade:</strong> {submission.grade || 'Not graded'}</p>
-                            <p><strong>Status:</strong> {submission.status}</p>
-                            {submission.feedback && (
-                              <p><strong>Feedback:</strong> {submission.feedback}</p>
-                            )}
-                          </div>
-                        );
-                      })}
+              {submissions.length === 0 ? (
+                <div className="empty-state">
+                  <i className="fas fa-file-upload" style={{ fontSize: '48px', color: '#ccc', marginBottom: '20px' }}></i>
+                  <h4>No submissions yet</h4>
+                  <p>Submission results will appear here once students submit their work.</p>
+                </div>
+              ) : (
+                <div className="quick-actions">
+                  {Object.values(groupedSubmissions).map(({ assessment, submissions: assessmentSubmissions }) => (
+                    <div key={assessment.id} className="item-card">
+                      <h4>{assessment.title}</h4>
+                      <p><strong>Grading Criteria:</strong> {assessment.criteria}</p>
+                      <div style={{ marginTop: '15px' }}>
+                        <h5>Student Submissions:</h5>
+                        {assessmentSubmissions.map(submission => {
+                          const student = users.find(u => u.id === submission.studentId);
+                          return (
+                            <div key={submission.id} style={{ 
+                              padding: '10px', 
+                              margin: '5px 0', 
+                              backgroundColor: 'rgba(102, 126, 234, 0.05)',
+                              borderRadius: '5px'
+                            }}>
+                              <p><strong>Student:</strong> {student?.name || 'Unknown'}</p>
+                              <p><strong>Grade:</strong> {submission.grade || 'Not graded'}</p>
+                              <p><strong>Status:</strong> 
+                                <span className={`status-badge status-${submission.status}`} style={{ marginLeft: '10px' }}>
+                                  {submission.status}
+                                </span>
+                              </p>
+                              {submission.feedback && (
+                                <p><strong>Feedback:</strong> {submission.feedback}</p>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </section>
           </main>
         </div>
       );
     };
 
-    // ProfilePage Component
+    // ==================== PROFILE PAGE ====================
     const ProfilePage = ({ currentUser, setCurrentUser, users, setUsers, goBack, handleLogout }) => {
       const [profileData, setProfileData] = useState({ 
         name: currentUser.name, 
@@ -1739,12 +3294,10 @@
             email: profileData.email
           };
           
-          // Update password if provided
           if (profileData.password) {
             updatedUser.password = profileData.password;
           }
           
-          // Try Supabase first
           const supabaseUpdatedUser = await SupabaseService.updateUser(currentUser.id, {
             name: profileData.name,
             email: profileData.email,
@@ -1753,21 +3306,17 @@
           
           setCurrentUser(supabaseUpdatedUser);
           
-          // Update in users array
           const updatedUsers = users.map(u => 
             u.id === currentUser.id ? supabaseUpdatedUser : u
           );
           setUsers(updatedUsers);
           
-          // Save to localStorage
           localStorage.setItem('currentUser', JSON.stringify(supabaseUpdatedUser));
           localStorage.setItem('users', JSON.stringify(updatedUsers));
           
           alert('Profile updated successfully');
           setProfileData({ ...profileData, password: '' });
         } catch (error) {
-          console.error('Error updating profile:', error);
-          // Fallback to localStorage
           const updatedUser = { 
             ...currentUser, 
             name: profileData.name, 
@@ -1788,7 +3337,7 @@
           localStorage.setItem('currentUser', JSON.stringify(updatedUser));
           localStorage.setItem('users', JSON.stringify(updatedUsers));
           
-          alert('Profile updated (local)');
+          alert('Profile updated');
           setProfileData({ ...profileData, password: '' });
         }
       };
@@ -1860,14 +3409,12 @@
       setClasses,
       handleLogout, 
       goToProfile,
-      // Popup control props
       showAddUserPopup,
       setShowAddUserPopup,
       popupUserData,
       setPopupUserData,
       handlePopupUserSubmit
     }) => {
-      // Safety check - if no currentUser
       if (!currentUser) {
         return (
           <div className="form-container">
@@ -1888,7 +3435,6 @@
       });
       const [classData, setClassData] = useState({ name: '', moduleCode: '', classType: 'lecture' });
 
-      // Handle module creation with Supabase
       const handleModuleSubmit = async (e) => {
         e.preventDefault();
 
@@ -1903,11 +3449,9 @@
         }
         
         try {
-          // Improved module code generation
           const generateModuleCode = (name) => {
             if (!name) return 'MOD';
             
-            // Get first letters of each word, max 3
             const initials = name
               .split(' ')
               .map(word => word[0] || '')
@@ -1916,7 +3460,6 @@
               .toUpperCase()
               .slice(0, 3);
             
-            // Add current month and year
             const now = new Date();
             const mm = String(now.getMonth() + 1).padStart(2, '0');
             const yyyy = now.getFullYear().toString();
@@ -1927,7 +3470,6 @@
           const code = generateModuleCode(moduleData.name);
           const invitationCode = await SupabaseService.generateUniqueInvitationCode();
           
-          // Prepare module data for Supabase
           const newModule = { 
             code, 
             name: moduleData.name, 
@@ -1937,17 +3479,13 @@
             invitation_code: invitationCode
           };
           
-          // Try Supabase first
           const createdModule = await SupabaseService.createModule(newModule);
           const updatedModules = [...modules, createdModule];
           setModules(updatedModules);
           localStorage.setItem('modules', JSON.stringify(updatedModules));
           setModuleData({ name: '', description: '', instructorId: '', examAdminId: '' });
           alert(`Module "${moduleData.name}" created with code: ${code}, the invitation code is: ${invitationCode}`);
-          window.location.reload();
         } catch (error) {
-          console.error('Error creating module:', error);
-          // Fallback with local unique code generation
           const generateModuleCode = (name) => {
             if (!name) return 'MOD';
             
@@ -1983,20 +3521,16 @@
           localStorage.setItem('modules', JSON.stringify(updatedModules));
           
           setModuleData({ name: '', description: '', instructorId: '', examAdminId: '' });
-          alert(`Module created (local storage)\n\nModule Code: ${moduleCode}\nInvitation Code: ${invitationCode}`);
+          alert(`Module created\n\nModule Code: ${moduleCode}\nInvitation Code: ${invitationCode}`);
         }
       };
 
-      // Add the missing handleGenerateInvitationCode function
       const handleGenerateInvitationCode = async (moduleCode) => {
         try {
           const newCode = await SupabaseService.generateUniqueInvitationCode();
-          console.log('Generating new invitation code:', newCode, 'for module:', moduleCode);
           
-          // Update in Supabase
           const updatedModule = await SupabaseService.updateModuleInvitationCode(moduleCode, newCode);
           
-          // Update local state
           const updatedModules = modules.map(m => 
             m.code === moduleCode ? { ...m, invitation_code: newCode } : m
           );
@@ -2005,20 +3539,16 @@
           
           alert(`New invitation code generated: ${newCode}`);
         } catch (error) {
-          console.error('Error generating invitation code:', error);
           alert('Failed to generate invitation code');
         }
       };
 
-      // Add the missing copyToClipboard function
       const copyToClipboard = (text) => {
         navigator.clipboard.writeText(text)
           .then(() => {
             alert('Invitation code copied to clipboard!');
           })
           .catch(err => {
-            console.error('Failed to copy: ', err);
-            // Fallback method
             const textArea = document.createElement('textarea');
             textArea.value = text;
             document.body.appendChild(textArea);
@@ -2037,7 +3567,6 @@
             setModules(updatedModules);
             localStorage.setItem('modules', JSON.stringify(updatedModules));
           } catch (error) {
-            console.error('Error deleting module:', error);
             const updatedModules = modules.filter(m => m.code !== moduleCode);
             setModules(updatedModules);
             localStorage.setItem('modules', JSON.stringify(updatedModules));
@@ -2045,7 +3574,6 @@
         }
       };
 
-      // UPDATED: Class creation matching your database schema
       const handleClassSubmit = async (e) => {
         e.preventDefault();
         
@@ -2055,34 +3583,25 @@
         }
         
         try {
-          // Get count of existing classes for this module and type
           const existingClasses = classes.filter(c => 
             c.module_code === classData.moduleCode
           );
           const classNumber = existingClasses.length + 1;
           
-          // Generate class display name with type and number
           const displayName = `${classData.name} - ${classData.classType.charAt(0).toUpperCase() + classData.classType.slice(1)} ${classNumber}`;
           
-          // Prepare class data for Supabase - using YOUR schema
           const newClass = { 
-            name: displayName, // Store class type in the name
+            name: displayName,
             module_code: classData.moduleCode,
-            students: [] // Initialize empty students array
+            students: []
           };
           
-          console.log('Attempting to create class (your schema):', newClass);
-          
-          // Create class in Supabase
           const createdClass = await SupabaseService.createClass(newClass);
           
-          console.log('Class created successfully:', createdClass);
-          
-          // Add class_type to the created class object for local display
           const classWithType = {
             ...createdClass,
-            class_type: classData.classType, // Keep for UI display
-            display_code: `${classData.moduleCode}_${classData.classType}_${classNumber}` // Virtual code for display
+            class_type: classData.classType,
+            display_code: `${classData.moduleCode}_${classData.classType}_${classNumber}`
           };
           
           const updatedClasses = [...classes, classWithType];
@@ -2092,40 +3611,31 @@
           setClassData({ name: '', moduleCode: '', classType: 'lecture' });
           alert(`Class "${displayName}" created successfully!`);
         } catch (error) {
-          console.error('Error creating class in Supabase:', error);
+          const existingClassesOfSameType = classes.filter(c => 
+            c.module_code === classData.moduleCode
+          );
+          const classNumber = existingClassesOfSameType.length + 1;
+          const displayName = `${classData.name} - ${classData.classType.charAt(0).toUpperCase() + classData.classType.slice(1)} ${classNumber}`;
           
-          // Check if it's a database schema issue
-          if (error.message && error.message.includes('column')) {
-            alert(`Database error: ${error.message}. Please check your database schema.`);
-          } else {
-            // Fallback to localStorage
-            const existingClassesOfSameType = classes.filter(c => 
-              c.module_code === classData.moduleCode
-            );
-            const classNumber = existingClassesOfSameType.length + 1;
-            const displayName = `${classData.name} - ${classData.classType.charAt(0).toUpperCase() + classData.classType.slice(1)} ${classNumber}`;
-            
-            const newClass = { 
-              id: Date.now(), 
-              name: displayName,
-              module_code: classData.moduleCode,
-              class_type: classData.classType,
-              students: [],
-              display_code: `${classData.moduleCode}_${classData.classType}_${classNumber}`,
-              created_at: new Date().toISOString()
-            };
-            
-            const updatedClasses = [...classes, newClass];
-            setClasses(updatedClasses);
-            localStorage.setItem('classes', JSON.stringify(updatedClasses));
-            
-            setClassData({ name: '', moduleCode: '', classType: 'lecture' });
-            alert(`Class created (local storage only): ${displayName}`);
-          }
+          const newClass = { 
+            id: Date.now(), 
+            name: displayName,
+            module_code: classData.moduleCode,
+            class_type: classData.classType,
+            students: [],
+            display_code: `${classData.moduleCode}_${classData.classType}_${classNumber}`,
+            created_at: new Date().toISOString()
+          };
+          
+          const updatedClasses = [...classes, newClass];
+          setClasses(updatedClasses);
+          localStorage.setItem('classes', JSON.stringify(updatedClasses));
+          
+          setClassData({ name: '', moduleCode: '', classType: 'lecture' });
+          alert(`Class created: ${displayName}`);
         }
       };
 
-      // UPDATED: Class deletion
       const deleteClass = async (classId) => {
         if (window.confirm('Are you sure you want to delete this class?')) {
           try {
@@ -2133,13 +3643,12 @@
             const updatedClasses = classes.filter(c => c.id !== classId);
             setClasses(updatedClasses);
             localStorage.setItem('classes', JSON.stringify(updatedClasses));
-            alert('Class deleted successfully from database');
+            alert('Class deleted successfully');
           } catch (error) {
-            console.error('Error deleting class:', error);
             const updatedClasses = classes.filter(c => c.id !== classId);
             setClasses(updatedClasses);
             localStorage.setItem('classes', JSON.stringify(updatedClasses));
-            alert('Class deleted (local storage only)');
+            alert('Class deleted');
           }
         }
       };
@@ -2157,7 +3666,6 @@
           setUsers(updatedUsers);
           localStorage.setItem('users', JSON.stringify(updatedUsers));
         } catch (error) {
-          console.error('Error updating user:', error);
           const updatedUsers = users.map(u => 
             u.id === userId ? { ...u, active: !u.active } : u
           );
@@ -2166,14 +3674,12 @@
         }
       };
 
-      // Helper function to get user name by ID
       const getUserName = (userId) => {
         if (!userId) return 'Not assigned';
         const user = users.find(u => u.id === userId);
         return user ? user.name : 'Unknown';
       };
 
-      // Helper function to get class type badge color
       const getClassTypeBadge = (type) => {
         switch(type) {
           case 'lecture':
@@ -2187,7 +3693,6 @@
         }
       };
 
-      // Helper function to get class type from name
       const getClassTypeFromName = (name) => {
         if (!name) return 'unknown';
         const lowerName = name.toLowerCase();
@@ -2197,15 +3702,12 @@
         return 'unknown';
       };
 
-      // Helper function to extract display code
       const getDisplayCode = (classObj) => {
         if (classObj.display_code) return classObj.display_code;
         
-        // Try to extract from name or generate
         const module = modules.find(m => m.code === classObj.module_code);
         if (module) {
           const type = getClassTypeFromName(classObj.name);
-          // Find other classes of same module and type to get number
           const similarClasses = classes.filter(c => 
             c.module_code === classObj.module_code && 
             getClassTypeFromName(c.name) === type
@@ -2334,7 +3836,6 @@
                   rows="4"
                 />
                 
-                {/* Instructor Selection */}
                 <div>
                   <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500', color: '#333' }}>
                     Select instructor
@@ -2364,7 +3865,6 @@
                   </select>
                 </div>
                 
-                {/* Exam Administrator Selection */}
                 <div>
                   <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500', color: '#333' }}>
                     Select Exam Administrator
@@ -2477,7 +3977,6 @@
               </div>
             </section>
             
-            {/* UPDATED: Create Class form - simplified for your schema */}
             <section id="create-class-form">
               <h3>Create Class</h3>
               <form onSubmit={handleClassSubmit} className="form-container" style={{ maxWidth: '600px', margin: '0 auto' }}>
@@ -2540,7 +4039,6 @@
                   </select>
                 </div>
                 
-                {/* Preview of generated class */}
                 {classData.moduleCode && classData.classType && classData.name && (
                   <div style={{ 
                     padding: '12px 15px', 
@@ -2566,22 +4064,13 @@
                     }}>
                       <strong>Display Code:</strong> {classData.moduleCode}_{classData.classType}_{classes.filter(c => c.module_code === classData.moduleCode).length + 1}
                     </p>
-                    <p style={{ 
-                      margin: '5px 0 0 0', 
-                      fontSize: '12px', 
-                      color: '#666',
-                      fontStyle: 'italic'
-                    }}>
-                      Class type will be stored in the name field
-                    </p>
                   </div>
                 )}
                 
-                <button type="submit" className="btn-primary">Create Class (Save to Database)</button>
+                <button type="submit" className="btn-primary">Create Class</button>
               </form>
             </section>
             
-            {/* UPDATED: Manage Classes - adapted for your schema */}
             <section id="manage-classes">
               <h3>Manage Classes ({classes.length})</h3>
               <div style={{ 
@@ -2635,6 +4124,111 @@
       );
     };
 
+    // ==================== LOGIN PAGE ====================
+    const LoginPage = ({ loginData, setLoginData, handleLogin, goToRegister }) => (
+      <div className="form-container">
+        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+          <img src="Images/Logo.png" alt="EduConnect Logo" className="logo" />
+        </div>
+        <h2 style={{
+          fontSize: '32px',
+          fontWeight: '300',
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          marginBottom: '25px',
+          textAlign: 'center',
+          letterSpacing: '0.5px'
+        }}>
+          Login to EduConnect
+        </h2>
+        
+        <form onSubmit={handleLogin}>
+          <input 
+            type="email" 
+            placeholder="Email" 
+            value={loginData.email} 
+            onChange={e => setLoginData({ ...loginData, email: e.target.value })} 
+            required 
+          />
+          <input 
+            type="password" 
+            placeholder="Password" 
+            value={loginData.password} 
+            onChange={e => setLoginData({ ...loginData, password: e.target.value })} 
+            required 
+          />
+
+          <div className="login-alert-credentials">
+            <h4><i className="fas fa-info-circle"></i> No Account Access?</h4>
+            <p>Contact the administrator to request account creation.</p>
+          </div>
+
+          <button type="submit" className="btn-primary">Login</button>
+        </form>
+      </div>
+    );
+
+    // ==================== REGISTER PAGE ====================
+    const RegisterPage = ({ registerData, setRegisterData, handleRegister, goToLogin }) => (
+      <div className="form-container">
+        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+          <img src="Images/Logo.png" alt="EduConnect Logo" className="logo" />
+        </div>
+        <h2
+          style={{
+            fontSize: '32px',
+            fontWeight: '300',
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            marginBottom: '25px',
+            textAlign: 'center',
+            letterSpacing: '0.5px'
+          }}
+        >Register for EduConnect</h2>
+        <form onSubmit={handleRegister}>
+          <input 
+            type="text" 
+            placeholder="Full Name" 
+            value={registerData.name} 
+            onChange={e => setRegisterData({ ...registerData, name: e.target.value })} 
+            required 
+          />
+          <input 
+            type="email" 
+            placeholder="Email Address" 
+            value={registerData.email} 
+            onChange={e => setRegisterData({ ...registerData, email: e.target.value })} 
+            required 
+          />
+          <input 
+            type="password" 
+            placeholder="Password" 
+            value={registerData.password} 
+            onChange={e => setRegisterData({ ...registerData, password: e.target.value })} 
+            required 
+          />
+          <select 
+            value={registerData.role} 
+            onChange={e => setRegisterData({ ...registerData, role: e.target.value })} 
+            required
+          >
+            <option value="">Select Role</option>
+            <option value="Student">Student</option>
+            <option value="Instructor">Instructor</option>
+            <option value="System Administrator">System Administrator</option>
+            <option value="Exam Administrator">Exam Administrator</option>
+          </select>
+          <button type="submit" className="btn-primary">Register</button>
+        </form>
+        <p>
+          Already have an account?{' '}
+          <button onClick={goToLogin} className="btn-secondary">Login</button>
+        </p>
+      </div>
+    );
+
     // ==================== HOMEPAGE (MAIN CONTROLLER) ====================
     const HomePage = () => {
       const [page, setPage] = useState('login');
@@ -2644,12 +4238,12 @@
       const [questions, setQuestions] = useState([]);
       const [modules, setModules] = useState([]);
       const [classes, setClasses] = useState([]);
+      const [teachingMaterials, setTeachingMaterials] = useState([]);
       const [currentUser, setCurrentUser] = useState(null);
       const [loginData, setLoginData] = useState({ email: '', password: '' });
       const [registerData, setRegisterData] = useState({ name: '', email: '', password: '', role: '' });
       const [isLoading, setIsLoading] = useState(true);
       
-      // Global popup state
       const [showAddUserPopup, setShowAddUserPopup] = useState(false);
       const [popupUserData, setPopupUserData] = useState({ name: '', email: '', password: '', role: '' });
 
@@ -2658,56 +4252,39 @@
           setIsLoading(true);
           
           try {
-            // Try to load from Supabase first
-            console.log('Loading data from Supabase...');
-            
             const [
               usersData, 
               assessmentsData, 
               submissionsData, 
               questionsData, 
               modulesData, 
-              classesData
+              classesData,
+              teachingMaterialsData
             ] = await Promise.all([
               SupabaseService.getUsers(),
               SupabaseService.getAssessments(),
               SupabaseService.getSubmissions(),
               SupabaseService.getQuestions(),
               SupabaseService.getModules(),
-              SupabaseService.getClasses()
+              SupabaseService.getClasses(),
+              SupabaseService.getTeachingMaterials()
             ]);
             
-            console.log('Supabase data loaded:', {
-              users: usersData.length,
-              assessments: assessmentsData.length,
-              submissions: submissionsData.length,
-              questions: questionsData.length,
-              modules: modulesData.length,
-              classes: classesData.length
-            });
+            setUsers(usersData);
+            setAssessments(assessmentsData);
+            setSubmissions(submissionsData);
+            setQuestions(questionsData);
+            setModules(modulesData);
+            setClasses(classesData);
+            setTeachingMaterials(teachingMaterialsData);
             
-            // If Supabase returns data, use it
-            if (usersData.length > 0 || modulesData.length > 0) {
-              setUsers(usersData);
-              setAssessments(assessmentsData);
-              setSubmissions(submissionsData);
-              setQuestions(questionsData);
-              setModules(modulesData);
-              setClasses(classesData);
-              
-              // Create default data if empty
-              if (usersData.length === 0) {
-                await createDefaultUsers();
-              }
-              if (modulesData.length === 0) {
-                await createDefaultModules();
-              }
-            } else {
-              // Fallback to localStorage
-              loadFromLocalStorage();
+            if (usersData.length === 0) {
+              await createDefaultUsers();
+            }
+            if (modulesData.length === 0) {
+              await createDefaultModules();
             }
             
-            // Check for current user session
             const storedUser = JSON.parse(localStorage.getItem('currentUser'));
             if (storedUser) {
               setCurrentUser(storedUser);
@@ -2717,8 +4294,7 @@
             }
             
           } catch (error) {
-            console.error('Error loading data from Supabase:', error);
-            // Fallback to localStorage
+            console.error('Error loading data:', error);
             loadFromLocalStorage();
           } finally {
             setIsLoading(false);
@@ -2729,15 +4305,14 @@
       }, []);
 
       const loadFromLocalStorage = () => {
-        console.log('Loading from localStorage...');
         const storedUsers = JSON.parse(localStorage.getItem('users')) || [];
         const storedAssessments = JSON.parse(localStorage.getItem('assessments')) || [];
         const storedSubmissions = JSON.parse(localStorage.getItem('submissions')) || [];
         const storedQuestions = JSON.parse(localStorage.getItem('questions')) || [];
         const storedModules = JSON.parse(localStorage.getItem('modules')) || [];
         const storedClasses = JSON.parse(localStorage.getItem('classes')) || [];
+        const storedTeachingMaterials = JSON.parse(localStorage.getItem('teachingMaterials')) || [];
         
-        // Create defaults if empty
         let updatedUsers = storedUsers;
         if (storedUsers.length === 0) {
           updatedUsers = createDefaultUsersLocal();
@@ -2762,6 +4337,7 @@
         setQuestions(storedQuestions);
         setModules(updatedModules);
         setClasses(updatedClasses);
+        setTeachingMaterials(storedTeachingMaterials);
       };
 
       const createDefaultModulesLocal = () => {
@@ -2943,7 +4519,13 @@
       };
 
       const redirectBasedOnRole = (role) => {
-        if (role === 'Student') {
+        const urlParams = new URLSearchParams(window.location.search);
+        const pageParam = urlParams.get('page');
+        const moduleParam = urlParams.get('module');
+        
+        if (pageParam === 'module' && moduleParam) {
+          setPage('module');
+        } else if (role === 'Student') {
           setPage('student-dashboard');
         } else if (role === 'Instructor') {
           setPage('instructor-dashboard');
@@ -2952,7 +4534,6 @@
         } else if (role === 'System Administrator') {
           setPage('admin-dashboard');
         } else {
-          console.warn('Unknown role:', role);
           setPage('login');
         }
       };
@@ -2961,7 +4542,6 @@
         e.preventDefault();
         
         try {
-          // Check if user exists in Supabase
           const exists = await SupabaseService.userExists(popupUserData.email);
           if (exists) {
             alert('User already exists');
@@ -2984,10 +4564,7 @@
           setPopupUserData({ name: '', email: '', password: '', role: '' });
           setShowAddUserPopup(false);
           alert('User created successfully');
-          window.location.reload();
         } catch (error) {
-          console.error('Error creating user:', error);
-          // Fallback to localStorage
           if (users.find(u => u.email === popupUserData.email)) {
             alert('User already exists');
             return;
@@ -3005,8 +4582,7 @@
           localStorage.setItem('users', JSON.stringify(updatedUsers));
           setPopupUserData({ name: '', email: '', password: '', role: '' });
           setShowAddUserPopup(false);
-          alert('User created (local)');
-          window.location.reload();
+          alert('User created');
         }
       };
 
@@ -3014,11 +4590,9 @@
         e.preventDefault();
         
         try {
-          // Try Supabase login first
           const user = await SupabaseService.loginUser(loginData.email, loginData.password);
           
           if (user) {
-            console.log('User found via Supabase:', user.name);
             setCurrentUser(user);
             localStorage.setItem('currentUser', JSON.stringify(user));
             redirectBasedOnRole(user.role);
@@ -3026,10 +4600,8 @@
           }
         } catch (supabaseError) {
           console.log('Supabase login failed, trying local...');
-          // Supabase login failed, try local storage
         }
         
-        // Fallback to local storage
         const localUser = users.find(u => 
           u.email === loginData.email && 
           u.password === loginData.password && 
@@ -3037,12 +4609,10 @@
         );
         
         if (localUser) {
-          console.log('User found locally:', localUser.name);
           setCurrentUser(localUser);
           localStorage.setItem('currentUser', JSON.stringify(localUser));
           redirectBasedOnRole(localUser.role);
         } else {
-          console.log('Login failed - no matching user found');
           alert('Invalid credentials. Please try again.');
         }
       };
@@ -3051,7 +4621,6 @@
         e.preventDefault();
         
         try {
-          // Check if user exists in Supabase
           const exists = await SupabaseService.userExists(registerData.email);
           if (exists) {
             alert('User already exists with this email');
@@ -3075,12 +4644,9 @@
           localStorage.setItem('users', JSON.stringify(updatedUsers));
           localStorage.setItem('currentUser', JSON.stringify(createdUser));
           
-          console.log('New user registered:', createdUser);
           redirectBasedOnRole(createdUser.role);
           
         } catch (error) {
-          console.error('Registration error:', error);
-          // Fallback to localStorage
           const existingUser = users.find(u => u.email === registerData.email);
           if (existingUser) {
             alert('User already exists with this email');
@@ -3103,13 +4669,11 @@
           localStorage.setItem('users', JSON.stringify(updatedUsers));
           localStorage.setItem('currentUser', JSON.stringify(newUser));
           
-          console.log('New user registered (local):', newUser);
           redirectBasedOnRole(newUser.role);
         }
       };
 
       const handleLogout = () => {
-        console.log('Logging out user:', currentUser?.name);
         setCurrentUser(null);
         localStorage.removeItem('currentUser');
         setPage('login');
@@ -3117,24 +4681,20 @@
       };
 
       const goToRegister = () => {
-        console.log('Going to register page');
         setPage('register');
         setRegisterData({ name: '', email: '', password: '', role: '' });
       };
 
       const goToLogin = () => {
-        console.log('Going to login page');
         setPage('login');
         setLoginData({ email: '', password: '' });
       };
 
       const goToProfile = () => {
-        console.log('Going to profile page');
         setPage('profile');
       };
 
       const goBack = () => {
-        console.log('Going back from profile');
         if (!currentUser) {
           setPage('login');
           return;
@@ -3142,7 +4702,6 @@
         redirectBasedOnRole(currentUser.role);
       };
 
-      // Show loading screen
       if (isLoading) {
         return (
           <div className="loading-screen">
@@ -3153,7 +4712,6 @@
         );
       }
 
-      // Render the appropriate page based on state
       switch(page) {
         case 'login':
           return (
@@ -3206,6 +4764,8 @@
               goToProfile={goToProfile}
               modules={modules}
               setModules={setModules}
+              teachingMaterials={teachingMaterials}
+              setTeachingMaterials={setTeachingMaterials}
             />
           );
           
@@ -3217,7 +4777,8 @@
               submissions={submissions} 
               users={users}
               handleLogout={handleLogout} 
-              goToProfile={goToProfile} 
+              goToProfile={goToProfile}
+              modules={modules}
             />
           );
           
@@ -3262,6 +4823,26 @@
             />
           );
           
+        case 'module':
+          return (
+            <ModulePage
+              currentUser={currentUser}
+              modules={modules}
+              assessments={assessments}
+              submissions={submissions}
+              questions={questions}
+              users={users}
+              teachingMaterials={teachingMaterials}
+              setAssessments={setAssessments}
+              setSubmissions={setSubmissions}
+              setTeachingMaterials={setTeachingMaterials}
+              setQuestions={setQuestions}
+              handleLogout={handleLogout}
+              goToProfile={goToProfile}
+              goBack={goBack}
+            />
+          );
+          
         default:
           return (
             <div className="error-page">
@@ -3275,7 +4856,6 @@
       }
     };
 
-    // Main App Component
     function App() {
       return (
         <div className="App">

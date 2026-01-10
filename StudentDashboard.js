@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 
-// StudentDashboard Component
 const StudentDashboard = ({ 
   currentUser, 
   assessments, 
@@ -10,7 +9,6 @@ const StudentDashboard = ({
   setQuestions, 
   handleLogout, 
   goToProfile,
-  // ADD THESE MISSING PROPS:
   modules = [],
   classes = [],
   setClasses = () => {}
@@ -18,20 +16,19 @@ const StudentDashboard = ({
   const [questionData, setQuestionData] = useState({ assessmentId: '', text: '' });
   const [invitationCode, setInvitationCode] = useState('');
   const [userModules, setUserModules] = useState([]);
+  const [selectedFile, setSelectedFile] = useState(null);
 
-  // Load user's modules on component mount
   useEffect(() => {
     loadUserModules();
   }, [classes, currentUser, modules]);
 
   const loadUserModules = () => {
-    // Find modules where user is enrolled in any class
     const enrolledModules = [];
     modules.forEach(module => {
       const moduleClasses = classes.filter(c => 
         c.module_code === module.code && 
         c.students && 
-        c.students.includes(currentUser.id)
+        c.students.includes(parseInt(currentUser.id))
       );
       if (moduleClasses.length > 0) {
         enrolledModules.push({
@@ -43,13 +40,110 @@ const StudentDashboard = ({
     setUserModules(enrolledModules);
   };
 
+  const submitAssessment = async (assessmentId) => {
+    if (!selectedFile) {
+      alert('Please select a file to submit');
+      return;
+    }
+
+    try {
+      const submission = {
+        id: Date.now(),
+        assessmentId,
+        studentId: currentUser.id,
+        fileName: selectedFile.name,
+        fileUrl: URL.createObjectURL(selectedFile),
+        submittedAt: new Date().toISOString(),
+        status: 'submitted',
+        grade: null,
+        feedback: '',
+        markedBy: null,
+        markedAt: null,
+        approvedByExamAdmin: false,
+        releasedToStudent: false
+      };
+      
+      const createdSubmission = await SupabaseService.createSubmission(submission);
+      const updatedSubmissions = [...submissions, createdSubmission];
+      setSubmissions(updatedSubmissions);
+      localStorage.setItem('submissions', JSON.stringify(updatedSubmissions));
+      alert('Submission successful');
+      setSelectedFile(null);
+    } catch (error) {
+      const submission = {
+        id: Date.now(),
+        assessmentId,
+        studentId: currentUser.id,
+        fileName: selectedFile.name,
+        fileUrl: URL.createObjectURL(selectedFile),
+        submittedAt: new Date().toISOString(),
+        status: 'submitted',
+        grade: null,
+        feedback: '',
+        markedBy: null,
+        markedAt: null,
+        approvedByExamAdmin: false,
+        releasedToStudent: false
+      };
+      const updatedSubmissions = [...submissions, submission];
+      setSubmissions(updatedSubmissions);
+      localStorage.setItem('submissions', JSON.stringify(updatedSubmissions));
+      alert('Submission successful');
+      setSelectedFile(null);
+    }
+  };
+
+  const handleQuestionSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const question = {
+        id: Date.now(),
+        assessmentId: parseInt(questionData.assessmentId),
+        studentId: currentUser.id,
+        question: questionData.text,
+        answers: []
+      };
+      
+      const createdQuestion = await SupabaseService.createQuestion(question);
+      const updatedQuestions = [...questions, createdQuestion];
+      setQuestions(updatedQuestions);
+      localStorage.setItem('questions', JSON.stringify(updatedQuestions));
+      setQuestionData({ assessmentId: '', text: '' });
+      alert('Question submitted');
+    } catch (error) {
+      const question = {
+        id: Date.now(),
+        assessmentId: parseInt(questionData.assessmentId),
+        studentId: currentUser.id,
+        question: questionData.text,
+        answers: []
+      };
+      const updatedQuestions = [...questions, question];
+      setQuestions(updatedQuestions);
+      localStorage.setItem('questions', JSON.stringify(updatedQuestions));
+      setQuestionData({ assessmentId: '', text: '' });
+      alert('Question submitted');
+    }
+  };
+
   const handleJoinModule = async (e) => {
     e.preventDefault();
     const noClassElement = document.getElementById('no-class-found');
     noClassElement.style.display = 'none';
     
+    if (!invitationCode || invitationCode.length < 6) {
+      noClassElement.innerHTML = `
+        <i class="fas fa-exclamation-circle"></i> 
+        <strong> Invalid invitation code.</strong>
+        <div style="font-size: 14px; margin-top: 5px;">
+          Please enter a valid invitation code (8 characters).
+        </div>
+      `;
+      noClassElement.style.display = 'block';
+      return;
+    }
+    
     try {
-      // Find module by invitation_code
       const module = await SupabaseService.findModuleByInvitationCode(invitationCode);
       
       if (!module) {
@@ -64,7 +158,6 @@ const StudentDashboard = ({
         return;
       }
       
-      // Get classes for this module
       const moduleClasses = await SupabaseService.getClassesForModule(module.code);
       
       if (moduleClasses.length === 0) {
@@ -72,7 +165,6 @@ const StudentDashboard = ({
         return;
       }
       
-      // Add student to all classes in the module
       let enrolledCount = 0;
       let alreadyEnrolledCount = 0;
       
@@ -80,7 +172,6 @@ const StudentDashboard = ({
         try {
           const result = await SupabaseService.addStudentToClass(classItem.id, currentUser.id);
           
-          // Check if student was newly added
           const students = result.students || [];
           if (students.includes(parseInt(currentUser.id))) {
             enrolledCount++;
@@ -92,7 +183,6 @@ const StudentDashboard = ({
         }
       }
       
-      // Update local state
       const updatedClasses = [...classes];
       moduleClasses.forEach(classItem => {
         const index = updatedClasses.findIndex(c => c.id === classItem.id);
@@ -108,7 +198,6 @@ const StudentDashboard = ({
       setClasses(updatedClasses);
       localStorage.setItem('classes', JSON.stringify(updatedClasses));
       
-      // Reload user modules
       loadUserModules();
       
       setInvitationCode('');
@@ -132,7 +221,9 @@ const StudentDashboard = ({
     }
   };
 
-  // ... rest of the StudentDashboard functions remain the same ...
+  const openModule = (moduleCode) => {
+    window.location.href = `?page=module&module=${moduleCode}`;
+  };
 
   return (
     <div className="main-container">
@@ -156,22 +247,54 @@ const StudentDashboard = ({
         
         <section>
           <h3>My Assessments ({assessments.length})</h3>
-          <div className="quick-actions">
-            {assessments.map(a => (
-              <div key={a.id} className="item-card">
-                <h4>{a.title}</h4>
-                <p>{a.description}</p>
-                <p><strong>Deadline:</strong> {a.deadline}</p>
-                <button 
-                  onClick={() => submitAssessment(a.id)}
-                  className="btn-primary"
-                  style={{ marginTop: '10px', width: '100%' }}
-                >
-                  Submit Assessment
-                </button>
-              </div>
-            ))}
-          </div>
+          {assessments.length === 0 ? (
+            <div className="empty-state">
+              <i className="fas fa-tasks" style={{ fontSize: '48px', color: '#ccc', marginBottom: '20px' }}></i>
+              <h4>No assessments yet</h4>
+              <p>Your instructors haven't created any assessments yet.</p>
+            </div>
+          ) : (
+            <div className="quick-actions">
+              {assessments.map(a => {
+                const submission = submissions.find(s => s.assessmentId === a.id && s.studentId === currentUser.id);
+                return (
+                  <div key={a.id} className="item-card">
+                    <h4>{a.title}</h4>
+                    <p>{a.description}</p>
+                    <p><strong>Deadline:</strong> {new Date(a.deadline).toLocaleDateString()}</p>
+                    {submission ? (
+                      <div style={{ marginTop: '10px' }}>
+                        <p><strong>Status:</strong> 
+                          <span className={`status-badge status-${submission.status}`} style={{ marginLeft: '10px' }}>
+                            {submission.status}
+                          </span>
+                        </p>
+                        {submission.grade && (
+                          <p><strong>Grade:</strong> {submission.grade}/100</p>
+                        )}
+                      </div>
+                    ) : (
+                      <>
+                        <input
+                          type="file"
+                          onChange={(e) => setSelectedFile(e.target.files[0])}
+                          style={{ width: '100%', padding: '8px', marginTop: '10px', border: '1px solid #ddd', borderRadius: '4px' }}
+                        />
+                        <button 
+                          onClick={() => submitAssessment(a.id)}
+                          className="btn-primary"
+                          style={{ marginTop: '10px', width: '100%' }}
+                          disabled={!selectedFile}
+                        >
+                          Submit Assessment
+                        </button>
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </section>
         
         <section>
@@ -234,20 +357,67 @@ const StudentDashboard = ({
           </div>
           
           <div style={{ marginTop: '20px' }}>
-            <h4>My Enrolled Modules</h4>
+            <h4>My Enrolled Modules ({userModules.length})</h4>
             {userModules.length > 0 ? (
               <div className="quick-actions">
                 {userModules.map(module => (
-                  <div key={module.code} className="item-card">
-                    <h5>{module.name}</h5>
-                    <p><strong>Module Code:</strong> {module.code}</p>
-                    <p><strong>Invitation Code:</strong> {module.invitation_code}</p>
-                    <p><strong>Classes enrolled:</strong> {module.classCount}</p>
+                  <div key={module.code} className="item-card" onClick={() => openModule(module.code)} style={{ cursor: 'pointer' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div style={{ flex: 1 }}>
+                        <h4>{module.name}</h4>
+                        <p style={{ color: '#666', marginBottom: '10px' }}>{module.code}</p>
+                        <p style={{ fontSize: '14px', marginBottom: '15px' }}>{module.description}</p>
+                      </div>
+                      <span style={{
+                        padding: '4px 8px',
+                        backgroundColor: '#667eea',
+                        color: 'white',
+                        borderRadius: '4px',
+                        fontSize: '12px',
+                        fontWeight: '600'
+                      }}>
+                        Student
+                      </span>
+                    </div>
+                    
+                    <div style={{ 
+                      display: 'grid', 
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', 
+                      gap: '10px',
+                      marginTop: '15px',
+                      paddingTop: '15px',
+                      borderTop: '1px solid #eee'
+                    }}>
+                      <div style={{ textAlign: 'center' }}>
+                        <p style={{ margin: '0', fontSize: '12px', color: '#666' }}>Classes</p>
+                        <p style={{ margin: '5px 0 0 0', fontSize: '18px', fontWeight: '600', color: '#3498db' }}>
+                          {module.classCount}
+                        </p>
+                      </div>
+                      <div style={{ textAlign: 'center' }}>
+                        <p style={{ margin: '0', fontSize: '12px', color: '#666' }}>Your Submissions</p>
+                        <p style={{ margin: '5px 0 0 0', fontSize: '18px', fontWeight: '600', color: '#2ecc71' }}>
+                          {submissions.filter(s => s.studentId === currentUser.id && 
+                            assessments.find(a => a.id === s.assessmentId && 
+                            (a.course === module.name || a.moduleCode === module.code))).length}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div style={{ marginTop: '15px', textAlign: 'center' }}>
+                      <button className="btn-primary" style={{ width: '100%' }}>
+                        <i className="fas fa-external-link-alt"></i> Open Module
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <p>You haven't joined any modules yet. Enter an invitation code above.</p>
+              <div className="empty-state">
+                <i className="fas fa-book" style={{ fontSize: '48px', color: '#ccc', marginBottom: '20px' }}></i>
+                <h4>No modules enrolled</h4>
+                <p>Join a module using an invitation code above.</p>
+              </div>
             )}
           </div>
         </section>
@@ -255,3 +425,5 @@ const StudentDashboard = ({
     </div>
   );
 };
+
+export default StudentDashboard;
