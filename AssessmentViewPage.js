@@ -1,3 +1,6 @@
+// AssessmentViewPage.js
+import React, { useState, useEffect } from 'react';
+
 const AssessmentViewPage = ({
   currentUser,
   assessments = [],
@@ -5,7 +8,7 @@ const AssessmentViewPage = ({
   questions = [],
   modules = [],
   users = [],
-  classes = [], // ADD THIS - missing prop
+  classes = [],
   setSubmissions = () => {},
   setQuestions = () => {},
   setAssessments = () => {},
@@ -20,8 +23,12 @@ const AssessmentViewPage = ({
   const [activeTab, setActiveTab] = useState('details');
   const [editing, setEditing] = useState(false);
   const [editedAssessment, setEditedAssessment] = useState(null);
-  const [gradeData, setGradeData] = useState({});
-  const [feedbackData, setFeedbackData] = useState({});
+  
+  // Grading Popup State
+  const [showGradePopup, setShowGradePopup] = useState(false);
+  const [submissionToGrade, setSubmissionToGrade] = useState(null);
+  const [popupGrade, setPopupGrade] = useState('');
+  const [popupFeedback, setPopupFeedback] = useState('');
 
   // Get assessment ID from URL
   useEffect(() => {
@@ -46,18 +53,35 @@ const AssessmentViewPage = ({
     }
   }, [assessments, currentUser, modules, goBack]);
 
+  // Add keyboard shortcuts for grading popup
+    useEffect(() => {
+    const handleKeyDown = (e) => {
+        if (showGradePopup) {
+        if (e.key === 'Escape') {
+            closeGradePopup();
+        }
+        if (e.key === 'Enter' && e.ctrlKey) {
+            e.preventDefault();
+            // You could auto-submit the form here
+        }
+        }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [showGradePopup]);
+
   const checkAccess = (assessment) => {
     const module = getAssessmentModule(assessment);
     
     if (!module) {
-      alert('Module not found for this assessment');
+      alert('Module not found for this assessment! ');
       goBack();
       return;
     }
 
     switch(currentUser.role) {
       case 'Student':
-        // Check if student is enrolled in the module
         const classAccess = classes.filter(c => 
           c.module_code === module.code && 
           c.students && 
@@ -71,19 +95,17 @@ const AssessmentViewPage = ({
         break;
         
       case 'Instructor':
-        // Check if instructor is assigned to the module
         const instructorId = module.instructor_id || module.instructorId;
         if (instructorId !== currentUser.id) {
-          alert('You are not assigned to this module');
+          alert('You are not assigned to this module! ');
           goBack();
         }
         break;
         
       case 'Exam Administrator':
-        // Check if exam admin is assigned to the module
         const examAdminId = module.exam_admin_id || module.examAdminId;
         if (examAdminId !== currentUser.id) {
-          alert('You are not assigned to this module');
+          alert('You are not assigned to this module! ');
           goBack();
         }
         break;
@@ -127,6 +149,22 @@ const AssessmentViewPage = ({
     }
   };
 
+  // Open Grading Popup
+  const openGradePopup = (submission) => {
+    setSubmissionToGrade(submission);
+    setPopupGrade(submission.grade || '');
+    setPopupFeedback(submission.feedback || '');
+    setShowGradePopup(true);
+  };
+
+  // Close Grading Popup
+  const closeGradePopup = () => {
+    setShowGradePopup(false);
+    setSubmissionToGrade(null);
+    setPopupGrade('');
+    setPopupFeedback('');
+  };
+
   // Submit assessment (Student only)
   const submitAssessment = async () => {
     if (!selectedFile) {
@@ -157,7 +195,6 @@ const AssessmentViewPage = ({
       localStorage.setItem('submissions', JSON.stringify(updatedSubmissions));
       alert('Assessment submitted successfully');
       setSelectedFile(null);
-      // Refresh page to show updated submission
       window.location.reload();
     } catch (error) {
       console.error('Error submitting assessment:', error);
@@ -293,22 +330,25 @@ const AssessmentViewPage = ({
     }
   };
 
-  // Grade submission (Instructor only)
-  const gradeSubmission = async (submissionId) => {
-    const grade = gradeData[submissionId];
-    const feedback = feedbackData[submissionId] || '';
+  // Grade submission (Instructor only - FROM POPUP)
+  const submitGrade = async (e) => {
+    e.preventDefault();
     
-    if (!grade || isNaN(grade)) {
+    if (!submissionToGrade) return;
+
+    if (!popupGrade || isNaN(popupGrade)) {
       alert('Please enter a valid grade');
       return;
     }
+    
+    const submissionId = submissionToGrade.id;
 
     try {
       const submission = submissions.find(s => s.id === submissionId);
       const updatedSubmission = {
         ...submission,
-        grade: parseFloat(grade),
-        feedback,
+        grade: parseFloat(popupGrade),
+        feedback: popupFeedback,
         markedBy: currentUser.id,
         markedAt: new Date().toISOString(),
         status: 'graded',
@@ -322,17 +362,16 @@ const AssessmentViewPage = ({
       setSubmissions(updatedSubmissions);
       localStorage.setItem('submissions', JSON.stringify(updatedSubmissions));
       
-      setGradeData(prev => ({ ...prev, [submissionId]: '' }));
-      setFeedbackData(prev => ({ ...prev, [submissionId]: '' }));
-      alert('Submission graded successfully');
+      alert('Submission graded successfully. It is now pending Exam Admin approval.');
+      closeGradePopup();
       window.location.reload();
     } catch (error) {
       console.error('Error grading submission:', error);
       const updatedSubmissions = submissions.map(s => 
         s.id === submissionId ? { 
           ...s, 
-          grade: parseFloat(grade), 
-          feedback,
+          grade: parseFloat(popupGrade), 
+          feedback: popupFeedback,
           markedBy: currentUser.id,
           markedAt: new Date().toISOString(),
           status: 'graded',
@@ -342,9 +381,8 @@ const AssessmentViewPage = ({
       setSubmissions(updatedSubmissions);
       localStorage.setItem('submissions', JSON.stringify(updatedSubmissions));
       
-      setGradeData(prev => ({ ...prev, [submissionId]: '' }));
-      setFeedbackData(prev => ({ ...prev, [submissionId]: '' }));
       alert('Submission graded (local)');
+      closeGradePopup();
       window.location.reload();
     }
   };
@@ -948,41 +986,25 @@ const AssessmentViewPage = ({
                           )}
                         </div>
                         
-                        {/* Instructor Grading */}
+                        {/* In the submission card - Replace existing grading button */}
                         {currentUser.role === 'Instructor' && submission.status === 'submitted' && (
-                          <div style={{ marginTop: '15px' }}>
-                            <div style={{ marginBottom: '10px' }}>
-                              <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>Grade (/{currentAssessment.maxMarks || currentAssessment.max_marks || 100})</label>
-                              <input
-                                type="number"
-                                placeholder="Enter grade"
-                                min="0"
-                                max={currentAssessment.maxMarks || currentAssessment.max_marks || 100}
-                                value={gradeData[submission.id] || ''}
-                                onChange={e => setGradeData(prev => ({ ...prev, [submission.id]: e.target.value }))}
-                                style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
-                              />
+                            <div style={{ marginTop: '15px' }}>
+                                <button
+                                    onClick={() => openGradePopup(submission)}
+                                    className="btn-primary"
+                                    style={{ 
+                                        width: '100%', 
+                                        padding: '12px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: '10px',
+                                        fontSize: '15px'
+                                    }}
+                                    >
+                                    <i className="fas fa-graduation-cap"></i> Grade This Submission
+                                </button>
                             </div>
-                            
-                            <div style={{ marginBottom: '10px' }}>
-                              <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>Feedback</label>
-                              <textarea
-                                placeholder="Provide feedback..."
-                                value={feedbackData[submission.id] || ''}
-                                onChange={e => setFeedbackData(prev => ({ ...prev, [submission.id]: e.target.value }))}
-                                rows="3"
-                                style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
-                              />
-                            </div>
-                            
-                            <button
-                              onClick={() => gradeSubmission(submission.id)}
-                              className="btn-primary"
-                              style={{ width: '100%' }}
-                            >
-                              <i className="fas fa-check"></i> Submit Grade
-                            </button>
-                          </div>
                         )}
                         
                         {/* Exam Admin Approval */}
@@ -1191,6 +1213,212 @@ const AssessmentViewPage = ({
           )}
         </div>
       </main>
+      
+      {/* Enhanced Grade Popup Modal */}
+        {showGradePopup && submissionToGrade && (
+        <div className="global-popup-overlay">
+            <div className="global-popup-content">
+            <div className="popup-header">
+                <h2>Grade Submission</h2>
+                <button 
+                onClick={closeGradePopup}
+                className="close-popup-btn"
+                >
+                ×
+                </button>
+            </div>
+            
+            <div className="popup-body">
+                {/* Student Information */}
+                <div className="submission-info-card">
+                <h3 style={{ margin: '0 0 15px 0', color: '#333' }}>
+                    <i className="fas fa-user-graduate" style={{ color: '#667eea', marginRight: '10px' }}></i>
+                    Student Submission
+                </h3>
+                
+                <div className="info-grid">
+                    <div className="info-item">
+                    <span className="info-label">Student Name</span>
+                    <span className="info-value">
+                        {users.find(u => u.id === submissionToGrade.studentId)?.name || 'Unknown Student'}
+                    </span>
+                    </div>
+                    <div className="info-item">
+                    <span className="info-label">Student ID</span>
+                    <span className="info-value">{submissionToGrade.studentId}</span>
+                    </div>
+                    <div className="info-item">
+                    <span className="info-label">Submitted On</span>
+                    <span className="info-value">
+                        {new Date(submissionToGrade.submittedAt).toLocaleDateString()} at{' '}
+                        {new Date(submissionToGrade.submittedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                    </div>
+                    <div className="info-item">
+                    <span className="info-label">File</span>
+                    <span className="info-value">
+                        <i className="fas fa-file" style={{ marginRight: '8px', color: '#3498db' }}></i>
+                        {submissionToGrade.fileName}
+                    </span>
+                    </div>
+                </div>
+                
+                <div className="download-btn-container">
+                    <a 
+                    href={submissionToGrade.fileUrl} 
+                    download 
+                    className="btn-primary"
+                    style={{ textDecoration: 'none', padding: '10px 20px', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+                    >
+                    <i className="fas fa-download"></i> Download Submission
+                    </a>
+                    <button 
+                    onClick={() => window.open(submissionToGrade.fileUrl, '_blank')}
+                    className="btn-secondary"
+                    style={{ padding: '10px 20px', display: 'flex', alignItems: 'center', gap: '8px' }}
+                    >
+                    <i className="fas fa-eye"></i> Preview
+                    </button>
+                </div>
+                </div>
+
+                {/* Grading Form */}
+                <form onSubmit={submitGrade} className="grading-form">
+                <div className="form-group">
+                    <label htmlFor="grade-input">
+                    Grade (Max: {currentAssessment.maxMarks || currentAssessment.max_marks || 100} marks)
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                    <input
+                        id="grade-input"
+                        type="number"
+                        value={popupGrade}
+                        onChange={e => setPopupGrade(e.target.value)}
+                        min="0"
+                        max={currentAssessment.maxMarks || currentAssessment.max_marks || 100}
+                        step="0.5"
+                        required
+                        placeholder="Enter grade (e.g., 85.5)"
+                        style={{ width: '100%', paddingRight: '60px' }}
+                    />
+                    <span style={{
+                        position: 'absolute',
+                        right: '15px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        color: '#666',
+                        fontWeight: '500'
+                    }}>
+                        / {currentAssessment.maxMarks || currentAssessment.max_marks || 100}
+                    </span>
+                    </div>
+                    <div style={{ fontSize: '14px', color: '#666', marginTop: '5px' }}>
+                    Enter a value between 0 and {currentAssessment.maxMarks || currentAssessment.max_marks || 100}
+                    </div>
+                </div>
+
+                <div className="form-group">
+                    <label htmlFor="feedback-input">
+                    Feedback <span style={{ color: '#666', fontWeight: 'normal' }}>(Optional but recommended)</span>
+                    </label>
+                    <textarea
+                    id="feedback-input"
+                    value={popupFeedback}
+                    onChange={e => setPopupFeedback(e.target.value)}
+                    rows="6"
+                    placeholder="Provide constructive feedback to help the student improve. Consider mentioning strengths, areas for improvement, and specific suggestions..."
+                    style={{ width: '100%' }}
+                    />
+                    <div style={{ fontSize: '14px', color: '#666', marginTop: '5px' }}>
+                    {popupFeedback.length}/1000 characters
+                    </div>
+                </div>
+
+                {/* Grade Preview */}
+                {popupGrade && !isNaN(popupGrade) && (
+                    <div className="grade-preview">
+                    <h4>Grade Preview</h4>
+                    <div className="preview-row">
+                        <span className="preview-label">Raw Score</span>
+                        <span className="preview-value">{popupGrade} marks</span>
+                    </div>
+                    <div className="preview-row">
+                        <span className="preview-label">Percentage</span>
+                        <span className="preview-value">
+                        {((popupGrade / (currentAssessment.maxMarks || currentAssessment.max_marks || 100)) * 100).toFixed(1)}%
+                        </span>
+                    </div>
+                    <div className="preview-row">
+                        <span className="preview-label">Assessment Type</span>
+                        <span className="preview-value">{currentAssessment.type?.toUpperCase() || 'ASSIGNMENT'}</span>
+                    </div>
+                    {popupGrade < (currentAssessment.maxMarks || currentAssessment.max_marks || 100) * 0.5 && (
+                        <div style={{ 
+                        marginTop: '10px', 
+                        padding: '10px', 
+                        backgroundColor: '#fff3cd', 
+                        borderRadius: '6px',
+                        borderLeft: '4px solid #ffc107'
+                        }}>
+                        <i className="fas fa-exclamation-triangle" style={{ color: '#ffc107', marginRight: '8px' }}></i>
+                        This grade is below 50%. Consider adding specific improvement suggestions.
+                        </div>
+                    )}
+                    </div>
+                )}
+
+                {/* Quick Stats */}
+                <div className="quick-stats-popup">
+                    <div className="stat-item">
+                    <div className="stat-label">Total Submissions</div>
+                    <div className="stat-value">{assessmentSubmissions.length}</div>
+                    </div>
+                    <div className="stat-item">
+                    <div className="stat-label">Pending</div>
+                    <div className="stat-value" style={{ color: '#f39c12' }}>
+                        {assessmentSubmissions.filter(s => s.status === 'submitted').length}
+                    </div>
+                    </div>
+                    <div className="stat-item">
+                    <div className="stat-label">Graded</div>
+                    <div className="stat-value" style={{ color: '#2ecc71' }}>
+                        {assessmentSubmissions.filter(s => s.status === 'graded' || s.status === 'released').length}
+                    </div>
+                    </div>
+                    <div className="stat-item">
+                    <div className="stat-label">Average</div>
+                    <div className="stat-value" style={{ color: '#3498db' }}>
+                        {(() => {
+                        const gradedSubmissions = assessmentSubmissions.filter(s => s.grade !== null);
+                        if (gradedSubmissions.length === 0) return 'N/A';
+                        const total = gradedSubmissions.reduce((sum, s) => sum + parseFloat(s.grade), 0);
+                        return (total / gradedSubmissions.length).toFixed(1);
+                        })()}
+                    </div>
+                    </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="popup-actions">
+                    <button type="submit" className="btn-primary">
+                    <i className="fas fa-check-circle"></i> Submit Grade & Mark as Graded
+                    </button>
+                    <button type="button" onClick={closeGradePopup} className="btn-secondary">
+                    <i className="fas fa-times"></i> Cancel
+                    </button>
+                </div>
+
+                <div style={{ fontSize: '13px', color: '#666', textAlign: 'center', marginTop: '15px' }}>
+                    <i className="fas fa-info-circle" style={{ marginRight: '5px' }}></i>
+                    Once submitted, this grade will be sent to the Exam Administrator for approval.
+                </div>
+                </form>
+            </div>
+            </div>
+        </div>
+        )}
     </div>
   );
 };
+
+export default AssessmentViewPage;

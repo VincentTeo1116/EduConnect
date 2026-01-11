@@ -269,6 +269,354 @@
         transform: translateY(0);
       }
     }
+
+    .enhanced-popup-overlay {
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      background: rgba(0, 0, 0, 0.85) !important;
+      backdrop-filter: blur(8px) !important;
+      display: flex !important;
+      justify-content: center !important;
+      align-items: center !important;
+      z-index: 99999 !important;
+      animation: fadeInOverlay 0.3s ease !important;
+    }
+
+    @keyframes fadeInOverlay {
+      from {
+        opacity: 0;
+        backdrop-filter: blur(0px);
+      }
+      to {
+        opacity: 1;
+        backdrop-filter: blur(8px);
+      }
+    }
+
+    .enhanced-popup-content {
+      background: white !important;
+      border-radius: 20px !important;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35) !important;
+      width: 90% !important;
+      max-width: 750px !important;
+      max-height: 85vh !important;
+      overflow-y: auto !important;
+      animation: slideInPopup 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+      position: relative !important;
+    }
+
+    @keyframes slideInPopup {
+      from {
+        opacity: 0;
+        transform: translateY(50px) scale(0.9);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .enhanced-popup-header {
+      display: flex !important;
+      justify-content: space-between !important;
+      align-items: center !important;
+      padding: 25px 30px 20px 30px !important;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+      color: white !important;
+      border-radius: 20px 20px 0 0 !important;
+    }
+
+    .enhanced-popup-header h2 {
+      margin: 0 !important;
+      font-size: 24px !important;
+      font-weight: 600 !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 12px !important;
+    }
+
+    .enhanced-close-popup-btn {
+      background: none !important;
+      border: none !important;
+      color: white !important;
+      font-size: 32px !important;
+      cursor: pointer !important;
+      width: 45px !important;
+      height: 45px !important;
+      border-radius: 50% !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      transition: all 0.3s ease !important;
+    }
+
+    .enhanced-close-popup-btn:hover {
+      background: rgba(255, 255, 255, 0.15) !important;
+      transform: rotate(90deg) !important;
+    }
+
+    .enhanced-popup-body {
+      padding: 30px !important;
+    }
+
+    .enhanced-grading-form {
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 25px !important;
+    }
+
+    .enhanced-form-group {
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 10px !important;
+    }
+
+    .enhanced-form-group label {
+      font-weight: 600 !important;
+      color: #333 !important;
+      font-size: 16px !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 8px !important;
+    }
+
+    .enhanced-form-group input, .enhanced-form-group textarea {
+      padding: 14px 16px !important;
+      border: 2px solid #e1e5e9 !important;
+      border-radius: 12px !important;
+      font-size: 16px !important;
+      transition: all 0.3s ease !important;
+      font-family: inherit !important;
+    }
+
+    .enhanced-form-group input:focus, .enhanced-form-group textarea:focus {
+      border-color: #667eea !important;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15) !important;
+      outline: none !important;
+      transform: translateY(-2px) !important;
+    }
+
+    .enhanced-form-group textarea {
+      min-height: 140px !important;
+      resize: vertical !important;
+      line-height: 1.6 !important;
+    }
+
+    .enhanced-grade-preview {
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important;
+      padding: 25px !important;
+      border-radius: 15px !important;
+      border-left: 5px solid #3498db !important;
+      margin: 15px 0 !important;
+    }
+
+    .enhanced-grade-preview h4 {
+      margin-top: 0 !important;
+      color: #333 !important;
+      margin-bottom: 15px !important;
+      font-size: 18px !important;
+    }
+
+    .enhanced-preview-row {
+      display: flex !important;
+      justify-content: space-between !important;
+      margin-bottom: 12px !important;
+      padding: 8px 0 !important;
+      border-bottom: 1px dashed rgba(0, 0, 0, 0.1) !important;
+    }
+
+    .enhanced-preview-row:last-child {
+      border-bottom: none !important;
+    }
+
+    .enhanced-preview-label {
+      color: #666 !important;
+      font-weight: 500 !important;
+      font-size: 15px !important;
+    }
+
+    .enhanced-preview-value {
+      font-weight: 600 !important;
+      color: #333 !important;
+      font-size: 15px !important;
+    }
+
+    .enhanced-preview-grade {
+      font-size: 28px !important;
+      color: #2ecc71 !important;
+      font-weight: 700 !important;
+    }
+
+    .enhanced-popup-actions {
+      display: flex !important;
+      gap: 15px !important;
+      margin-top: 25px !important;
+    }
+
+    .enhanced-popup-actions .btn-primary {
+      flex: 3 !important;
+      padding: 16px !important;
+      font-size: 16px !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 10px !important;
+    }
+
+    .enhanced-popup-actions .btn-secondary {
+      flex: 1 !important;
+      padding: 16px !important;
+      font-size: 16px !important;
+    }
+
+    .enhanced-submission-info-card {
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important;
+      padding: 25px !important;
+      border-radius: 15px !important;
+      margin-bottom: 25px !important;
+      border-left: 5px solid #667eea !important;
+    }
+
+    .enhanced-submission-info-card h3 {
+      margin: 0 0 20px 0 !important;
+      color: #333 !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 12px !important;
+    }
+
+    .enhanced-info-grid {
+      display: grid !important;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important;
+      gap: 20px !important;
+      margin-bottom: 20px !important;
+    }
+
+    .enhanced-info-item {
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 6px !important;
+    }
+
+    .enhanced-info-label {
+      font-size: 13px !important;
+      color: #666 !important;
+      font-weight: 500 !important;
+    }
+
+    .enhanced-info-value {
+      font-size: 15px !important;
+      color: #333 !important;
+      font-weight: 600 !important;
+    }
+
+    .enhanced-download-btn-container {
+      display: flex !important;
+      gap: 12px !important;
+      flex-wrap: wrap !important;
+    }
+
+    .enhanced-download-btn-container .btn-primary,
+    .enhanced-download-btn-container .btn-secondary {
+      text-decoration: none !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 8px !important;
+    }
+
+    /* Grade validation warning */
+    .enhanced-grade-warning {
+      background-color: #fff3cd !important;
+      border-left: 4px solid #ffc107 !important;
+      padding: 12px 16px !important;
+      border-radius: 6px !important;
+      margin-top: 10px !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 10px !important;
+      font-size: 14px !important;
+      color: #856404 !important;
+    }
+
+    /* Character counter for feedback */
+    .enhanced-char-counter {
+      font-size: 14px !important;
+      color: #666 !important;
+      text-align: right !important;
+      margin-top: 5px !important;
+    }
+
+    /* Info note at bottom */
+    .enhanced-info-note {
+      font-size: 13px !important;
+      color: #666 !important;
+      text-align: center !important;
+      margin-top: 15px !important;
+      padding: 12px !important;
+      background-color: #f8f9fa !important;
+      border-radius: 8px !important;
+      border: 1px dashed #dee2e6 !important;
+    }
+
+    /* Custom scrollbar for popup */
+    .enhanced-popup-content::-webkit-scrollbar {
+      width: 8px !important;
+    }
+
+    .enhanced-popup-content::-webkit-scrollbar-track {
+      background: #f1f1f1 !important;
+      border-radius: 4px !important;
+    }
+
+    .enhanced-popup-content::-webkit-scrollbar-thumb {
+      background: #667eea !important;
+      border-radius: 4px !important;
+    }
+
+    .enhanced-popup-content::-webkit-scrollbar-thumb:hover {
+      background: #764ba2 !important;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+      .enhanced-popup-content {
+        width: 95% !important;
+        max-width: 95% !important;
+        border-radius: 15px !important;
+      }
+      
+      .enhanced-popup-header {
+        padding: 20px 25px 15px 25px !important;
+      }
+      
+      .enhanced-popup-body {
+        padding: 20px !important;
+      }
+      
+      .enhanced-popup-actions {
+        flex-direction: column !important;
+        gap: 10px !important;
+      }
+      
+      .enhanced-popup-actions .btn-primary,
+      .enhanced-popup-actions .btn-secondary {
+        flex: none !important;
+        width: 100% !important;
+      }
+      
+      .enhanced-info-grid {
+        grid-template-columns: 1fr !important;
+        gap: 15px !important;
+      }
+      
+      .enhanced-download-btn-container {
+        flex-direction: column !important;
+      }
+    }
   </style>
 </head>
 <body>
@@ -564,10 +912,26 @@
           const { data, error } = await supabase
             .from('submissions')
             .select('*')
-            .order('submitted_at', { ascending: false }); // Changed to 'submitted_at'
+            .order('submitted_at', { ascending: false });
           
           if (error) throw error;
-          return data || [];
+
+          // MAP DB (snake_case) -> FRONTEND (camelCase)
+          return (data || []).map(sub => ({
+            ...sub,
+            // Map the IDs required for filtering
+            assessmentId: sub.assessment_id,
+            studentId: sub.student_id,
+            
+            // Map other fields used in the UI
+            fileName: sub.file_name,
+            fileUrl: sub.file_path,
+            submittedAt: sub.submitted_at,
+            markedBy: sub.marked_by,
+            markedAt: sub.marked_at,
+            approvedByExamAdmin: sub.approved_by_exam_admin,
+            releasedToStudent: sub.released_to_student
+          }));
         } catch (error) {
           console.error('Error fetching submissions:', error);
           return [];
@@ -3428,7 +3792,7 @@
       );
     };
 
-    // ==================== ASSESSMENT VIEW PAGE ====================
+    // ==================== ASSESSMENT VIEW PAGE WITH ENHANCED GRADING POPUP ====================
     const AssessmentViewPage = ({
       currentUser,
       assessments = [],
@@ -3446,6 +3810,12 @@
       const [selectedFile, setSelectedFile] = useState(null);
       const [newQuestion, setNewQuestion] = useState('');
       const [answers, setAnswers] = useState({});
+
+      // ENHANCED GRADING POPUP STATE
+      const [showEnhancedGradePopup, setShowEnhancedGradePopup] = useState(false);
+      const [submissionToGrade, setSubmissionToGrade] = useState(null);
+      const [popupGrade, setPopupGrade] = useState('');
+      const [popupFeedback, setPopupFeedback] = useState('');
 
       // Get assessment ID from URL
       useEffect(() => {
@@ -3465,18 +3835,10 @@
             );
             
             if (currentUser.role === 'Student') {
-              // Student: Check if enrolled in the module
               if (!module) {
                 alert('You do not have access to this assessment');
                 goBack();
                 return;
-              }
-              
-              // Check if student is enrolled in any class of this module
-              const hasAccess = true; // You should implement proper access check
-              if (!hasAccess) {
-                alert('You are not enrolled in this module');
-                goBack();
               }
             }
           } else {
@@ -3513,6 +3875,85 @@
         const file = e.target.files[0];
         if (file) {
           setSelectedFile(file);
+        }
+      };
+
+      // ENHANCED GRADING POPUP FUNCTIONS
+      const openEnhancedGradePopup = (submission) => {
+        setSubmissionToGrade(submission);
+        setPopupGrade(submission.grade || '');
+        setPopupFeedback(submission.feedback || '');
+        setShowEnhancedGradePopup(true);
+        document.body.classList.add('popup-open');
+      };
+
+      const closeEnhancedGradePopup = () => {
+        setShowEnhancedGradePopup(false);
+        setSubmissionToGrade(null);
+        setPopupGrade('');
+        setPopupFeedback('');
+        document.body.classList.remove('popup-open');
+      };
+
+      const submitGradeFromPopup = async (e) => {
+        e.preventDefault();
+        
+        if (!submissionToGrade) return;
+
+        if (!popupGrade || isNaN(popupGrade)) {
+          alert('Please enter a valid grade');
+          return;
+        }
+        
+        const maxMarks = currentAssessment.maxMarks || currentAssessment.max_marks || 100;
+        if (parseFloat(popupGrade) < 0 || parseFloat(popupGrade) > maxMarks) {
+          alert(`Grade must be between 0 and ${maxMarks}`);
+          return;
+        }
+        
+        const submissionId = submissionToGrade.id;
+
+        try {
+          const submission = submissions.find(s => s.id === submissionId);
+          const updatedSubmission = {
+            ...submission,
+            grade: parseFloat(popupGrade),
+            feedback: popupFeedback,
+            markedBy: currentUser.id,
+            markedAt: new Date().toISOString(),
+            status: 'graded',
+            approvedByExamAdmin: false
+          };
+
+          const supabaseUpdated = await SupabaseService.updateSubmission(submissionId, updatedSubmission);
+          const updatedSubmissions = submissions.map(s => 
+            s.id === submissionId ? supabaseUpdated : s
+          );
+          setSubmissions(updatedSubmissions);
+          localStorage.setItem('submissions', JSON.stringify(updatedSubmissions));
+          
+          alert('Submission graded successfully. Now pending Exam Admin approval.');
+          closeEnhancedGradePopup();
+          window.location.reload();
+        } catch (error) {
+          console.error('Error grading submission:', error);
+          const updatedSubmissions = submissions.map(s => 
+            s.id === submissionId ? { 
+              ...s, 
+              grade: parseFloat(popupGrade), 
+              feedback: popupFeedback,
+              markedBy: currentUser.id,
+              markedAt: new Date().toISOString(),
+              status: 'graded',
+              approvedByExamAdmin: false
+            } : s
+          );
+          setSubmissions(updatedSubmissions);
+          localStorage.setItem('submissions', JSON.stringify(updatedSubmissions));
+          
+          alert('✓ Submission graded (local)');
+          closeEnhancedGradePopup();
+          window.location.reload();
         }
       };
 
@@ -4022,7 +4463,7 @@
                   </section>
                 )}
 
-                {/* Instructor View - Submissions */}
+                {/* Instructor View - Submissions WITH ENHANCED GRADING POPUP */}
                 {currentUser.role === 'Instructor' && (
                   <section style={{ marginBottom: '30px' }}>
                     <h3><i className="fas fa-users" style={{ color: '#e74c3c' }}></i> Student Submissions ({assessmentSubmissions.length})</h3>
@@ -4091,15 +4532,26 @@
                                 )}
                               </div>
                               
-                              <button
-                                onClick={() => {
-                                  window.location.href = `?page=module&module=${module?.code}&tab=grading`;
-                                }}
-                                className="btn-primary"
-                                style={{ width: '100%' }}
-                              >
-                                <i className="fas fa-graduation-cap"></i> Grade Submission
-                              </button>
+                              {/* ENHANCED GRADING BUTTON */}
+                              {submission.status === 'submitted' && (
+                                <button
+                                  onClick={() => openEnhancedGradePopup(submission)}
+                                  className="btn-primary"
+                                  style={{ 
+                                    width: '100%', 
+                                    padding: '14px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '12px',
+                                    fontSize: '16px',
+                                    fontWeight: '600',
+                                    borderRadius: '10px'
+                                  }}
+                                >
+                                  <i className="fas fa-graduation-cap"></i> Grade This Submission
+                                </button>
+                              )}
                             </div>
                           );
                         })}
@@ -4156,6 +4608,180 @@
               </div>
             </div>
           </main>
+
+          {/* ENHANCED GRADE POPUP MODAL */}
+          {showEnhancedGradePopup && submissionToGrade && (
+            <div className="enhanced-popup-overlay">
+              <div className="enhanced-popup-content">
+                <div className="enhanced-popup-header">
+                  <h2>
+                    <i className="fas fa-graduation-cap"></i> Grade Submission
+                  </h2>
+                  <button 
+                    onClick={closeEnhancedGradePopup}
+                    className="enhanced-close-popup-btn"
+                  >
+                    ×
+                  </button>
+                </div>
+                
+                <div className="enhanced-popup-body">
+                  {/* Student Information */}
+                  <div className="enhanced-submission-info-card">
+                    <h3>
+                      <i className="fas fa-user-graduate"></i> Student Submission
+                    </h3>
+                    
+                    <div className="enhanced-info-grid">
+                      <div className="enhanced-info-item">
+                        <span className="enhanced-info-label">Student Name</span>
+                        <span className="enhanced-info-value">
+                          {users.find(u => u.id === submissionToGrade.studentId)?.name || 'Unknown Student'}
+                        </span>
+                      </div>
+                      <div className="enhanced-info-item">
+                        <span className="enhanced-info-label">Student ID</span>
+                        <span className="enhanced-info-value">{submissionToGrade.studentId}</span>
+                      </div>
+                      <div className="enhanced-info-item">
+                        <span className="enhanced-info-label">Submitted On</span>
+                        <span className="enhanced-info-value">
+                          {new Date(submissionToGrade.submittedAt).toLocaleDateString()} at{' '}
+                          {new Date(submissionToGrade.submittedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      <div className="enhanced-info-item">
+                        <span className="enhanced-info-label">File</span>
+                        <span className="enhanced-info-value">
+                          <i className="fas fa-file" style={{ marginRight: '8px', color: '#3498db' }}></i>
+                          {submissionToGrade.fileName}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div className="enhanced-download-btn-container">
+                      <a 
+                        href={submissionToGrade.fileUrl} 
+                        download 
+                        className="btn-primary"
+                        style={{ textDecoration: 'none', padding: '10px 20px', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+                      >
+                        <i className="fas fa-download"></i> Download Submission
+                      </a>
+                      <button 
+                        onClick={() => window.open(submissionToGrade.fileUrl, '_blank')}
+                        className="btn-secondary"
+                        style={{ padding: '10px 20px', display: 'flex', alignItems: 'center', gap: '8px' }}
+                      >
+                        <i className="fas fa-eye"></i> Preview
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Grading Form */}
+                  <form onSubmit={submitGradeFromPopup} className="enhanced-grading-form">
+                    <div className="enhanced-form-group">
+                      <label htmlFor="grade-input">
+                        <i className="fas fa-star"></i> Grade (Max: {currentAssessment.maxMarks || currentAssessment.max_marks || 100} marks)
+                      </label>
+                      <div style={{ position: 'relative' }}>
+                        <input
+                          id="grade-input"
+                          type="number"
+                          value={popupGrade}
+                          onChange={e => setPopupGrade(e.target.value)}
+                          min="0"
+                          max={currentAssessment.maxMarks || currentAssessment.max_marks || 100}
+                          step="0.5"
+                          required
+                          placeholder="Enter grade (e.g., 85.5)"
+                          style={{ width: '100%', paddingRight: '60px' }}
+                        />
+                        <span style={{
+                          position: 'absolute',
+                          right: '15px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          color: '#666',
+                          fontWeight: '500'
+                        }}>
+                          / {currentAssessment.maxMarks || currentAssessment.max_marks || 100}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '14px', color: '#666', marginTop: '5px' }}>
+                        Enter a value between 0 and {currentAssessment.maxMarks || currentAssessment.max_marks || 100}
+                      </div>
+                    </div>
+
+                    <div className="enhanced-form-group">
+                      <label htmlFor="feedback-input">
+                        <i className="fas fa-comment-alt"></i> Feedback <span style={{ color: '#666', fontWeight: 'normal' }}>(Optional but recommended)</span>
+                      </label>
+                      <textarea
+                        id="feedback-input"
+                        value={popupFeedback}
+                        onChange={e => setPopupFeedback(e.target.value)}
+                        rows="6"
+                        placeholder="Provide constructive feedback to help the student improve. Consider mentioning strengths, areas for improvement, and specific suggestions..."
+                        style={{ width: '100%' }}
+                      />
+                      <div style={{ fontSize: '14px', color: '#666', marginTop: '5px' }}>
+                        {popupFeedback.length}/1000 characters
+                      </div>
+                    </div>
+
+                    {/* Grade Preview */}
+                    {popupGrade && !isNaN(popupGrade) && (
+                      <div className="enhanced-grade-preview">
+                        <h4>Grade Preview</h4>
+                        <div className="enhanced-preview-row">
+                          <span className="enhanced-preview-label">Raw Score</span>
+                          <span className="enhanced-preview-value">{popupGrade} marks</span>
+                        </div>
+                        <div className="enhanced-preview-row">
+                          <span className="enhanced-preview-label">Percentage</span>
+                          <span className="enhanced-preview-value">
+                            {((popupGrade / (currentAssessment.maxMarks || currentAssessment.max_marks || 100)) * 100).toFixed(1)}%
+                          </span>
+                        </div>
+                        <div className="enhanced-preview-row">
+                          <span className="enhanced-preview-label">Assessment Type</span>
+                          <span className="enhanced-preview-value">{currentAssessment.type?.toUpperCase() || 'ASSIGNMENT'}</span>
+                        </div>
+                        {popupGrade < (currentAssessment.maxMarks || currentAssessment.max_marks || 100) * 0.5 && (
+                          <div style={{ 
+                            marginTop: '10px', 
+                            padding: '10px', 
+                            backgroundColor: '#fff3cd', 
+                            borderRadius: '6px',
+                            borderLeft: '4px solid #ffc107'
+                          }}>
+                            <i className="fas fa-exclamation-triangle" style={{ color: '#ffc107', marginRight: '8px' }}></i>
+                            This grade is below 50%. Consider adding specific improvement suggestions.
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Action Buttons */}
+                    <div className="enhanced-popup-actions">
+                      <button type="submit" className="btn-primary">
+                        <i className="fas fa-check-circle"></i> Submit Grade & Mark as Graded
+                      </button>
+                      <button type="button" onClick={closeEnhancedGradePopup} className="btn-secondary">
+                        <i className="fas fa-times"></i> Cancel
+                      </button>
+                    </div>
+
+                    <div style={{ fontSize: '13px', color: '#666', textAlign: 'center', marginTop: '15px' }}>
+                      <i className="fas fa-info-circle" style={{ marginRight: '5px' }}></i>
+                      Once submitted, this grade will be sent to the Exam Administrator for approval.
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       );
     };

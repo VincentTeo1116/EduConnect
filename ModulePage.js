@@ -85,8 +85,16 @@ const ModulePage = ({
           }
         } else if (currentUser.role === 'Exam Administrator') {
           // Exam Admin: Check if assigned to this module
-          const examAdminId = module.exam_admin_id || module.examAdminId;
-          if (examAdminId !== currentUser.id) {
+          const examAdminId = module.exam_admin_id || module.examAdminId || module.examAdminId;
+          console.log('Module exam admin ID check:', {
+            exam_admin_id: module.exam_admin_id,
+            examAdminId: module.examAdminId,
+            currentUserId: currentUser.id,
+            type: typeof currentUser.id,
+            typeExamAdminId: typeof examAdminId
+          });
+          
+          if (examAdminId && parseInt(examAdminId) !== parseInt(currentUser.id)) {
             alert('You are not assigned to this module');
             goBack();
           }
