@@ -270,6 +270,25 @@ const HomePage = () => {
         />
       );
       
+    case 'assessment-view':
+      return (
+        <AssessmentViewPage
+          currentUser={currentUser}
+          assessments={assessments}
+          submissions={submissions}
+          questions={questions}
+          modules={modules}
+          users={users}
+          classes={classes}
+          setSubmissions={setSubmissions}
+          setQuestions={setQuestions}
+          setAssessments={setAssessments}
+          handleLogout={handleLogout}
+          goToProfile={goToProfile}
+          goBack={goBack}
+        />
+      );
+
     case 'instructor-dashboard':
       return (
         <InstructorDashboard 
@@ -281,7 +300,11 @@ const HomePage = () => {
           setSubmissions={setSubmissions} 
           setQuestions={setQuestions} 
           handleLogout={handleLogout} 
-          goToProfile={goToProfile} 
+          goToProfile={goToProfile}
+          modules={modules}
+          setModules={setModules}
+          teachingMaterials={teachingMaterials}
+          setTeachingMaterials={setTeachingMaterials}
         />
       );
       
