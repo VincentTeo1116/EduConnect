@@ -312,32 +312,46 @@ const InstructorDashboard = ({
             </div>
           ) : (
             <div className="quick-actions">
+              // Find the instructor assessments section
               {instructorAssessments.map(assessment => {
                 const module = modules.find(m => m.code === assessment.moduleCode || m.code === assessment.module_code);
                 const assessmentSubmissions = submissions.filter(s => s.assessmentId === assessment.id);
                 
                 return (
                   <div key={assessment.id} className="item-card">
-                    <h4>{assessment.title}</h4>
-                    <p>{assessment.description}</p>
-                    <p><strong>Module:</strong> {module ? `${module.name} (${module.code})` : 'Unknown module'}</p>
-                    <p><strong>Deadline:</strong> {new Date(assessment.dueDate || assessment.due_date).toLocaleDateString()}</p>
-                    <p><strong>Submissions:</strong> {assessmentSubmissions.length}</p>
-                    <p><strong>Status:</strong> 
-                      <span className={`status-badge status-${assessment.status || 'draft'}`} style={{ marginLeft: '10px' }}>
-                        {assessment.status || 'draft'}
-                      </span>
-                    </p>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div style={{ flex: 1 }}>
+                        <h4>{assessment.title}</h4>
+                        <p>{assessment.description}</p>
+                        <p><strong>Module:</strong> {module ? `${module.name} (${module.code})` : 'Unknown module'}</p>
+                        <p><strong>Deadline:</strong> {new Date(assessment.dueDate || assessment.due_date).toLocaleDateString()}</p>
+                        <p><strong>Submissions:</strong> {assessmentSubmissions.length}</p>
+                        <p><strong>Status:</strong> 
+                          <span className={`status-badge status-${assessment.status || 'draft'}`} style={{ marginLeft: '10px' }}>
+                            {assessment.status || 'draft'}
+                          </span>
+                        </p>
+                      </div>
+                    </div>
                     
-                    {module && (
+                    <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
                       <button 
-                        onClick={() => openModule(module.code)}
-                        className="btn-secondary"
-                        style={{ marginTop: '10px', width: '100%' }}
+                        onClick={() => window.location.href = `?page=assessment-view&assessment=${assessment.id}`}
+                        className="btn-primary"
+                        style={{ flex: 1 }}
                       >
-                        <i className="fas fa-external-link-alt"></i> Open Module to View
+                        <i className="fas fa-eye"></i> View Assessment
                       </button>
-                    )}
+                      
+                      {module && (
+                        <button 
+                          onClick={() => openModule(module.code)}
+                          className="btn-secondary"
+                        >
+                          <i className="fas fa-external-link-alt"></i> Module
+                        </button>
+                      )}
+                    </div>
                   </div>
                 );
               })}

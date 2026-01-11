@@ -156,13 +156,28 @@ const ExamAdminDashboard = ({
             </div>
           ) : (
             <div className="quick-actions">
+              // Find the assessment statistics section
               {assessmentStats.map(stat => (
                 <div key={stat.id} className="item-card">
-                  <h4>{stat.title}</h4>
-                  <p><strong>Course:</strong> {stat.course}</p>
-                  <p><strong>Submissions:</strong> {stat.submissionCount}</p>
-                  <p><strong>Average Grade:</strong> {stat.averageGrade}%</p>
-                  <p><strong>Deadline:</strong> {new Date(stat.deadline).toLocaleDateString()}</p>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div style={{ flex: 1 }}>
+                      <h4 style={{ cursor: 'pointer' }} 
+                          onClick={() => window.location.href = `?page=assessment-view&assessment=${stat.id}`}>
+                        {stat.title}
+                      </h4>
+                      <p><strong>Course:</strong> {stat.course}</p>
+                      <p><strong>Submissions:</strong> {stat.submissionCount}</p>
+                      <p><strong>Average Grade:</strong> {stat.averageGrade}%</p>
+                      <p><strong>Deadline:</strong> {new Date(stat.deadline).toLocaleDateString()}</p>
+                    </div>
+                    <button 
+                      onClick={() => window.location.href = `?page=assessment-view&assessment=${stat.id}`}
+                      className="btn-primary"
+                      style={{ padding: '8px 16px' }}
+                    >
+                      <i className="fas fa-eye"></i> View
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

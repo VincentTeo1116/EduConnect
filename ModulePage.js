@@ -732,7 +732,10 @@ const ModulePage = ({
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                           <div style={{ flex: 1 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-                              <h4 style={{ margin: 0 }}>{assessment.title}</h4>
+                              <h4 style={{ margin: 0, cursor: 'pointer' }} 
+                                  onClick={() => window.location.href = `?page=assessment-view&assessment=${assessment.id}`}>
+                                {assessment.title}
+                              </h4>
                               <span style={{
                                 padding: '4px 8px',
                                 backgroundColor: assessment.type === 'exam' ? '#e74c3c' : '#3498db',
@@ -745,6 +748,15 @@ const ModulePage = ({
                               </span>
                             </div>
                             <p>{assessment.description}</p>
+                            
+                            {/* Add a quick view button */}
+                            <button 
+                              onClick={() => window.location.href = `?page=assessment-view&assessment=${assessment.id}`}
+                              className="btn-secondary"
+                              style={{ marginTop: '10px', padding: '8px 12px' }}
+                            >
+                              <i className="fas fa-info-circle"></i> View Details
+                            </button>
                             <div style={{ 
                               display: 'flex', 
                               gap: '20px', 

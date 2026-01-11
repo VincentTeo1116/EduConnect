@@ -1908,7 +1908,10 @@
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                               <div style={{ flex: 1 }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-                                  <h4 style={{ margin: 0 }}>{assessment.title}</h4>
+                                  <h4 style={{ margin: 0, cursor: 'pointer' }} 
+                                      onClick={() => window.location.href = `?page=assessment-view&assessment=${assessment.id}`}>
+                                    {assessment.title}
+                                  </h4>
                                   <span style={{
                                     padding: '4px 8px',
                                     backgroundColor: assessment.type === 'exam' ? '#e74c3c' : '#3498db',
@@ -1921,6 +1924,30 @@
                                   </span>
                                 </div>
                                 <p>{assessment.description}</p>
+                                
+                                <div style={{ marginTop: '15px', display: 'flex', gap: '10px' }}>
+                                  <button 
+                                    onClick={() => window.location.href = `?page=assessment-view&assessment=${assessment.id}`}
+                                    className="btn-primary"
+                                    style={{ flex: 1, padding: '10px' }}
+                                  >
+                                    <i className="fas fa-eye"></i> View Assessment Details
+                                  </button>
+                                  
+                                  {currentUser.role === 'Student' && studentSubmission && (
+                                    <button 
+                                      onClick={() => {
+                                        // Open submission details
+                                        window.location.href = `?page=assessment-view&assessment=${assessment.id}`;
+                                      }}
+                                      className="btn-secondary"
+                                      style={{ padding: '10px' }}
+                                    >
+                                      <i className="fas fa-file-alt"></i> Your Submission
+                                    </button>
+                                  )}
+                                </div>
+                                
                                 <div style={{ 
                                   display: 'flex', 
                                   gap: '20px', 
@@ -1937,7 +1964,7 @@
                                   {studentSubmission && (
                                     <div style={{
                                       color: studentSubmission.status === 'released' ? '#2ecc71' : 
-                                             studentSubmission.status === 'graded' ? '#f39c12' : '#3498db'
+                                            studentSubmission.status === 'graded' ? '#f39c12' : '#3498db'
                                     }}>
                                       <i className="fas fa-check-circle"></i> Status: {studentSubmission.status}
                                     </div>
@@ -1999,15 +2026,6 @@
                               {/* Instructor Actions */}
                               {currentUser.role === 'Instructor' && (
                                 <div style={{ display: 'flex', gap: '10px' }}>
-                                  <button 
-                                    onClick={() => {
-                                      setActiveTab('grading');
-                                    }}
-                                    className="btn-secondary"
-                                    style={{ padding: '8px 12px' }}
-                                  >
-                                    <i className="fas fa-graduation-cap"></i> Grade
-                                  </button>
                                   <button 
                                     onClick={() => deleteAssessment(assessment.id)}
                                     className="btn-danger"
@@ -5562,25 +5580,32 @@
         return defaultModules;
       };
 
+      // In HomePage component
       const redirectBasedOnRole = (role) => {
-        const urlParams = new URLSearchParams(window.location.search);
-        const pageParam = urlParams.get('page');
-        const moduleParam = urlParams.get('module');
-        
-        if (pageParam === 'module' && moduleParam) {
-          setPage('module');
-        } else if (role === 'Student') {
-          setPage('student-dashboard');
-        } else if (role === 'Instructor') {
-          setPage('instructor-dashboard');
-        } else if (role === 'Exam Administrator') {
-          setPage('exam-admin-dashboard');
-        } else if (role === 'System Administrator') {
-          setPage('admin-dashboard');
-        } else {
-          setPage('login');
-        }
-      };
+      const urlParams = new URLSearchParams(window.location.search);
+      const pageParam = urlParams.get('page');
+      const moduleParam = urlParams.get('module');
+      const assessmentParam = urlParams.get('assessment');
+
+      if (pageParam === 'assessment-view' && assessmentParam) {
+        setPage('assessment-view');
+        return; 
+      }
+
+      if (pageParam === 'module' && moduleParam) {
+        setPage('module');
+      } else if (role === 'Student') {
+        setPage('student-dashboard');
+      } else if (role === 'Instructor') {
+        setPage('instructor-dashboard');
+      } else if (role === 'Exam Administrator') {
+        setPage('exam-admin-dashboard');
+      } else if (role === 'System Administrator') {
+        setPage('admin-dashboard');
+      } else {
+        setPage('login');
+      }
+    };
 
       const handlePopupUserSubmit = async (e) => {
         e.preventDefault();

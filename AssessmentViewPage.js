@@ -1,4 +1,3 @@
-// ==================== ENHANCED ASSESSMENT VIEW PAGE ====================
 const AssessmentViewPage = ({
   currentUser,
   assessments = [],
@@ -1169,7 +1168,7 @@ const AssessmentViewPage = ({
                         {assessmentSubmissions.filter(s => s.status === 'graded').length}
                       </strong>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}> {/* FIXED: Changed from 'display: flex'' */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <span>Released:</span>
                       <strong style={{ color: '#2ecc71' }}>
                         {assessmentSubmissions.filter(s => s.releasedToStudent).length}

@@ -224,6 +224,10 @@ const HomePage = () => {
     }
   };
 
+  const navigateToAssessment = (assessmentId) => {
+    window.location.href = `?page=assessment-view&assessment=${assessmentId}`;
+  };
+
   // Show loading screen
   if (isLoading) {
     return (
@@ -266,7 +270,10 @@ const HomePage = () => {
           setSubmissions={setSubmissions} 
           setQuestions={setQuestions} 
           handleLogout={handleLogout} 
-          goToProfile={goToProfile} 
+          goToProfile={goToProfile}
+          modules={modules}
+          classes={classes}
+          setClasses={setClasses}
         />
       );
       

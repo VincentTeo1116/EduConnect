@@ -255,13 +255,22 @@ const StudentDashboard = ({
             </div>
           ) : (
             <div className="quick-actions">
-              {assessments.map(a => {
+            {assessments.map(a => {
                 const submission = submissions.find(s => s.assessmentId === a.id && s.studentId === currentUser.id);
                 return (
                   <div key={a.id} className="item-card">
                     <h4>{a.title}</h4>
                     <p>{a.description}</p>
                     <p><strong>Deadline:</strong> {new Date(a.deadline).toLocaleDateString()}</p>
+                    
+                    {/* Add this button to view assessment details */}
+                    <button 
+                      onClick={() => window.location.href = `?page=assessment-view&assessment=${a.id}`}
+                      className="btn-secondary"
+                      style={{ marginTop: '10px', width: '100%' }}
+                    >
+                      <i className="fas fa-eye"></i> View Details
+                    </button>
                     {submission ? (
                       <div style={{ marginTop: '10px' }}>
                         <p><strong>Status:</strong> 
