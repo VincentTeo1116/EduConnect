@@ -1,4 +1,4 @@
-// ModulePage.js
+// ModulePage.js - COMPLETE FIXED VERSION
 import React, { useState, useEffect } from 'react';
 
 const ModulePage = ({ 
@@ -33,23 +33,52 @@ const ModulePage = ({
   const [gradingData, setGradingData] = useState({});
   const [approvalStatus, setApprovalStatus] = useState({});
 
+  // Debug: Log everything on component mount
+  useEffect(() => {
+    console.log('=== MODULE PAGE MOUNTED ===');
+    console.log('Current user:', currentUser);
+    console.log('All modules:', modules);
+    console.log('All assessments:', assessments);
+    console.log('Assessments count:', assessments.length);
+    
+    // Check each assessment's module reference
+    if (assessments.length > 0) {
+      console.log('=== ASSESSMENT MODULE REFERENCES ===');
+      assessments.forEach((a, i) => {
+        console.log(`Assessment ${i} (ID: ${a.id}):`, {
+          title: a.title,
+          module_code: a.module_code,
+          moduleCode: a.moduleCode,
+          course: a.course,
+          instructor_id: a.instructor_id,
+          instructorId: a.instructorId
+        });
+      });
+    }
+  }, []);
+
   // Get module from URL parameter
   useEffect(() => {
+    console.log('=== GETTING MODULE FROM URL ===');
     const urlParams = new URLSearchParams(window.location.search);
     const moduleCode = urlParams.get('module');
+    console.log('URL module parameter:', moduleCode);
     
     if (moduleCode) {
       const module = modules.find(m => m.code === moduleCode);
+      console.log('Found module in modules array:', module);
+      
       if (module) {
         setCurrentModule(module);
         
         // Check if user has access to this module
         if (currentUser.role === 'Student') {
           // Student: Check if enrolled in any class of this module
-          // (This would need to check the classes data structure)
+          console.log('Student access check - module found');
         } else if (currentUser.role === 'Instructor') {
           // Instructor: Check if assigned to this module
           const instructorId = module.instructor_id || module.instructorId;
+          console.log('Module instructor ID:', instructorId, 'Current user ID:', currentUser.id);
           if (instructorId !== currentUser.id) {
             alert('You are not assigned to this module');
             goBack();
@@ -63,22 +92,42 @@ const ModulePage = ({
           }
         }
       } else {
+        console.log('Module not found in modules array');
         alert('Module not found');
         goBack();
       }
     }
   }, [modules, currentUser, goBack]);
 
-  // Filter module-specific data
-  const moduleAssessments = assessments.filter(a => 
-    a.moduleCode === currentModule?.code || a.course === currentModule?.name
-  );
+  // Filter module-specific data with SIMPLE, WORKING filter
+  const moduleAssessments = assessments.filter(a => {
+    // Get module reference from ANY possible field
+    const assessmentModuleRef = a.module_code || a.moduleCode || a.course;
+    
+    console.log('Filtering - Assessment:', a.id, a.title);
+    console.log('  - Assessment module ref:', assessmentModuleRef);
+    console.log('  - Current module code:', currentModule?.code);
+    
+    // Simple exact match
+    const match = assessmentModuleRef === currentModule?.code;
+    console.log('  - Match result:', match);
+    
+    return match;
+  });
+
+  console.log('=== FILTER RESULTS ===');
+  console.log('Current module:', currentModule);
+  console.log('Module assessments found:', moduleAssessments.length);
+  console.log('Module assessments:', moduleAssessments);
+
   const moduleTeachingMaterials = teachingMaterials.filter(tm => 
-    tm.moduleCode === currentModule?.code
+    tm.moduleCode === currentModule?.code || tm.module_code === currentModule?.code
   );
+  
   const moduleSubmissions = submissions.filter(s => 
     moduleAssessments.some(a => a.id === s.assessmentId)
   );
+  
   const moduleQuestions = questions.filter(q => 
     moduleAssessments.some(a => a.id === q.assessmentId)
   );
@@ -114,7 +163,6 @@ const ModulePage = ({
     };
 
     try {
-      // Try Supabase
       const createdMaterial = await SupabaseService.createTeachingMaterial(material);
       const updatedMaterials = [...teachingMaterials, createdMaterial];
       setTeachingMaterials(updatedMaterials);
@@ -124,7 +172,6 @@ const ModulePage = ({
       setSelectedFile(null);
     } catch (error) {
       console.error('Error adding teaching material:', error);
-      // Fallback to localStorage
       const updatedMaterials = [...teachingMaterials, material];
       setTeachingMaterials(updatedMaterials);
       localStorage.setItem('teachingMaterials', JSON.stringify(updatedMaterials));
@@ -134,66 +181,99 @@ const ModulePage = ({
     }
   };
 
-  // Add assessment (Instructor only)
   const addAssessment = async (e) => {
     e.preventDefault();
     
     if (!newAssessment.title || !newAssessment.dueDate) {
-      alert('Please fill in all required fields');
-      return;
+        alert('Please fill in all required fields');
+        return;
     }
 
+    console.log('Creating assessment for module:', currentModule.code);
+
+    // Convert to snake_case for database
     const assessment = {
-      id: Date.now(),
-      moduleCode: currentModule.code,
-      title: newAssessment.title,
-      description: newAssessment.description,
-      type: newAssessment.type,
-      dueDate: newAssessment.dueDate,
-      maxMarks: parseInt(newAssessment.maxMarks),
-      criteria: newAssessment.criteria,
-      instructorId: currentUser.id,
-      fileName: newAssessment.file ? newAssessment.file.name : null,
-      fileUrl: newAssessment.file ? URL.createObjectURL(newAssessment.file) : null,
-      createdAt: new Date().toISOString(),
-      status: 'draft',
-      approvedByExamAdmin: false
+        module_code: currentModule.code,
+        title: newAssessment.title,
+        description: newAssessment.description,
+        type: newAssessment.type,
+        due_date: newAssessment.dueDate,
+        max_marks: parseInt(newAssessment.maxMarks),
+        criteria: newAssessment.criteria,
+        instructor_id: currentUser.id,
+        file_name: newAssessment.file ? newAssessment.file.name : null,
+        file_path: newAssessment.file ? URL.createObjectURL(newAssessment.file) : null,
+        status: 'draft',
+        approved_by_exam_admin: false,
+        created_at: new Date().toISOString()
     };
 
     try {
-      // Try Supabase
-      const createdAssessment = await SupabaseService.createAssessment(assessment);
-      const updatedAssessments = [...assessments, createdAssessment];
-      setAssessments(updatedAssessments);
-      localStorage.setItem('assessments', JSON.stringify(updatedAssessments));
-      alert('Assessment created successfully');
-      setNewAssessment({ 
-        title: '', 
-        description: '', 
-        type: 'assignment', 
-        dueDate: '', 
-        maxMarks: 100,
-        criteria: '',
-        file: null 
-      });
-      setActiveTab('assessments');
+        const createdAssessment = await SupabaseService.createAssessment(assessment);
+        
+        // Convert back to camelCase for frontend
+        const frontendAssessment = {
+            ...createdAssessment,
+            moduleCode: createdAssessment.module_code,
+            dueDate: createdAssessment.due_date,
+            maxMarks: createdAssessment.max_marks,
+            instructorId: createdAssessment.instructor_id,
+            fileName: createdAssessment.file_name,
+            fileUrl: createdAssessment.file_path,
+            createdAt: createdAssessment.created_at,
+            approvedByExamAdmin: createdAssessment.approved_by_exam_admin
+        };
+        
+        const updatedAssessments = [...assessments, frontendAssessment];
+        setAssessments(updatedAssessments);
+        localStorage.setItem('assessments', JSON.stringify(updatedAssessments));
+        alert('Assessment created successfully');
+        
+        setNewAssessment({ 
+            title: '', 
+            description: '', 
+            type: 'assignment', 
+            dueDate: '', 
+            maxMarks: 100,
+            criteria: '',
+            file: null 
+        });
+        setActiveTab('assessments');
     } catch (error) {
-      console.error('Error creating assessment:', error);
-      // Fallback to localStorage
-      const updatedAssessments = [...assessments, assessment];
-      setAssessments(updatedAssessments);
-      localStorage.setItem('assessments', JSON.stringify(updatedAssessments));
-      alert('Assessment created (local)');
-      setNewAssessment({ 
-        title: '', 
-        description: '', 
-        type: 'assignment', 
-        dueDate: '', 
-        maxMarks: 100,
-        criteria: '',
-        file: null 
-      });
-      setActiveTab('assessments');
+        console.error('Error creating assessment:', error);
+        
+        const fallbackAssessment = {
+            id: Date.now(),
+            moduleCode: currentModule.code,
+            title: newAssessment.title,
+            description: newAssessment.description,
+            type: newAssessment.type,
+            dueDate: newAssessment.dueDate,
+            maxMarks: parseInt(newAssessment.maxMarks),
+            criteria: newAssessment.criteria,
+            instructorId: currentUser.id,
+            fileName: newAssessment.file ? newAssessment.file.name : null,
+            fileUrl: newAssessment.file ? URL.createObjectURL(newAssessment.file) : null,
+            createdAt: new Date().toISOString(),
+            status: 'draft',
+            approvedByExamAdmin: false
+        };
+        
+        const updatedAssessments = [...assessments, fallbackAssessment];
+        setAssessments(updatedAssessments);
+        localStorage.setItem('assessments', JSON.stringify(updatedAssessments));
+        alert('Assessment created (local)');
+        
+        setNewAssessment({ 
+            title: '', 
+            description: '', 
+            type: 'assignment', 
+            dueDate: '', 
+            maxMarks: 100,
+            criteria: '',
+            file: null 
+        });
+        setActiveTab('assessments');
     }
   };
 
@@ -221,7 +301,6 @@ const ModulePage = ({
     };
 
     try {
-      // Try Supabase
       const createdSubmission = await SupabaseService.createSubmission(submission);
       const updatedSubmissions = [...submissions, createdSubmission];
       setSubmissions(updatedSubmissions);
@@ -230,7 +309,6 @@ const ModulePage = ({
       setSelectedFile(null);
     } catch (error) {
       console.error('Error submitting assessment:', error);
-      // Fallback to localStorage
       const updatedSubmissions = [...submissions, submission];
       setSubmissions(updatedSubmissions);
       localStorage.setItem('submissions', JSON.stringify(updatedSubmissions));
@@ -253,7 +331,6 @@ const ModulePage = ({
         approvedByExamAdmin: false
       };
 
-      // Try Supabase
       const supabaseUpdated = await SupabaseService.updateSubmission(submissionId, updatedSubmission);
       const updatedSubmissions = submissions.map(s => 
         s.id === submissionId ? supabaseUpdated : s
@@ -291,7 +368,6 @@ const ModulePage = ({
         status: approved ? 'released' : 'needs_revision'
       };
 
-      // Try Supabase
       const supabaseUpdated = await SupabaseService.updateSubmission(submissionId, updatedSubmission);
       const updatedSubmissions = submissions.map(s => 
         s.id === submissionId ? supabaseUpdated : s
@@ -355,7 +431,6 @@ const ModulePage = ({
         setAssessments(updatedAssessments);
         localStorage.setItem('assessments', JSON.stringify(updatedAssessments));
         
-        // Also delete related submissions
         const updatedSubmissions = submissions.filter(s => s.assessmentId !== assessmentId);
         setSubmissions(updatedSubmissions);
         localStorage.setItem('submissions', JSON.stringify(updatedSubmissions));
@@ -505,7 +580,6 @@ const ModulePage = ({
                   <p><strong>Released Grades:</strong> {moduleSubmissions.filter(s => s.releasedToStudent).length}</p>
                 </div>
 
-                {/* Instructor/Exam Admin specific overview */}
                 {(currentUser.role === 'Instructor' || currentUser.role === 'Exam Administrator') && (
                   <div className="item-card">
                     <h4><i className="fas fa-bell" style={{ color: '#e74c3c' }}></i> Action Required</h4>
@@ -679,10 +753,10 @@ const ModulePage = ({
                               color: '#666'
                             }}>
                               <div>
-                                <i className="far fa-calendar"></i> Due: {new Date(assessment.dueDate).toLocaleDateString()}
+                                <i className="far fa-calendar"></i> Due: {new Date(assessment.dueDate || assessment.due_date).toLocaleDateString()}
                               </div>
                               <div>
-                                <i className="fas fa-star"></i> Max Marks: {assessment.maxMarks}
+                                <i className="fas fa-star"></i> Max Marks: {assessment.maxMarks || assessment.max_marks}
                               </div>
                               {studentSubmission && (
                                 <div style={{
@@ -727,7 +801,7 @@ const ModulePage = ({
                                     <p><strong>Submitted:</strong> {new Date(studentSubmission.submittedAt).toLocaleDateString()}</p>
                                     <p><strong>Status:</strong> {studentSubmission.status}</p>
                                     {studentSubmission.grade !== null && (
-                                      <p><strong>Grade:</strong> {studentSubmission.grade}/{assessment.maxMarks}</p>
+                                      <p><strong>Grade:</strong> {studentSubmission.grade}/{assessment.maxMarks || assessment.max_marks}</p>
                                     )}
                                     {studentSubmission.feedback && (
                                       <p><strong>Feedback:</strong> {studentSubmission.feedback}</p>
@@ -752,7 +826,6 @@ const ModulePage = ({
                               <button 
                                 onClick={() => {
                                   setActiveTab('grading');
-                                  // Could filter to show only this assessment's submissions
                                 }}
                                 className="btn-secondary"
                                 style={{ padding: '8px 12px' }}
@@ -855,7 +928,6 @@ const ModulePage = ({
             <section>
               <h3>Grading & Approval</h3>
               
-              {/* Instructor Grading View */}
               {currentUser.role === 'Instructor' && (
                 <>
                   <div className="quick-actions">
@@ -872,12 +944,12 @@ const ModulePage = ({
                           
                           <div style={{ marginTop: '15px' }}>
                             <div style={{ marginBottom: '10px' }}>
-                              <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>Grade (/{assessment?.maxMarks || 100})</label>
+                              <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>Grade (/{assessment?.maxMarks || assessment?.max_marks || 100})</label>
                               <input
                                 type="number"
                                 placeholder="Enter grade"
                                 min="0"
-                                max={assessment?.maxMarks || 100}
+                                max={assessment?.maxMarks || assessment?.max_marks || 100}
                                 value={gradingData[submission.id]?.grade || submission.grade || ''}
                                 onChange={e => setGradingData(prev => ({
                                   ...prev,
@@ -934,7 +1006,7 @@ const ModulePage = ({
                           <div key={submission.id} className="item-card">
                             <h4>{assessment?.title || 'Unknown Assessment'}</h4>
                             <p><strong>Student:</strong> {student?.name || 'Unknown'}</p>
-                            <p><strong>Grade:</strong> {submission.grade}/{assessment?.maxMarks || 100}</p>
+                            <p><strong>Grade:</strong> {submission.grade}/{assessment?.maxMarks || assessment?.max_marks || 100}</p>
                             <p><strong>Status:</strong> 
                               {submission.approvedByExamAdmin ? ' Approved by Exam Admin' : ' Pending Exam Admin Approval'}
                             </p>
@@ -947,7 +1019,6 @@ const ModulePage = ({
                 </>
               )}
 
-              {/* Exam Admin Approval View */}
               {currentUser.role === 'Exam Administrator' && (
                 <>
                   <div className="quick-actions">
@@ -970,7 +1041,7 @@ const ModulePage = ({
                               <p><strong>Instructor:</strong> {instructor?.name || 'Unknown'}</p>
                             </div>
                             <div>
-                              <p><strong>Grade:</strong> {submission.grade}/{assessment?.maxMarks || 100}</p>
+                              <p><strong>Grade:</strong> {submission.grade}/{assessment?.maxMarks || assessment?.max_marks || 100}</p>
                               <p><strong>Marked:</strong> {new Date(submission.markedAt).toLocaleDateString()}</p>
                             </div>
                           </div>
@@ -1060,7 +1131,7 @@ const ModulePage = ({
                               marginTop: '10px'
                             }}>
                               <div>
-                                <p><strong>Grade:</strong> {submission.grade}/{assessment?.maxMarks || 100}</p>
+                                <p><strong>Grade:</strong> {submission.grade}/{assessment?.maxMarks || assessment?.max_marks || 100}</p>
                                 <p><strong>Approved:</strong> {new Date(submission.markedAt).toLocaleDateString()}</p>
                               </div>
                               <div>
@@ -1131,13 +1202,13 @@ const ModulePage = ({
                               <div>
                                 <p style={{ margin: '0 0 5px 0', color: '#666' }}>Your Grade</p>
                                 <h3 style={{ margin: '0', color: '#2ecc71' }}>
-                                  {submission.grade}/{assessment?.maxMarks || 100}
+                                  {submission.grade}/{assessment?.maxMarks || assessment?.max_marks || 100}
                                 </h3>
                               </div>
                               <div>
                                 <p style={{ margin: '0 0 5px 0', color: '#666' }}>Percentage</p>
                                 <h3 style={{ margin: '0', color: '#3498db' }}>
-                                  {((submission.grade / (assessment?.maxMarks || 100)) * 100).toFixed(1)}%
+                                  {((submission.grade / (assessment?.maxMarks || assessment?.max_marks || 100)) * 100).toFixed(1)}%
                                 </h3>
                               </div>
                             </div>
@@ -1179,7 +1250,6 @@ const ModulePage = ({
                 })}
               </div>
               
-              {/* Overall Performance */}
               {moduleSubmissions.filter(s => s.studentId === currentUser.id && s.releasedToStudent).length > 0 && (
                 <div style={{ marginTop: '30px' }}>
                   <h4>Overall Performance</h4>

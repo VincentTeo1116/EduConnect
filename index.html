@@ -492,9 +492,32 @@
       
       async createAssessment(assessment) {
         try {
+          const dbAssessment = {
+            module_code: assessment.moduleCode || assessment.module_code,
+            title: assessment.title,
+            description: assessment.description,
+            type: assessment.type || 'assignment',
+            due_date: assessment.dueDate || assessment.due_date,
+            max_marks: assessment.maxMarks || assessment.max_marks,
+            criteria: assessment.criteria || '',
+            instructor_id: assessment.instructorId || assessment.instructor_id,
+            file_name: assessment.fileName || assessment.file_name,
+            file_path: assessment.fileUrl || assessment.file_path,
+            status: assessment.status || 'draft',
+            approved_by_exam_admin: assessment.approvedByExamAdmin || assessment.approved_by_exam_admin || false,
+            created_at: assessment.createdAt || assessment.created_at || new Date().toISOString()
+          };
+
+          // Remove undefined/null values
+          Object.keys(dbAssessment).forEach(key => {
+            if (dbAssessment[key] === undefined || dbAssessment[key] === null) {
+              delete dbAssessment[key];
+            }
+          });
+
           const { data, error } = await supabase
             .from('assessments')
-            .insert([assessment])
+            .insert([dbAssessment])
             .select();
           
           if (error) throw error;
@@ -541,7 +564,7 @@
           const { data, error } = await supabase
             .from('submissions')
             .select('*')
-            .order('created_at', { ascending: false });
+            .order('submitted_at', { ascending: false }); // Changed to 'submitted_at'
           
           if (error) throw error;
           return data || [];
@@ -553,9 +576,33 @@
       
       async createSubmission(submission) {
         try {
+          // Convert camelCase to snake_case for database
+          const dbSubmission = {
+            assessment_id: submission.assessmentId || submission.assessment_id,
+            student_id: submission.studentId || submission.student_id,
+            file_name: submission.fileName || submission.file_name,
+            file_path: submission.fileUrl || submission.file_path,
+            submitted_at: submission.submittedAt || submission.submitted_at || new Date().toISOString(),
+            status: submission.status || 'submitted',
+            grade: submission.grade,
+            feedback: submission.feedback || '',
+            marked_by: submission.markedBy || submission.marked_by,
+            marked_at: submission.markedAt || submission.marked_at,
+            approved_by_exam_admin: submission.approvedByExamAdmin || submission.approved_by_exam_admin || false,
+            released_to_student: submission.releasedToStudent || submission.released_to_student || false,
+            updated_at: new Date().toISOString() // Always set updated_at
+          };
+
+          // Remove undefined/null values
+          Object.keys(dbSubmission).forEach(key => {
+            if (dbSubmission[key] === undefined) {
+              delete dbSubmission[key];
+            }
+          });
+
           const { data, error } = await supabase
             .from('submissions')
-            .insert([submission])
+            .insert([dbSubmission])
             .select();
           
           if (error) throw error;
@@ -568,9 +615,40 @@
       
       async updateSubmission(submissionId, updates) {
         try {
+          // Convert camelCase to snake_case
+          const dbUpdates = {};
+          
+          // Map camelCase to snake_case
+          if (updates.assessmentId !== undefined) dbUpdates.assessment_id = updates.assessmentId;
+          if (updates.studentId !== undefined) dbUpdates.student_id = updates.studentId;
+          if (updates.fileName !== undefined) dbUpdates.file_name = updates.fileName;
+          if (updates.fileUrl !== undefined) dbUpdates.file_path = updates.fileUrl;
+          if (updates.submittedAt !== undefined) dbUpdates.submitted_at = updates.submittedAt;
+          if (updates.status !== undefined) dbUpdates.status = updates.status;
+          if (updates.grade !== undefined) dbUpdates.grade = updates.grade;
+          if (updates.feedback !== undefined) dbUpdates.feedback = updates.feedback;
+          if (updates.markedBy !== undefined) dbUpdates.marked_by = updates.markedBy;
+          if (updates.markedAt !== undefined) dbUpdates.marked_at = updates.markedAt;
+          if (updates.approvedByExamAdmin !== undefined) dbUpdates.approved_by_exam_admin = updates.approvedByExamAdmin;
+          if (updates.releasedToStudent !== undefined) dbUpdates.released_to_student = updates.releasedToStudent;
+          
+          // Also handle snake_case directly
+          if (updates.assessment_id !== undefined) dbUpdates.assessment_id = updates.assessment_id;
+          if (updates.student_id !== undefined) dbUpdates.student_id = updates.student_id;
+          if (updates.file_name !== undefined) dbUpdates.file_name = updates.file_name;
+          if (updates.file_path !== undefined) dbUpdates.file_path = updates.file_path;
+          if (updates.submitted_at !== undefined) dbUpdates.submitted_at = updates.submitted_at;
+          if (updates.marked_by !== undefined) dbUpdates.marked_by = updates.marked_by;
+          if (updates.marked_at !== undefined) dbUpdates.marked_at = updates.marked_at;
+          if (updates.approved_by_exam_admin !== undefined) dbUpdates.approved_by_exam_admin = updates.approved_by_exam_admin;
+          if (updates.released_to_student !== undefined) dbUpdates.released_to_student = updates.released_to_student;
+          
+          // Always update the updated_at timestamp
+          dbUpdates.updated_at = new Date().toISOString();
+
           const { data, error } = await supabase
             .from('submissions')
-            .update(updates)
+            .update(dbUpdates)
             .eq('id', submissionId)
             .select();
           
@@ -1131,30 +1209,58 @@
       const [gradingData, setGradingData] = useState({});
       const [approvalStatus, setApprovalStatus] = useState({});
 
+      // Debug: Log everything on component mount
       useEffect(() => {
+        console.log('=== MODULE PAGE MOUNTED ===');
+        console.log('Current user:', currentUser);
+        console.log('All modules:', modules);
+        console.log('All assessments:', assessments);
+        console.log('Assessments count:', assessments.length);
+        
+        // Check each assessment's module reference
+        if (assessments.length > 0) {
+          console.log('=== ASSESSMENT MODULE REFERENCES ===');
+          assessments.forEach((a, i) => {
+            console.log(`Assessment ${i} (ID: ${a.id}):`, {
+              title: a.title,
+              module_code: a.module_code,
+              moduleCode: a.moduleCode,
+              course: a.course,
+              instructor_id: a.instructor_id,
+              instructorId: a.instructorId
+            });
+          });
+        }
+      }, []);
+
+      // Get module from URL parameter
+      useEffect(() => {
+        console.log('=== GETTING MODULE FROM URL ===');
         const urlParams = new URLSearchParams(window.location.search);
         const moduleCode = urlParams.get('module');
+        console.log('URL module parameter:', moduleCode);
         
         if (moduleCode) {
           const module = modules.find(m => m.code === moduleCode);
+          console.log('Found module in modules array:', module);
+          
           if (module) {
             setCurrentModule(module);
             
+            // Check if user has access to this module
             if (currentUser.role === 'Student') {
-              // Check enrollment via classes
-              const moduleClasses = modules.filter(m => m.code === moduleCode);
-              const isEnrolled = true; // Simplified check
-              if (!isEnrolled) {
-                alert('You are not enrolled in this module');
-                goBack();
-              }
+              // Student: Check if enrolled in any class of this module
+              console.log('Student access check - module found');
             } else if (currentUser.role === 'Instructor') {
+              // Instructor: Check if assigned to this module
               const instructorId = module.instructor_id || module.instructorId;
+              console.log('Module instructor ID:', instructorId, 'Current user ID:', currentUser.id);
               if (instructorId !== currentUser.id) {
                 alert('You are not assigned to this module');
                 goBack();
               }
             } else if (currentUser.role === 'Exam Administrator') {
+              // Exam Admin: Check if assigned to this module
               const examAdminId = module.exam_admin_id || module.examAdminId;
               if (examAdminId !== currentUser.id) {
                 alert('You are not assigned to this module');
@@ -1162,25 +1268,55 @@
               }
             }
           } else {
+            console.log('Module not found in modules array');
             alert('Module not found');
             goBack();
           }
         }
       }, [modules, currentUser, goBack]);
 
-      const moduleAssessments = assessments.filter(a => 
-        a.moduleCode === currentModule?.code || a.course === currentModule?.name
-      );
+      // FIXED: Filter module-specific data with SIMPLE, WORKING filter
+      const moduleAssessments = assessments.filter(a => {
+        // Get module reference from ANY possible field
+        const assessmentModuleRef = a.module_code || a.moduleCode || a.course;
+        
+        console.log('Filtering - Assessment:', a.id, a.title);
+        console.log('  - Assessment module ref:', assessmentModuleRef);
+        console.log('  - Current module code:', currentModule?.code);
+        
+        // Simple exact match
+        const match = assessmentModuleRef === currentModule?.code;
+        console.log('  - Match result:', match);
+        
+        return match;
+      });
+
+      console.log('=== FILTER RESULTS ===');
+      console.log('Current module:', currentModule);
+      console.log('Module assessments found:', moduleAssessments.length);
+      console.log('Module assessments:', moduleAssessments);
+
       const moduleTeachingMaterials = teachingMaterials.filter(tm => 
-        tm.moduleCode === currentModule?.code
+        tm.moduleCode === currentModule?.code || tm.module_code === currentModule?.code
       );
+      
       const moduleSubmissions = submissions.filter(s => 
         moduleAssessments.some(a => a.id === s.assessmentId)
       );
+      
       const moduleQuestions = questions.filter(q => 
         moduleAssessments.some(a => a.id === q.assessmentId)
       );
 
+      // Handle file upload
+      const handleFileUpload = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          setSelectedFile(file);
+        }
+      };
+
+      // Add teaching material (Instructor only)
       const addTeachingMaterial = async (e) => {
         e.preventDefault();
         
@@ -1210,15 +1346,14 @@
           alert('Teaching material added successfully');
           setNewMaterial({ title: '', description: '', file: null });
           setSelectedFile(null);
-          setActiveTab('materials');
         } catch (error) {
+          console.error('Error adding teaching material:', error);
           const updatedMaterials = [...teachingMaterials, material];
           setTeachingMaterials(updatedMaterials);
           localStorage.setItem('teachingMaterials', JSON.stringify(updatedMaterials));
-          alert('Teaching material added');
+          alert('Teaching material added (local)');
           setNewMaterial({ title: '', description: '', file: null });
           setSelectedFile(null);
-          setActiveTab('materials');
         }
       };
 
@@ -1226,61 +1361,99 @@
         e.preventDefault();
         
         if (!newAssessment.title || !newAssessment.dueDate) {
-          alert('Please fill in all required fields');
-          return;
+            alert('Please fill in all required fields');
+            return;
         }
 
+        console.log('Creating assessment for module:', currentModule.code);
+
+        // Convert to snake_case for database
         const assessment = {
-          id: Date.now(),
-          moduleCode: currentModule.code,
-          title: newAssessment.title,
-          description: newAssessment.description,
-          type: newAssessment.type,
-          dueDate: newAssessment.dueDate,
-          maxMarks: parseInt(newAssessment.maxMarks),
-          criteria: newAssessment.criteria,
-          instructorId: currentUser.id,
-          fileName: newAssessment.file ? newAssessment.file.name : null,
-          fileUrl: newAssessment.file ? URL.createObjectURL(newAssessment.file) : null,
-          createdAt: new Date().toISOString(),
-          status: 'draft',
-          approvedByExamAdmin: false
+            module_code: currentModule.code,
+            title: newAssessment.title,
+            description: newAssessment.description,
+            type: newAssessment.type,
+            due_date: newAssessment.dueDate,
+            max_marks: parseInt(newAssessment.maxMarks),
+            criteria: newAssessment.criteria,
+            instructor_id: currentUser.id,
+            file_name: newAssessment.file ? newAssessment.file.name : null,
+            file_path: newAssessment.file ? URL.createObjectURL(newAssessment.file) : null,
+            status: 'draft',
+            approved_by_exam_admin: false,
+            created_at: new Date().toISOString()
         };
 
         try {
-          const createdAssessment = await SupabaseService.createAssessment(assessment);
-          const updatedAssessments = [...assessments, createdAssessment];
-          setAssessments(updatedAssessments);
-          localStorage.setItem('assessments', JSON.stringify(updatedAssessments));
-          alert('Assessment created successfully');
-          setNewAssessment({ 
-            title: '', 
-            description: '', 
-            type: 'assignment', 
-            dueDate: '', 
-            maxMarks: 100,
-            criteria: '',
-            file: null 
-          });
-          setActiveTab('assessments');
+            const createdAssessment = await SupabaseService.createAssessment(assessment);
+            
+            // Convert back to camelCase for frontend
+            const frontendAssessment = {
+                ...createdAssessment,
+                moduleCode: createdAssessment.module_code,
+                dueDate: createdAssessment.due_date,
+                maxMarks: createdAssessment.max_marks,
+                instructorId: createdAssessment.instructor_id,
+                fileName: createdAssessment.file_name,
+                fileUrl: createdAssessment.file_path,
+                createdAt: createdAssessment.created_at,
+                approvedByExamAdmin: createdAssessment.approved_by_exam_admin
+            };
+            
+            const updatedAssessments = [...assessments, frontendAssessment];
+            setAssessments(updatedAssessments);
+            localStorage.setItem('assessments', JSON.stringify(updatedAssessments));
+            alert('Assessment created successfully');
+            
+            setNewAssessment({ 
+                title: '', 
+                description: '', 
+                type: 'assignment', 
+                dueDate: '', 
+                maxMarks: 100,
+                criteria: '',
+                file: null 
+            });
+            setActiveTab('assessments');
         } catch (error) {
-          const updatedAssessments = [...assessments, assessment];
-          setAssessments(updatedAssessments);
-          localStorage.setItem('assessments', JSON.stringify(updatedAssessments));
-          alert('Assessment created');
-          setNewAssessment({ 
-            title: '', 
-            description: '', 
-            type: 'assignment', 
-            dueDate: '', 
-            maxMarks: 100,
-            criteria: '',
-            file: null 
-          });
-          setActiveTab('assessments');
+            console.error('Error creating assessment:', error);
+            
+            const fallbackAssessment = {
+                id: Date.now(),
+                moduleCode: currentModule.code,
+                title: newAssessment.title,
+                description: newAssessment.description,
+                type: newAssessment.type,
+                dueDate: newAssessment.dueDate,
+                maxMarks: parseInt(newAssessment.maxMarks),
+                criteria: newAssessment.criteria,
+                instructorId: currentUser.id,
+                fileName: newAssessment.file ? newAssessment.file.name : null,
+                fileUrl: newAssessment.file ? URL.createObjectURL(newAssessment.file) : null,
+                createdAt: new Date().toISOString(),
+                status: 'draft',
+                approvedByExamAdmin: false
+            };
+            
+            const updatedAssessments = [...assessments, fallbackAssessment];
+            setAssessments(updatedAssessments);
+            localStorage.setItem('assessments', JSON.stringify(updatedAssessments));
+            alert('Assessment created (local)');
+            
+            setNewAssessment({ 
+                title: '', 
+                description: '', 
+                type: 'assignment', 
+                dueDate: '', 
+                maxMarks: 100,
+                criteria: '',
+                file: null 
+            });
+            setActiveTab('assessments');
         }
       };
 
+      // Submit assessment (Student only)
       const submitAssessment = async (assessmentId) => {
         if (!selectedFile) {
           alert('Please select a file to submit');
@@ -1311,14 +1484,16 @@
           alert('Assessment submitted successfully');
           setSelectedFile(null);
         } catch (error) {
+          console.error('Error submitting assessment:', error);
           const updatedSubmissions = [...submissions, submission];
           setSubmissions(updatedSubmissions);
           localStorage.setItem('submissions', JSON.stringify(updatedSubmissions));
-          alert('Assessment submitted');
+          alert('Assessment submitted (local)');
           setSelectedFile(null);
         }
       };
 
+      // Grade submission (Instructor only)
       const gradeSubmission = async (submissionId, grade, feedback) => {
         try {
           const submission = submissions.find(s => s.id === submissionId);
@@ -1340,6 +1515,7 @@
           localStorage.setItem('submissions', JSON.stringify(updatedSubmissions));
           alert('Submission graded successfully');
         } catch (error) {
+          console.error('Error grading submission:', error);
           const updatedSubmissions = submissions.map(s => 
             s.id === submissionId ? { 
               ...s, 
@@ -1353,10 +1529,11 @@
           );
           setSubmissions(updatedSubmissions);
           localStorage.setItem('submissions', JSON.stringify(updatedSubmissions));
-          alert('Submission graded');
+          alert('Submission graded (local)');
         }
       };
 
+      // Approve/reject grade (Exam Admin only)
       const handleGradeApproval = async (submissionId, approved) => {
         try {
           const submission = submissions.find(s => s.id === submissionId);
@@ -1381,6 +1558,7 @@
           
           alert(`Grade ${approved ? 'approved and released' : 'rejected'}`);
         } catch (error) {
+          console.error('Error updating approval:', error);
           const updatedSubmissions = submissions.map(s => 
             s.id === submissionId ? { 
               ...s, 
@@ -1397,10 +1575,11 @@
             [submissionId]: approved ? 'approved' : 'rejected'
           }));
           
-          alert(`Grade ${approved ? 'approved' : 'rejected'}`);
+          alert(`Grade ${approved ? 'approved (local)' : 'rejected (local)'}`);
         }
       };
 
+      // Delete teaching material (Instructor only)
       const deleteTeachingMaterial = async (materialId) => {
         if (window.confirm('Are you sure you want to delete this teaching material?')) {
           try {
@@ -1410,14 +1589,16 @@
             localStorage.setItem('teachingMaterials', JSON.stringify(updatedMaterials));
             alert('Teaching material deleted');
           } catch (error) {
+            console.error('Error deleting material:', error);
             const updatedMaterials = teachingMaterials.filter(tm => tm.id !== materialId);
             setTeachingMaterials(updatedMaterials);
             localStorage.setItem('teachingMaterials', JSON.stringify(updatedMaterials));
-            alert('Teaching material deleted');
+            alert('Teaching material deleted (local)');
           }
         }
       };
 
+      // Delete assessment (Instructor only)
       const deleteAssessment = async (assessmentId) => {
         if (window.confirm('Are you sure you want to delete this assessment? All submissions will also be deleted.')) {
           try {
@@ -1432,6 +1613,7 @@
             
             alert('Assessment and related submissions deleted');
           } catch (error) {
+            console.error('Error deleting assessment:', error);
             const updatedAssessments = assessments.filter(a => a.id !== assessmentId);
             setAssessments(updatedAssessments);
             localStorage.setItem('assessments', JSON.stringify(updatedAssessments));
@@ -1440,7 +1622,7 @@
             setSubmissions(updatedSubmissions);
             localStorage.setItem('submissions', JSON.stringify(updatedSubmissions));
             
-            alert('Assessment deleted');
+            alert('Assessment deleted (local)');
           }
         }
       };
@@ -1475,6 +1657,7 @@
           </header>
 
           <main>
+            {/* Module Overview */}
             <section className="welcome-banner">
               <h2 className="welcome-title">{currentModule.name}</h2>
               <p className="welcome-subtitle">{currentModule.description}</p>
@@ -1503,11 +1686,12 @@
                   padding: '10px 20px', 
                   borderRadius: '8px' 
                 }}>
-                  <strong>Submissions:</strong> {moduleSubmissions.length}
+                  <strong>Your Submissions:</strong> {moduleSubmissions.filter(s => s.studentId === currentUser.id).length}
                 </div>
               </div>
             </section>
 
+            {/* Tab Navigation */}
             <div style={{ 
               display: 'flex', 
               borderBottom: '1px solid #ddd',
@@ -1550,7 +1734,9 @@
               )}
             </div>
 
+            {/* Tab Content */}
             <div className="tab-content">
+              {/* Overview Tab */}
               {activeTab === 'overview' && (
                 <section>
                   <h3>Module Overview</h3>
@@ -1560,16 +1746,13 @@
                       <p><strong>Code:</strong> {currentModule.code}</p>
                       <p><strong>Name:</strong> {currentModule.name}</p>
                       <p><strong>Description:</strong> {currentModule.description}</p>
-                      {currentModule.invitation_code && (
-                        <p><strong>Invitation Code:</strong> {currentModule.invitation_code}</p>
-                      )}
                     </div>
                     
                     <div className="item-card">
                       <h4><i className="fas fa-chart-line" style={{ color: '#2ecc71' }}></i> Quick Stats</h4>
                       <p><strong>Total Assessments:</strong> {moduleAssessments.length}</p>
                       <p><strong>Teaching Materials:</strong> {moduleTeachingMaterials.length}</p>
-                      <p><strong>Total Submissions:</strong> {moduleSubmissions.length}</p>
+                      <p><strong>Pending Submissions:</strong> {moduleSubmissions.filter(s => s.status === 'submitted').length}</p>
                       <p><strong>Released Grades:</strong> {moduleSubmissions.filter(s => s.releasedToStudent).length}</p>
                     </div>
 
@@ -1594,6 +1777,7 @@
                 </section>
               )}
 
+              {/* Teaching Materials Tab */}
               {activeTab === 'materials' && (
                 <section>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
@@ -1650,6 +1834,7 @@
                 </section>
               )}
 
+              {/* Add Teaching Material Tab (Instructor only) */}
               {activeTab === 'add-material' && currentUser.role === 'Instructor' && (
                 <section>
                   <h3>Add Teaching Material</h3>
@@ -1690,6 +1875,7 @@
                 </section>
               )}
 
+              {/* Assessments Tab */}
               {activeTab === 'assessments' && (
                 <section>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
@@ -1723,7 +1909,14 @@
                               <div style={{ flex: 1 }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
                                   <h4 style={{ margin: 0 }}>{assessment.title}</h4>
-                                  <span className={`type-badge type-${assessment.type}`}>
+                                  <span style={{
+                                    padding: '4px 8px',
+                                    backgroundColor: assessment.type === 'exam' ? '#e74c3c' : '#3498db',
+                                    color: 'white',
+                                    borderRadius: '4px',
+                                    fontSize: '12px',
+                                    fontWeight: '600'
+                                  }}>
                                     {assessment.type.toUpperCase()}
                                   </span>
                                 </div>
@@ -1736,20 +1929,22 @@
                                   color: '#666'
                                 }}>
                                   <div>
-                                    <i className="far fa-calendar"></i> Due: {new Date(assessment.dueDate).toLocaleDateString()}
+                                    <i className="far fa-calendar"></i> Due: {new Date(assessment.dueDate || assessment.due_date).toLocaleDateString()}
                                   </div>
                                   <div>
-                                    <i className="fas fa-star"></i> Max Marks: {assessment.maxMarks}
+                                    <i className="fas fa-star"></i> Max Marks: {assessment.maxMarks || assessment.max_marks}
                                   </div>
                                   {studentSubmission && (
-                                    <div>
-                                      <span className={`status-badge status-${studentSubmission.status}`}>
-                                        {studentSubmission.status}
-                                      </span>
+                                    <div style={{
+                                      color: studentSubmission.status === 'released' ? '#2ecc71' : 
+                                             studentSubmission.status === 'graded' ? '#f39c12' : '#3498db'
+                                    }}>
+                                      <i className="fas fa-check-circle"></i> Status: {studentSubmission.status}
                                     </div>
                                   )}
                                 </div>
                                 
+                                {/* Student Actions */}
                                 {currentUser.role === 'Student' && (
                                   <div style={{ marginTop: '20px' }}>
                                     {!studentSubmission ? (
@@ -1758,7 +1953,7 @@
                                           <input
                                             type="file"
                                             id={`file-${assessment.id}`}
-                                            onChange={(e) => setSelectedFile(e.target.files[0])}
+                                            onChange={handleFileUpload}
                                             style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
                                           />
                                         </div>
@@ -1780,13 +1975,9 @@
                                       }}>
                                         <h5>Your Submission</h5>
                                         <p><strong>Submitted:</strong> {new Date(studentSubmission.submittedAt).toLocaleDateString()}</p>
-                                        <p><strong>Status:</strong> 
-                                          <span className={`status-badge status-${studentSubmission.status}`} style={{ marginLeft: '10px' }}>
-                                            {studentSubmission.status}
-                                          </span>
-                                        </p>
+                                        <p><strong>Status:</strong> {studentSubmission.status}</p>
                                         {studentSubmission.grade !== null && (
-                                          <p><strong>Grade:</strong> {studentSubmission.grade}/{assessment.maxMarks}</p>
+                                          <p><strong>Grade:</strong> {studentSubmission.grade}/{assessment.maxMarks || assessment.max_marks}</p>
                                         )}
                                         {studentSubmission.feedback && (
                                           <p><strong>Feedback:</strong> {studentSubmission.feedback}</p>
@@ -1805,6 +1996,7 @@
                                 )}
                               </div>
                               
+                              {/* Instructor Actions */}
                               {currentUser.role === 'Instructor' && (
                                 <div style={{ display: 'flex', gap: '10px' }}>
                                   <button 
@@ -1834,6 +2026,7 @@
                 </section>
               )}
 
+              {/* Add Assessment Tab (Instructor only) */}
               {activeTab === 'add-assessment' && currentUser.role === 'Instructor' && (
                 <section>
                   <h3>Create Assessment</h3>
@@ -1906,6 +2099,7 @@
                 </section>
               )}
 
+              {/* Grading Tab (Instructor & Exam Admin) */}
               {(activeTab === 'grading' && (currentUser.role === 'Instructor' || currentUser.role === 'Exam Administrator')) && (
                 <section>
                   <h3>Grading & Approval</h3>
@@ -1922,20 +2116,16 @@
                               <h4>{assessment?.title || 'Unknown Assessment'}</h4>
                               <p><strong>Student:</strong> {student?.name || 'Unknown'}</p>
                               <p><strong>Submitted:</strong> {new Date(submission.submittedAt).toLocaleDateString()}</p>
-                              <p><strong>Current Status:</strong> 
-                                <span className={`status-badge status-${submission.status}`} style={{ marginLeft: '10px' }}>
-                                  {submission.status}
-                                </span>
-                              </p>
+                              <p><strong>Current Status:</strong> {submission.status}</p>
                               
                               <div style={{ marginTop: '15px' }}>
                                 <div style={{ marginBottom: '10px' }}>
-                                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>Grade (/{assessment?.maxMarks || 100})</label>
+                                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>Grade (/{assessment?.maxMarks || assessment?.max_marks || 100})</label>
                                   <input
                                     type="number"
                                     placeholder="Enter grade"
                                     min="0"
-                                    max={assessment?.maxMarks || 100}
+                                    max={assessment?.maxMarks || assessment?.max_marks || 100}
                                     value={gradingData[submission.id]?.grade || submission.grade || ''}
                                     onChange={e => setGradingData(prev => ({
                                       ...prev,
@@ -1992,12 +2182,9 @@
                               <div key={submission.id} className="item-card">
                                 <h4>{assessment?.title || 'Unknown Assessment'}</h4>
                                 <p><strong>Student:</strong> {student?.name || 'Unknown'}</p>
-                                <p><strong>Grade:</strong> {submission.grade}/{assessment?.maxMarks || 100}</p>
+                                <p><strong>Grade:</strong> {submission.grade}/{assessment?.maxMarks || assessment?.max_marks || 100}</p>
                                 <p><strong>Status:</strong> 
-                                  {submission.approvedByExamAdmin ? 
-                                    <span className="status-badge status-released" style={{ marginLeft: '10px' }}>Approved by Exam Admin</span> : 
-                                    <span className="status-badge status-graded" style={{ marginLeft: '10px' }}>Pending Exam Admin Approval</span>
-                                  }
+                                  {submission.approvedByExamAdmin ? ' Approved by Exam Admin' : ' Pending Exam Admin Approval'}
                                 </p>
                                 <p><strong>Feedback:</strong> {submission.feedback || 'No feedback provided'}</p>
                               </div>
@@ -2030,7 +2217,7 @@
                                   <p><strong>Instructor:</strong> {instructor?.name || 'Unknown'}</p>
                                 </div>
                                 <div>
-                                  <p><strong>Grade:</strong> {submission.grade}/{assessment?.maxMarks || 100}</p>
+                                  <p><strong>Grade:</strong> {submission.grade}/{assessment?.maxMarks || assessment?.max_marks || 100}</p>
                                   <p><strong>Marked:</strong> {new Date(submission.markedAt).toLocaleDateString()}</p>
                                 </div>
                               </div>
@@ -2102,7 +2289,14 @@
                                     <h4 style={{ margin: '0 0 5px 0' }}>{assessment?.title || 'Unknown Assessment'}</h4>
                                     <p style={{ margin: '0', color: '#666' }}>{student?.name || 'Unknown'}</p>
                                   </div>
-                                  <span className="status-badge status-released">
+                                  <span style={{
+                                    padding: '4px 8px',
+                                    backgroundColor: '#2ecc71',
+                                    color: 'white',
+                                    borderRadius: '4px',
+                                    fontSize: '12px',
+                                    fontWeight: '600'
+                                  }}>
                                     RELEASED
                                   </span>
                                 </div>
@@ -2113,7 +2307,7 @@
                                   marginTop: '10px'
                                 }}>
                                   <div>
-                                    <p><strong>Grade:</strong> {submission.grade}/{assessment?.maxMarks || 100}</p>
+                                    <p><strong>Grade:</strong> {submission.grade}/{assessment?.maxMarks || assessment?.max_marks || 100}</p>
                                     <p><strong>Approved:</strong> {new Date(submission.markedAt).toLocaleDateString()}</p>
                                   </div>
                                   <div>
@@ -2130,6 +2324,7 @@
                 </section>
               )}
 
+              {/* Student My Work Tab */}
               {activeTab === 'my-work' && currentUser.role === 'Student' && (
                 <section>
                   <h3>My Work & Grades</h3>
@@ -2152,7 +2347,16 @@
                                 Submitted: {new Date(submission.submittedAt).toLocaleDateString()}
                               </p>
                             </div>
-                            <span className={`status-badge status-${submission.status}`}>
+                            <span style={{
+                              padding: '4px 8px',
+                              backgroundColor: submission.status === 'released' ? '#2ecc71' : 
+                                             submission.status === 'graded' ? '#f39c12' : 
+                                             submission.status === 'submitted' ? '#3498db' : '#e74c3c',
+                              color: 'white',
+                              borderRadius: '4px',
+                              fontSize: '12px',
+                              fontWeight: '600'
+                            }}>
                               {submission.status.toUpperCase()}
                             </span>
                           </div>
@@ -2174,13 +2378,13 @@
                                   <div>
                                     <p style={{ margin: '0 0 5px 0', color: '#666' }}>Your Grade</p>
                                     <h3 style={{ margin: '0', color: '#2ecc71' }}>
-                                      {submission.grade}/{assessment?.maxMarks || 100}
+                                      {submission.grade}/{assessment?.maxMarks || assessment?.max_marks || 100}
                                     </h3>
                                   </div>
                                   <div>
                                     <p style={{ margin: '0 0 5px 0', color: '#666' }}>Percentage</p>
                                     <h3 style={{ margin: '0', color: '#3498db' }}>
-                                      {((submission.grade / (assessment?.maxMarks || 100)) * 100).toFixed(1)}%
+                                      {((submission.grade / (assessment?.maxMarks || assessment?.max_marks || 100)) * 100).toFixed(1)}%
                                     </h3>
                                   </div>
                                 </div>
@@ -2655,16 +2859,23 @@
       teachingMaterials = [],
       setTeachingMaterials = () => {}
     }) => {
+      const [userModules, setUserModules] = useState([]);
       const [assessmentData, setAssessmentData] = useState({ 
         title: '', 
         description: '', 
-        course: '', 
+        moduleCode: '', 
         deadline: '', 
-        criteria: '' 
+        criteria: '',
+        type: 'assignment',
+        maxMarks: 100
       });
-      const [userModules, setUserModules] = useState([]);
 
       useEffect(() => {
+        console.log('=== INSTRUCTOR DASHBOARD DEBUG ===');
+        console.log('Current user:', currentUser);
+        console.log('All modules:', modules);
+        console.log('All assessments:', assessments);
+        
         loadUserModules();
       }, [modules, currentUser]);
 
@@ -2672,45 +2883,102 @@
         const instructorModules = modules.filter(m => 
           m.instructor_id === currentUser.id || m.instructorId === currentUser.id
         );
+        console.log('Instructor modules:', instructorModules);
         setUserModules(instructorModules);
       };
 
       const handleAssessmentSubmit = async (e) => {
         e.preventDefault();
+        
+        if (!assessmentData.moduleCode) {
+          alert('Please select a module');
+          return;
+        }
+        
+        console.log('Creating assessment for module:', assessmentData.moduleCode);
+        
         try {
+          // Use snake_case for database
           const assessment = {
-            id: Date.now(),
+            module_code: assessmentData.moduleCode,
             title: assessmentData.title,
             description: assessmentData.description,
-            course: assessmentData.course,
-            deadline: assessmentData.deadline,
+            due_date: assessmentData.deadline,
             criteria: assessmentData.criteria,
-            instructorId: currentUser.id,
-            files: []
+            instructor_id: currentUser.id,
+            status: 'draft',
+            approved_by_exam_admin: false,
+            created_at: new Date().toISOString(),
+            type: assessmentData.type || 'assignment',
+            max_marks: assessmentData.maxMarks || 100
           };
           
+          console.log('Sending to Supabase:', assessment);
+          
           const createdAssessment = await SupabaseService.createAssessment(assessment);
-          const updatedAssessments = [...assessments, createdAssessment];
+          
+          console.log('Created assessment response:', createdAssessment);
+          
+          // Convert back to camelCase for frontend
+          const frontendAssessment = {
+            ...createdAssessment,
+            moduleCode: createdAssessment.module_code,
+            dueDate: createdAssessment.due_date,
+            instructorId: createdAssessment.instructor_id,
+            createdAt: createdAssessment.created_at,
+            approvedByExamAdmin: createdAssessment.approved_by_exam_admin,
+            maxMarks: createdAssessment.max_marks
+          };
+          
+          const updatedAssessments = [...assessments, frontendAssessment];
           setAssessments(updatedAssessments);
           localStorage.setItem('assessments', JSON.stringify(updatedAssessments));
-          setAssessmentData({ title: '', description: '', course: '', deadline: '', criteria: '' });
+          
+          setAssessmentData({ 
+            title: '', 
+            description: '', 
+            moduleCode: '', 
+            deadline: '', 
+            criteria: '',
+            type: 'assignment',
+            maxMarks: 100
+          });
+          
           alert('Assessment created successfully');
         } catch (error) {
+          console.error('Error creating assessment:', error);
+          
+          // Fallback to localStorage
           const assessment = {
             id: Date.now(),
+            moduleCode: assessmentData.moduleCode,
             title: assessmentData.title,
             description: assessmentData.description,
-            course: assessmentData.course,
-            deadline: assessmentData.deadline,
+            dueDate: assessmentData.deadline,
             criteria: assessmentData.criteria,
             instructorId: currentUser.id,
-            files: []
+            files: [],
+            status: 'draft',
+            approvedByExamAdmin: false,
+            type: assessmentData.type || 'assignment',
+            maxMarks: assessmentData.maxMarks || 100
           };
+          
           const updatedAssessments = [...assessments, assessment];
           setAssessments(updatedAssessments);
           localStorage.setItem('assessments', JSON.stringify(updatedAssessments));
-          setAssessmentData({ title: '', description: '', course: '', deadline: '', criteria: '' });
-          alert('Assessment created');
+          
+          setAssessmentData({ 
+            title: '', 
+            description: '', 
+            moduleCode: '', 
+            deadline: '', 
+            criteria: '',
+            type: 'assignment',
+            maxMarks: 100
+          });
+          
+          alert('Assessment created (local storage)');
         }
       };
 
@@ -2725,12 +2993,14 @@
           );
           setSubmissions(updatedSubmissions);
           localStorage.setItem('submissions', JSON.stringify(updatedSubmissions));
+          alert('Submission graded successfully');
         } catch (error) {
           const updatedSubmissions = submissions.map(s => 
             s.id === submissionId ? { ...s, grade, status: 'graded' } : s
           );
           setSubmissions(updatedSubmissions);
           localStorage.setItem('submissions', JSON.stringify(updatedSubmissions));
+          alert('Submission graded');
         }
       };
 
@@ -2770,6 +3040,7 @@
           );
           setQuestions(updatedQuestions);
           localStorage.setItem('questions', JSON.stringify(updatedQuestions));
+          alert('Answer submitted successfully');
         } catch (error) {
           const updatedQuestions = questions.map(q => 
             q.id === questionId ? { 
@@ -2784,6 +3055,7 @@
           );
           setQuestions(updatedQuestions);
           localStorage.setItem('questions', JSON.stringify(updatedQuestions));
+          alert('Answer submitted');
         }
       };
 
@@ -2843,8 +3115,14 @@
       };
 
       const openModule = (moduleCode) => {
+        console.log('Opening module:', moduleCode);
         window.location.href = `?page=module&module=${moduleCode}`;
       };
+
+      // Get instructor's assessments
+      const instructorAssessments = assessments.filter(a => 
+        a.instructorId === currentUser.id || a.instructor_id === currentUser.id
+      );
 
       return (
         <div className="main-container">
@@ -2868,52 +3146,54 @@
             </section>
             
             <section>
-              <h3>Create New Assessment</h3>
-              <form onSubmit={handleAssessmentSubmit} className="form-container" style={{ maxWidth: '600px' }}>
-                <input 
-                  type="text" 
-                  placeholder="Assessment Title" 
-                  value={assessmentData.title} 
-                  onChange={e => setAssessmentData({ ...assessmentData, title: e.target.value })} 
-                  required 
-                />
-                <textarea 
-                  placeholder="Assessment Description" 
-                  value={assessmentData.description} 
-                  onChange={e => setAssessmentData({ ...assessmentData, description: e.target.value })} 
-                  required 
-                  rows="3"
-                />
-                <input 
-                  type="text" 
-                  placeholder="Course Name" 
-                  value={assessmentData.course} 
-                  onChange={e => setAssessmentData({ ...assessmentData, course: e.target.value })} 
-                  required 
-                />
-                <input 
-                  type="datetime-local" 
-                  value={assessmentData.deadline} 
-                  onChange={e => setAssessmentData({ ...assessmentData, deadline: e.target.value })} 
-                  required 
-                />
-                <textarea 
-                  placeholder="Grading Criteria" 
-                  value={assessmentData.criteria} 
-                  onChange={e => setAssessmentData({ ...assessmentData, criteria: e.target.value })} 
-                  required 
-                  rows="3"
-                />
-                <button type="submit" className="btn-primary">Create Assessment</button>
-              </form>
+              <h3>My Assessments ({instructorAssessments.length})</h3>
+              {instructorAssessments.length === 0 ? (
+                <div className="empty-state">
+                  <i className="fas fa-tasks" style={{ fontSize: '48px', color: '#ccc', marginBottom: '20px' }}></i>
+                  <h4>No assessments created yet</h4>
+                  <p>Create your first assessment using the form above.</p>
+                </div>
+              ) : (
+                <div className="quick-actions">
+                  {instructorAssessments.map(assessment => {
+                    const module = modules.find(m => m.code === assessment.moduleCode || m.code === assessment.module_code);
+                    const assessmentSubmissions = submissions.filter(s => s.assessmentId === assessment.id);
+                    
+                    return (
+                      <div key={assessment.id} className="item-card">
+                        <h4>{assessment.title}</h4>
+                        <p>{assessment.description}</p>
+                        <p><strong>Module:</strong> {module ? `${module.name} (${module.code})` : 'Unknown module'}</p>
+                        <p><strong>Deadline:</strong> {new Date(assessment.dueDate || assessment.due_date).toLocaleDateString()}</p>
+                        <p><strong>Submissions:</strong> {assessmentSubmissions.length}</p>
+                        <p><strong>Status:</strong> 
+                          <span className={`status-badge status-${assessment.status || 'draft'}`} style={{ marginLeft: '10px' }}>
+                            {assessment.status || 'draft'}
+                          </span>
+                        </p>
+                        
+                        {module && (
+                          <button 
+                            onClick={() => openModule(module.code)}
+                            className="btn-secondary"
+                            style={{ marginTop: '10px', width: '100%' }}
+                          >
+                            <i className="fas fa-external-link-alt"></i> Open Module to View
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </section>
             
             <section>
               <h3>Student Submissions ({submissions.filter(s => 
-                assessments.find(a => a.id === s.assessmentId && a.instructorId === currentUser.id)
+                assessments.find(a => a.id === s.assessmentId && (a.instructorId === currentUser.id || a.instructor_id === currentUser.id))
               ).length})</h3>
               {submissions.filter(s => 
-                assessments.find(a => a.id === s.assessmentId && a.instructorId === currentUser.id)
+                assessments.find(a => a.id === s.assessmentId && (a.instructorId === currentUser.id || a.instructor_id === currentUser.id))
               ).length === 0 ? (
                 <div className="empty-state">
                   <i className="fas fa-inbox" style={{ fontSize: '48px', color: '#ccc', marginBottom: '20px' }}></i>
@@ -2923,34 +3203,45 @@
               ) : (
                 <div className="quick-actions">
                   {submissions.filter(s => 
-                    assessments.find(a => a.id === s.assessmentId && a.instructorId === currentUser.id)
-                  ).map(s => (
-                    <div key={s.id} className="item-card">
-                      <h4>Submission #{s.id}</h4>
-                      <p><strong>Student ID:</strong> {s.studentId}</p>
-                      <p><strong>Status:</strong> 
-                        <span className={`status-badge status-${s.status}`} style={{ marginLeft: '10px' }}>
-                          {s.status}
-                        </span>
-                      </p>
-                      <p><strong>Current Grade:</strong> {s.grade || 'Not graded'}</p>
-                      <div style={{ marginTop: '15px' }}>
-                        <input 
-                          type="number" 
-                          placeholder="Enter grade" 
-                          onChange={e => gradeSubmission(s.id, e.target.value)}
-                          style={{ marginBottom: '10px', width: '100%', padding: '8px' }}
-                        />
-                        <textarea 
-                          placeholder="Provide feedback..." 
-                          value={s.feedback || ''}
-                          onChange={e => updateFeedback(s.id, e.target.value)}
-                          style={{ width: '100%', padding: '8px', marginBottom: '10px' }}
-                          rows="3"
-                        />
+                    assessments.find(a => a.id === s.assessmentId && (a.instructorId === currentUser.id || a.instructor_id === currentUser.id))
+                  ).map(s => {
+                    const assessment = assessments.find(a => a.id === s.assessmentId);
+                    const module = modules.find(m => 
+                      m.code === assessment?.moduleCode || 
+                      m.code === assessment?.module_code ||
+                      (assessment?.course && m.name.includes(assessment.course))
+                    );
+                    
+                    return (
+                      <div key={s.id} className="item-card">
+                        <h4>Submission #{s.id}</h4>
+                        <p><strong>Assessment:</strong> {assessment?.title || 'Unknown'}</p>
+                        <p><strong>Module:</strong> {module ? module.name : 'Unknown'}</p>
+                        <p><strong>Student ID:</strong> {s.studentId}</p>
+                        <p><strong>Status:</strong> 
+                          <span className={`status-badge status-${s.status}`} style={{ marginLeft: '10px' }}>
+                            {s.status}
+                          </span>
+                        </p>
+                        <p><strong>Current Grade:</strong> {s.grade || 'Not graded'}</p>
+                        <div style={{ marginTop: '15px' }}>
+                          <input 
+                            type="number" 
+                            placeholder="Enter grade" 
+                            onChange={e => gradeSubmission(s.id, e.target.value)}
+                            style={{ marginBottom: '10px', width: '100%', padding: '8px' }}
+                          />
+                          <textarea 
+                            placeholder="Provide feedback..." 
+                            value={s.feedback || ''}
+                            onChange={e => updateFeedback(s.id, e.target.value)}
+                            style={{ width: '100%', padding: '8px', marginBottom: '10px' }}
+                            rows="3"
+                          />
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </section>
@@ -2965,76 +3256,91 @@
                 </div>
               ) : (
                 <div className="quick-actions">
-                  {userModules.map(module => (
-                    <div key={module.code} className="item-card">
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div style={{ flex: 1 }}>
-                          <h4>{module.name}</h4>
-                          <p><strong>Code:</strong> {module.code}</p>
-                          <p><strong>Description:</strong> {module.description}</p>
-                        </div>
-                        <button 
-                          onClick={() => openModule(module.code)}
-                          className="btn-primary"
-                          style={{ padding: '8px 16px' }}
-                        >
-                          <i className="fas fa-external-link-alt"></i> Open
-                        </button>
-                      </div>
-                      
-                      {module.invitation_code ? (
-                        <>
-                          <div className="invitation-code-display">
-                            {module.invitation_code}
+                  {userModules.map(module => {
+                    const moduleAssessments = assessments.filter(a => 
+                      a.moduleCode === module.code || a.module_code === module.code
+                    );
+                    const moduleSubmissions = submissions.filter(s => 
+                      moduleAssessments.some(a => a.id === s.assessmentId)
+                    );
+                    
+                    return (
+                      <div key={module.code} className="item-card">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                          <div style={{ flex: 1 }}>
+                            <h4>{module.name}</h4>
+                            <p><strong>Code:</strong> {module.code}</p>
+                            <p><strong>Description:</strong> {module.description}</p>
+                            <p><strong>Assessments:</strong> {moduleAssessments.length}</p>
+                            <p><strong>Submissions:</strong> {moduleSubmissions.length}</p>
                           </div>
-                          <div className="invite-actions">
-                            <button 
-                              onClick={() => regenerateInvitationCode(module.code)}
-                              className="refresh-btn"
-                            >
-                              <i className="fas fa-sync-alt"></i> Regenerate Code
-                            </button>
-                            <button 
-                              onClick={() => copyToClipboard(module.invitation_code)}
-                              className="copy-btn"
-                            >
-                              <i className="fas fa-copy"></i> Copy
-                            </button>
-                          </div>
-                        </>
-                      ) : (
-                        <div>
-                          <p style={{ color: '#666', marginBottom: '10px' }}>
-                            No invitation code generated yet.
-                          </p>
                           <button 
-                            onClick={() => generateInvitationCode(module.code)}
+                            onClick={() => openModule(module.code)}
                             className="btn-primary"
-                            style={{ width: '100%' }}
+                            style={{ padding: '8px 16px' }}
                           >
-                            <i className="fas fa-key"></i> Generate Invitation Code
+                            <i className="fas fa-external-link-alt"></i> Open Module
                           </button>
                         </div>
-                      )}
-                      
-                      <div style={{ marginTop: '15px', fontSize: '14px', color: '#666' }}>
-                        <p><strong>How to invite students:</strong></p>
-                        <ol style={{ margin: '10px 0', paddingLeft: '20px' }}>
-                          <li>Generate an invitation code</li>
-                          <li>Share the code with students</li>
-                          <li>Students enter the code in their dashboard</li>
-                          <li>Students are automatically added to all classes in this module</li>
-                        </ol>
+                        
+                        {module.invitation_code ? (
+                          <>
+                            <div className="invitation-code-display">
+                              {module.invitation_code}
+                            </div>
+                            <div className="invite-actions">
+                              <button 
+                                onClick={() => regenerateInvitationCode(module.code)}
+                                className="refresh-btn"
+                              >
+                                <i className="fas fa-sync-alt"></i> Regenerate Code
+                              </button>
+                              <button 
+                                onClick={() => copyToClipboard(module.invitation_code)}
+                                className="copy-btn"
+                              >
+                                <i className="fas fa-copy"></i> Copy
+                              </button>
+                            </div>
+                          </>
+                        ) : (
+                          <div>
+                            <p style={{ color: '#666', marginBottom: '10px' }}>
+                              No invitation code generated yet.
+                            </p>
+                            <button 
+                              onClick={() => generateInvitationCode(module.code)}
+                              className="btn-primary"
+                              style={{ width: '100%' }}
+                            >
+                              <i className="fas fa-key"></i> Generate Invitation Code
+                            </button>
+                          </div>
+                        )}
+                        
+                        <div style={{ marginTop: '15px', fontSize: '14px', color: '#666' }}>
+                          <p><strong>How to invite students:</strong></p>
+                          <ol style={{ margin: '10px 0', paddingLeft: '20px' }}>
+                            <li>Generate an invitation code</li>
+                            <li>Share the code with students</li>
+                            <li>Students enter the code in their dashboard</li>
+                            <li>Students are automatically added to all classes in this module</li>
+                          </ol>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </section>
             
             <section>
-              <h3>Student Questions ({questions.length})</h3>
-              {questions.length === 0 ? (
+              <h3>Student Questions ({questions.filter(q => 
+                assessments.find(a => a.id === q.assessmentId && (a.instructorId === currentUser.id || a.instructor_id === currentUser.id))
+              ).length})</h3>
+              {questions.filter(q => 
+                assessments.find(a => a.id === q.assessmentId && (a.instructorId === currentUser.id || a.instructor_id === currentUser.id))
+              ).length === 0 ? (
                 <div className="empty-state">
                   <i className="fas fa-question-circle" style={{ fontSize: '48px', color: '#ccc', marginBottom: '20px' }}></i>
                   <h4>No questions yet</h4>
@@ -3042,57 +3348,795 @@
                 </div>
               ) : (
                 <div className="quick-actions">
-                  {questions.map(q => (
-                    <div key={q.id} className="item-card">
-                      <h4>Question #{q.id}</h4>
-                      <p><strong>Question:</strong> {q.question}</p>
-                      <p><strong>Assessment ID:</strong> {q.assessmentId}</p>
-                      {q.answers && q.answers.length > 0 && (
-                        <div style={{ marginTop: '10px' }}>
-                          <p><strong>Previous Answers:</strong></p>
-                          {q.answers.map((answer, idx) => (
-                            <div key={idx} style={{ 
-                              padding: '8px', 
-                              margin: '5px 0', 
-                              backgroundColor: '#f8f9fa',
-                              borderRadius: '4px',
-                              fontSize: '14px'
-                            }}>
-                              <p><strong>Answer {idx + 1}:</strong> {answer.answer}</p>
-                              <p><em>{answer.official ? '(Official Answer)' : '(Peer Answer)'}</em></p>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      <textarea 
-                        placeholder="Type your answer here..." 
-                        onChange={(e) => {
-                          const textarea = e.target;
-                          textarea.dataset.answer = e.target.value;
-                        }}
-                        style={{ width: '100%', padding: '8px', marginTop: '10px' }}
-                        rows="3"
-                      />
-                      <button 
-                        onClick={(e) => {
-                          const textarea = e.target.previousElementSibling;
-                          if (textarea && textarea.dataset.answer) {
-                            answerQuestion(q.id, textarea.dataset.answer);
-                            alert('Answer submitted!');
-                            textarea.value = '';
-                            textarea.dataset.answer = '';
-                          }
-                        }}
-                        className="btn-primary"
-                        style={{ marginTop: '10px', width: '100%' }}
-                      >
-                        Submit Answer
-                      </button>
-                    </div>
-                  ))}
+                  {questions.filter(q => 
+                    assessments.find(a => a.id === q.assessmentId && (a.instructorId === currentUser.id || a.instructor_id === currentUser.id))
+                  ).map(q => {
+                    const assessment = assessments.find(a => a.id === q.assessmentId);
+                    
+                    return (
+                      <div key={q.id} className="item-card">
+                        <h4>Question #{q.id}</h4>
+                        <p><strong>Assessment:</strong> {assessment?.title || 'Unknown'}</p>
+                        <p><strong>Question:</strong> {q.question}</p>
+                        {q.answers && q.answers.length > 0 && (
+                          <div style={{ marginTop: '10px' }}>
+                            <p><strong>Previous Answers:</strong></p>
+                            {q.answers.map((answer, idx) => (
+                              <div key={idx} style={{ 
+                                padding: '8px', 
+                                margin: '5px 0', 
+                                backgroundColor: '#f8f9fa',
+                                borderRadius: '4px',
+                                fontSize: '14px'
+                              }}>
+                                <p><strong>Answer {idx + 1}:</strong> {answer.answer}</p>
+                                <p><em>{answer.official ? '(Official Answer)' : '(Peer Answer)'}</em></p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        <textarea 
+                          placeholder="Type your answer here..." 
+                          onChange={(e) => {
+                            const textarea = e.target;
+                            textarea.dataset.answer = e.target.value;
+                          }}
+                          style={{ width: '100%', padding: '8px', marginTop: '10px' }}
+                          rows="3"
+                        />
+                        <button 
+                          onClick={(e) => {
+                            const textarea = e.target.previousElementSibling;
+                            if (textarea && textarea.dataset.answer) {
+                              answerQuestion(q.id, textarea.dataset.answer);
+                              alert('Answer submitted!');
+                              textarea.value = '';
+                              textarea.dataset.answer = '';
+                            }
+                          }}
+                          className="btn-primary"
+                          style={{ marginTop: '10px', width: '100%' }}
+                        >
+                          Submit Answer
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </section>
+          </main>
+        </div>
+      );
+    };
+
+    // ==================== ASSESSMENT VIEW PAGE ====================
+    const AssessmentViewPage = ({
+      currentUser,
+      assessments = [],
+      submissions = [],
+      questions = [],
+      modules = [],
+      users = [],
+      setSubmissions = () => {},
+      setQuestions = () => {},
+      handleLogout = () => {},
+      goToProfile = () => {},
+      goBack = () => {}
+    }) => {
+      const [currentAssessment, setCurrentAssessment] = useState(null);
+      const [selectedFile, setSelectedFile] = useState(null);
+      const [newQuestion, setNewQuestion] = useState('');
+      const [answers, setAnswers] = useState({});
+
+      // Get assessment ID from URL
+      useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const assessmentId = urlParams.get('assessment');
+        
+        if (assessmentId) {
+          const assessment = assessments.find(a => a.id === parseInt(assessmentId) || a.id === assessmentId);
+          if (assessment) {
+            setCurrentAssessment(assessment);
+            
+            // Check if user has access to this assessment
+            const module = modules.find(m => 
+              m.code === assessment.module_code || 
+              m.code === assessment.moduleCode ||
+              (assessment.course && m.name.includes(assessment.course))
+            );
+            
+            if (currentUser.role === 'Student') {
+              // Student: Check if enrolled in the module
+              if (!module) {
+                alert('You do not have access to this assessment');
+                goBack();
+                return;
+              }
+              
+              // Check if student is enrolled in any class of this module
+              const hasAccess = true; // You should implement proper access check
+              if (!hasAccess) {
+                alert('You are not enrolled in this module');
+                goBack();
+              }
+            }
+          } else {
+            alert('Assessment not found');
+            goBack();
+          }
+        }
+      }, [assessments, currentUser, modules, goBack]);
+
+      // Get assessment submissions
+      const assessmentSubmissions = submissions.filter(s => 
+        s.assessmentId === currentAssessment?.id
+      );
+
+      // Get student's submission
+      const studentSubmission = assessmentSubmissions.find(s => 
+        s.studentId === currentUser.id
+      );
+
+      // Get assessment questions
+      const assessmentQuestions = questions.filter(q => 
+        q.assessmentId === currentAssessment?.id
+      );
+
+      // Get module
+      const module = modules.find(m => 
+        m.code === currentAssessment?.module_code || 
+        m.code === currentAssessment?.moduleCode ||
+        (currentAssessment?.course && m.name.includes(currentAssessment.course))
+      );
+
+      // Handle file selection
+      const handleFileUpload = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          setSelectedFile(file);
+        }
+      };
+
+      // Submit assessment (Student only)
+      const submitAssessment = async () => {
+        if (!selectedFile) {
+          alert('Please select a file to submit');
+          return;
+        }
+
+        const submission = {
+          id: Date.now(),
+          assessmentId: currentAssessment.id,
+          studentId: currentUser.id,
+          fileName: selectedFile.name,
+          fileUrl: URL.createObjectURL(selectedFile),
+          submittedAt: new Date().toISOString(),
+          status: 'submitted',
+          grade: null,
+          feedback: '',
+          markedBy: null,
+          markedAt: null,
+          approvedByExamAdmin: false,
+          releasedToStudent: false
+        };
+
+        try {
+          const createdSubmission = await SupabaseService.createSubmission(submission);
+          const updatedSubmissions = [...submissions, createdSubmission];
+          setSubmissions(updatedSubmissions);
+          localStorage.setItem('submissions', JSON.stringify(updatedSubmissions));
+          alert('Assessment submitted successfully');
+          setSelectedFile(null);
+        } catch (error) {
+          console.error('Error submitting assessment:', error);
+          const updatedSubmissions = [...submissions, submission];
+          setSubmissions(updatedSubmissions);
+          localStorage.setItem('submissions', JSON.stringify(updatedSubmissions));
+          alert('Assessment submitted (local)');
+          setSelectedFile(null);
+        }
+      };
+
+      // Ask a question (Student only)
+      const askQuestion = async () => {
+        if (!newQuestion.trim()) {
+          alert('Please enter a question');
+          return;
+        }
+
+        const question = {
+          id: Date.now(),
+          assessmentId: currentAssessment.id,
+          studentId: currentUser.id,
+          question: newQuestion,
+          answers: []
+        };
+
+        try {
+          const createdQuestion = await SupabaseService.createQuestion(question);
+          const updatedQuestions = [...questions, createdQuestion];
+          setQuestions(updatedQuestions);
+          localStorage.setItem('questions', JSON.stringify(updatedQuestions));
+          alert('Question submitted successfully');
+          setNewQuestion('');
+        } catch (error) {
+          console.error('Error asking question:', error);
+          const updatedQuestions = [...questions, question];
+          setQuestions(updatedQuestions);
+          localStorage.setItem('questions', JSON.stringify(updatedQuestions));
+          alert('Question submitted (local)');
+          setNewQuestion('');
+        }
+      };
+
+      // Answer a question (Instructor only)
+      const answerQuestion = async (questionId) => {
+        const answer = answers[questionId];
+        if (!answer || !answer.trim()) {
+          alert('Please enter an answer');
+          return;
+        }
+
+        try {
+          const question = questions.find(q => q.id === questionId);
+          const updatedAnswers = [...(question.answers || []), {
+            instructorId: currentUser.id,
+            answer,
+            official: true,
+            resolved: false,
+            answeredAt: new Date().toISOString()
+          }];
+
+          const updatedQuestion = await SupabaseService.updateQuestion(questionId, {
+            answers: updatedAnswers
+          });
+
+          const updatedQuestions = questions.map(q =>
+            q.id === questionId ? updatedQuestion : q
+          );
+          setQuestions(updatedQuestions);
+          localStorage.setItem('questions', JSON.stringify(updatedQuestions));
+          
+          setAnswers(prev => ({ ...prev, [questionId]: '' }));
+          alert('Answer submitted successfully');
+        } catch (error) {
+          console.error('Error answering question:', error);
+          const updatedQuestions = questions.map(q =>
+            q.id === questionId ? {
+              ...q,
+              answers: [...(q.answers || []), {
+                instructorId: currentUser.id,
+                answer,
+                official: true,
+                resolved: false,
+                answeredAt: new Date().toISOString()
+              }]
+            } : q
+          );
+          setQuestions(updatedQuestions);
+          localStorage.setItem('questions', JSON.stringify(updatedQuestions));
+          
+          setAnswers(prev => ({ ...prev, [questionId]: '' }));
+          alert('Answer submitted (local)');
+        }
+      };
+
+      // Download assessment file
+      const downloadAssessmentFile = () => {
+        if (currentAssessment?.fileUrl) {
+          const link = document.createElement('a');
+          link.href = currentAssessment.fileUrl;
+          link.download = currentAssessment.fileName || 'assessment_file';
+          link.click();
+        } else {
+          alert('No file available for download');
+        }
+      };
+
+      if (!currentAssessment) {
+        return (
+          <div className="loading-screen">
+            <div className="loading-spinner"></div>
+            <p>Loading assessment...</p>
+          </div>
+        );
+      }
+
+      return (
+        <div className="main-container">
+          <header>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+              <button onClick={goBack} className="btn-secondary" style={{ padding: '8px 16px' }}>
+                <i className="fas fa-arrow-left"></i> Back
+              </button>
+              <div>
+                <h1>{currentAssessment.title}</h1>
+                <p style={{ margin: '5px 0 0 0', color: '#666', fontSize: '16px' }}>
+                  {module ? `${module.name} (${module.code})` : 'Unknown Module'} • {currentUser.role}
+                </p>
+              </div>
+            </div>
+            <div>
+              <button onClick={goToProfile} className="btn-secondary">Profile</button>
+              <button onClick={handleLogout} className="btn-danger">Logout</button>
+            </div>
+          </header>
+
+          <main>
+            {/* Assessment Overview */}
+            <section className="welcome-banner">
+              <h2 className="welcome-title">{currentAssessment.title}</h2>
+              <p className="welcome-subtitle">{currentAssessment.description}</p>
+              <div style={{
+                display: 'flex',
+                gap: '20px',
+                marginTop: '20px',
+                flexWrap: 'wrap'
+              }}>
+                <div style={{
+                  backgroundColor: 'rgba(255,255,255,0.2)',
+                  padding: '10px 20px',
+                  borderRadius: '8px'
+                }}>
+                  <strong>Type:</strong> {currentAssessment.type?.toUpperCase() || 'ASSIGNMENT'}
+                </div>
+                <div style={{
+                  backgroundColor: 'rgba(255,255,255,0.2)',
+                  padding: '10px 20px',
+                  borderRadius: '8px'
+                }}>
+                  <strong>Due:</strong> {new Date(currentAssessment.dueDate || currentAssessment.due_date).toLocaleDateString()}
+                </div>
+                <div style={{
+                  backgroundColor: 'rgba(255,255,255,0.2)',
+                  padding: '10px 20px',
+                  borderRadius: '8px'
+                }}>
+                  <strong>Max Marks:</strong> {currentAssessment.maxMarks || currentAssessment.max_marks || 100}
+                </div>
+                <div style={{
+                  backgroundColor: 'rgba(255,255,255,0.2)',
+                  padding: '10px 20px',
+                  borderRadius: '8px'
+                }}>
+                  <strong>Status:</strong> {currentAssessment.status || 'draft'}
+                </div>
+              </div>
+            </section>
+
+            {/* Main Content */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: '30px',
+              marginTop: '30px'
+            }}>
+              {/* Left Column - Assessment Details */}
+              <div>
+                <section style={{ marginBottom: '30px' }}>
+                  <h3><i className="fas fa-info-circle" style={{ color: '#667eea' }}></i> Assessment Details</h3>
+                  <div className="item-card">
+                    <h4>Description</h4>
+                    <p>{currentAssessment.description}</p>
+                    
+                    {currentAssessment.criteria && (
+                      <>
+                        <h4 style={{ marginTop: '20px' }}>Grading Criteria</h4>
+                        <p>{currentAssessment.criteria}</p>
+                      </>
+                    )}
+                    
+                    <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px solid #eee' }}>
+                      <h4>Assessment Information</h4>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '10px' }}>
+                        <div>
+                          <p><strong>Type:</strong> {currentAssessment.type?.toUpperCase() || 'ASSIGNMENT'}</p>
+                          <p><strong>Max Marks:</strong> {currentAssessment.maxMarks || currentAssessment.max_marks || 100}</p>
+                        </div>
+                        <div>
+                          <p><strong>Due Date:</strong> {new Date(currentAssessment.dueDate || currentAssessment.due_date).toLocaleString()}</p>
+                          <p><strong>Created:</strong> {new Date(currentAssessment.createdAt || currentAssessment.created_at).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {currentAssessment.fileUrl && (
+                      <div style={{ marginTop: '20px' }}>
+                        <button onClick={downloadAssessmentFile} className="btn-primary" style={{ width: '100%' }}>
+                          <i className="fas fa-download"></i> Download Assessment File
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </section>
+
+                {/* Questions Section */}
+                <section>
+                  <h3><i className="fas fa-question-circle" style={{ color: '#9b59b6' }}></i> Questions & Answers ({assessmentQuestions.length})</h3>
+                  {currentUser.role === 'Student' && (
+                    <div className="item-card" style={{ marginBottom: '20px' }}>
+                      <h4>Ask a Question</h4>
+                      <textarea
+                        placeholder="Type your question here..."
+                        value={newQuestion}
+                        onChange={(e) => setNewQuestion(e.target.value)}
+                        rows="4"
+                        style={{ width: '100%', padding: '12px', marginBottom: '10px', borderRadius: '8px', border: '1px solid #ddd' }}
+                      />
+                      <button onClick={askQuestion} className="btn-primary" style={{ width: '100%' }}>
+                        <i className="fas fa-paper-plane"></i> Submit Question
+                      </button>
+                    </div>
+                  )}
+
+                  {assessmentQuestions.length === 0 ? (
+                    <div className="empty-state">
+                      <i className="fas fa-comments" style={{ fontSize: '48px', color: '#ccc', marginBottom: '20px' }}></i>
+                      <h4>No questions yet</h4>
+                      <p>Be the first to ask a question about this assessment.</p>
+                    </div>
+                  ) : (
+                    <div>
+                      {assessmentQuestions.map(question => {
+                        const student = users.find(u => u.id === question.studentId);
+                        return (
+                          <div key={question.id} className="item-card" style={{ marginBottom: '15px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                              <div style={{ flex: 1 }}>
+                                <h4 style={{ margin: '0 0 10px 0' }}>
+                                  <i className="fas fa-user-graduate" style={{ color: '#3498db', marginRight: '8px' }}></i>
+                                  {student?.name || 'Unknown Student'}
+                                </h4>
+                                <p style={{ margin: '0 0 15px 0', color: '#333' }}>{question.question}</p>
+                                <p style={{ fontSize: '12px', color: '#666', margin: 0 }}>
+                                  <i className="far fa-clock"></i> Asked on {new Date(question.createdAt || question.created_at).toLocaleDateString()}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Answers */}
+                            {question.answers && question.answers.length > 0 && (
+                              <div style={{ marginTop: '15px', padding: '15px', backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
+                                <h5 style={{ margin: '0 0 10px 0', color: '#666' }}>Answers:</h5>
+                                {question.answers.map((answer, idx) => {
+                                  const instructor = users.find(u => u.id === answer.instructorId);
+                                  return (
+                                    <div key={idx} style={{
+                                      padding: '10px',
+                                      marginBottom: '10px',
+                                      backgroundColor: 'white',
+                                      borderRadius: '6px',
+                                      border: '1px solid #e9ecef'
+                                    }}>
+                                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                                        <div>
+                                          <strong style={{ color: answer.official ? '#2ecc71' : '#f39c12' }}>
+                                            <i className={`fas fa-${answer.official ? 'user-tie' : 'user-graduate'}`}></i>
+                                            {answer.official ? ' Official Answer' : ' Peer Answer'}
+                                          </strong>
+                                          {instructor && (
+                                            <span style={{ marginLeft: '10px', fontSize: '14px', color: '#666' }}>
+                                              by {instructor.name}
+                                            </span>
+                                          )}
+                                        </div>
+                                        {answer.answeredAt && (
+                                          <span style={{ fontSize: '12px', color: '#999' }}>
+                                            {new Date(answer.answeredAt).toLocaleDateString()}
+                                          </span>
+                                        )}
+                                      </div>
+                                      <p style={{ margin: '5px 0 0 0', color: '#333' }}>{answer.answer}</p>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+
+                            {/* Instructor Answer Input */}
+                            {currentUser.role === 'Instructor' && (
+                              <div style={{ marginTop: '15px' }}>
+                                <textarea
+                                  placeholder="Type your answer here..."
+                                  value={answers[question.id] || ''}
+                                  onChange={(e) => setAnswers(prev => ({ ...prev, [question.id]: e.target.value }))}
+                                  rows="3"
+                                  style={{ width: '100%', padding: '12px', marginBottom: '10px', borderRadius: '8px', border: '1px solid #ddd' }}
+                                />
+                                <button onClick={() => answerQuestion(question.id)} className="btn-primary" style={{ width: '100%' }}>
+                                  <i className="fas fa-reply"></i> Submit Answer
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </section>
+              </div>
+
+              {/* Right Column - Submission & Status */}
+              <div>
+                {/* Student Submission Section */}
+                {currentUser.role === 'Student' && (
+                  <section style={{ marginBottom: '30px' }}>
+                    <h3><i className="fas fa-upload" style={{ color: '#2ecc71' }}></i> Your Submission</h3>
+                    {!studentSubmission ? (
+                      <div className="item-card">
+                        <h4>Submit Your Work</h4>
+                        <p>Please upload your completed assessment file.</p>
+                        
+                        <div style={{ margin: '20px 0' }}>
+                          <label style={{ display: 'block', marginBottom: '10px', fontWeight: '500' }}>
+                            Select File
+                          </label>
+                          <input
+                            type="file"
+                            onChange={handleFileUpload}
+                            style={{ width: '100%', padding: '12px', border: '2px dashed #ddd', borderRadius: '8px', backgroundColor: '#f8f9fa' }}
+                          />
+                          {selectedFile && (
+                            <div style={{ marginTop: '10px', padding: '10px', backgroundColor: '#e8f5e9', borderRadius: '6px' }}>
+                              <i className="fas fa-check-circle" style={{ color: '#2ecc71', marginRight: '8px' }}></i>
+                              <strong>Selected:</strong> {selectedFile.name} ({(selectedFile.size / 1024).toFixed(2)} KB)
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+                          <button
+                            onClick={submitAssessment}
+                            className="btn-primary"
+                            style={{ flex: 1 }}
+                            disabled={!selectedFile}
+                          >
+                            <i className="fas fa-paper-plane"></i> Submit Assessment
+                          </button>
+                          <button
+                            onClick={() => setSelectedFile(null)}
+                            className="btn-secondary"
+                            disabled={!selectedFile}
+                          >
+                            <i className="fas fa-times"></i> Clear
+                          </button>
+                        </div>
+                        
+                        <div style={{ marginTop: '20px', fontSize: '14px', color: '#666' }}>
+                          <p><strong>Submission Guidelines:</strong></p>
+                          <ul style={{ margin: '10px 0', paddingLeft: '20px' }}>
+                            <li>Only upload the required file types (PDF, DOC, DOCX, ZIP)</li>
+                            <li>Maximum file size: 10MB</li>
+                            <li>Make sure to include your name and student ID in the submission</li>
+                            <li>You can only submit once</li>
+                          </ul>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="item-card">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                          <h4 style={{ margin: 0 }}>Submission Status</h4>
+                          <span className={`status-badge status-${studentSubmission.status}`}>
+                            {studentSubmission.status.toUpperCase()}
+                          </span>
+                        </div>
+                        
+                        <div style={{
+                          padding: '15px',
+                          backgroundColor: '#f8f9fa',
+                          borderRadius: '8px',
+                          marginBottom: '15px'
+                        }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
+                            <div>
+                              <p style={{ margin: '0 0 5px 0', fontSize: '14px', color: '#666' }}>Submitted On</p>
+                              <p style={{ margin: 0, fontWeight: '600' }}>
+                                {new Date(studentSubmission.submittedAt).toLocaleString()}
+                              </p>
+                            </div>
+                            <div>
+                              <p style={{ margin: '0 0 5px 0', fontSize: '14px', color: '#666' }}>File</p>
+                              <p style={{ margin: 0, fontWeight: '600' }}>{studentSubmission.fileName}</p>
+                            </div>
+                          </div>
+                          
+                          {studentSubmission.grade !== null && (
+                            <div style={{
+                              padding: '12px',
+                              backgroundColor: studentSubmission.releasedToStudent ? '#e8f5e9' : '#fff3cd',
+                              borderRadius: '6px',
+                              marginBottom: '10px'
+                            }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div>
+                                  <p style={{ margin: '0 0 5px 0', fontSize: '14px', color: '#666' }}>Grade</p>
+                                  <h3 style={{ margin: 0, color: studentSubmission.releasedToStudent ? '#2ecc71' : '#f39c12' }}>
+                                    {studentSubmission.grade}/{currentAssessment.maxMarks || currentAssessment.max_marks || 100}
+                                  </h3>
+                                </div>
+                                <div>
+                                  <p style={{ margin: '0 0 5px 0', fontSize: '14px', color: '#666' }}>Percentage</p>
+                                  <h3 style={{ margin: 0, color: '#3498db' }}>
+                                    {((studentSubmission.grade / (currentAssessment.maxMarks || currentAssessment.max_marks || 100)) * 100).toFixed(1)}%
+                                  </h3>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {studentSubmission.feedback && (
+                            <div>
+                              <p style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#666' }}>Instructor Feedback</p>
+                              <div style={{
+                                padding: '12px',
+                                backgroundColor: 'white',
+                                borderRadius: '6px',
+                                border: '1px solid #e9ecef'
+                              }}>
+                                <p style={{ margin: 0, color: '#333' }}>{studentSubmission.feedback}</p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                          <a
+                            href={studentSubmission.fileUrl}
+                            download
+                            className="btn-primary"
+                            style={{ flex: 1 }}
+                          >
+                            <i className="fas fa-download"></i> Download Your Submission
+                          </a>
+                          {currentAssessment.fileUrl && (
+                            <a
+                              href={currentAssessment.fileUrl}
+                              download
+                              className="btn-secondary"
+                            >
+                              <i className="fas fa-file-download"></i> Assessment
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </section>
+                )}
+
+                {/* Instructor View - Submissions */}
+                {currentUser.role === 'Instructor' && (
+                  <section style={{ marginBottom: '30px' }}>
+                    <h3><i className="fas fa-users" style={{ color: '#e74c3c' }}></i> Student Submissions ({assessmentSubmissions.length})</h3>
+                    {assessmentSubmissions.length === 0 ? (
+                      <div className="empty-state">
+                        <i className="fas fa-inbox" style={{ fontSize: '48px', color: '#ccc', marginBottom: '20px' }}></i>
+                        <h4>No submissions yet</h4>
+                        <p>Student submissions will appear here once they submit their work.</p>
+                      </div>
+                    ) : (
+                      <div>
+                        {assessmentSubmissions.map(submission => {
+                          const student = users.find(u => u.id === submission.studentId);
+                          return (
+                            <div key={submission.id} className="item-card" style={{ marginBottom: '15px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+                                <div>
+                                  <h4 style={{ margin: '0 0 5px 0' }}>
+                                    <i className="fas fa-user-graduate" style={{ color: '#3498db', marginRight: '8px' }}></i>
+                                    {student?.name || 'Unknown Student'}
+                                  </h4>
+                                  <p style={{ margin: 0, fontSize: '14px', color: '#666' }}>
+                                    Submitted: {new Date(submission.submittedAt).toLocaleString()}
+                                  </p>
+                                </div>
+                                <span className={`status-badge status-${submission.status}`}>
+                                  {submission.status.toUpperCase()}
+                                </span>
+                              </div>
+                              
+                              <div style={{
+                                padding: '12px',
+                                backgroundColor: '#f8f9fa',
+                                borderRadius: '6px',
+                                marginBottom: '10px'
+                              }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                                  <div>
+                                    <p style={{ margin: '0 0 5px 0', fontSize: '14px', color: '#666' }}>File</p>
+                                    <p style={{ margin: 0, fontWeight: '600' }}>{submission.fileName}</p>
+                                  </div>
+                                  <a href={submission.fileUrl} download className="btn-secondary" style={{ padding: '6px 12px' }}>
+                                    <i className="fas fa-download"></i>
+                                  </a>
+                                </div>
+                                
+                                {submission.grade !== null && (
+                                  <div style={{
+                                    padding: '10px',
+                                    backgroundColor: 'white',
+                                    borderRadius: '4px',
+                                    marginTop: '10px'
+                                  }}>
+                                    <p style={{ margin: '0 0 5px 0', fontSize: '14px', color: '#666' }}>Grade</p>
+                                    <h4 style={{ margin: 0, color: '#2ecc71' }}>
+                                      {submission.grade}/{currentAssessment.maxMarks || currentAssessment.max_marks || 100}
+                                    </h4>
+                                  </div>
+                                )}
+                                
+                                {submission.feedback && (
+                                  <div style={{ marginTop: '10px' }}>
+                                    <p style={{ margin: '0 0 5px 0', fontSize: '14px', color: '#666' }}>Feedback</p>
+                                    <p style={{ margin: 0, color: '#333' }}>{submission.feedback}</p>
+                                  </div>
+                                )}
+                              </div>
+                              
+                              <button
+                                onClick={() => {
+                                  window.location.href = `?page=module&module=${module?.code}&tab=grading`;
+                                }}
+                                className="btn-primary"
+                                style={{ width: '100%' }}
+                              >
+                                <i className="fas fa-graduation-cap"></i> Grade Submission
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </section>
+                )}
+
+                {/* Module Information */}
+                <section>
+                  <h3><i className="fas fa-book" style={{ color: '#3498db' }}></i> Module Information</h3>
+                  <div className="item-card">
+                    {module ? (
+                      <>
+                        <h4>{module.name}</h4>
+                        <p><strong>Code:</strong> {module.code}</p>
+                        <p><strong>Description:</strong> {module.description}</p>
+                        
+                        <div style={{ marginTop: '15px', paddingTop: '15px', borderTop: '1px solid #eee' }}>
+                          <div style={{ display: 'flex', gap: '15px', marginBottom: '10px' }}>
+                            <div>
+                              <p style={{ margin: '0 0 5px 0', fontSize: '14px', color: '#666' }}>Total Submissions</p>
+                              <p style={{ margin: 0, fontSize: '18px', fontWeight: '600', color: '#3498db' }}>
+                                {assessmentSubmissions.length}
+                              </p>
+                            </div>
+                            <div>
+                              <p style={{ margin: '0 0 5px 0', fontSize: '14px', color: '#666' }}>Pending Grading</p>
+                              <p style={{ margin: 0, fontSize: '18px', fontWeight: '600', color: '#f39c12' }}>
+                                {assessmentSubmissions.filter(s => s.status === 'submitted').length}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <button
+                          onClick={() => {
+                            window.location.href = `?page=module&module=${module.code}`;
+                          }}
+                          className="btn-secondary"
+                          style={{ width: '100%', marginTop: '15px' }}
+                        >
+                          <i className="fas fa-external-link-alt"></i> Go to Module
+                        </button>
+                      </>
+                    ) : (
+                      <div className="empty-state">
+                        <i className="fas fa-exclamation-circle" style={{ fontSize: '32px', color: '#ccc', marginBottom: '10px' }}></i>
+                        <p>Module information not available</p>
+                      </div>
+                    )}
+                  </div>
+                </section>
+              </div>
+            </div>
           </main>
         </div>
       );
@@ -4695,11 +5739,17 @@
       };
 
       const goBack = () => {
-        if (!currentUser) {
-          setPage('login');
-          return;
+        // Use browser history to go back
+        if (window.history.length > 1) {
+          window.history.back();
+        } else {
+          // If no history, go to appropriate dashboard
+          if (!currentUser) {
+            setPage('login');
+          } else {
+            redirectBasedOnRole(currentUser.role);
+          }
         }
-        redirectBasedOnRole(currentUser.role);
       };
 
       if (isLoading) {
@@ -4766,6 +5816,23 @@
               setModules={setModules}
               teachingMaterials={teachingMaterials}
               setTeachingMaterials={setTeachingMaterials}
+            />
+          );
+
+        case 'assessment-view':
+          return (
+            <AssessmentViewPage
+              currentUser={currentUser}
+              assessments={assessments}
+              submissions={submissions}
+              questions={questions}
+              modules={modules}
+              users={users}
+              setSubmissions={setSubmissions}
+              setQuestions={setQuestions}
+              handleLogout={handleLogout}
+              goToProfile={goToProfile}
+              goBack={goBack}
             />
           );
           

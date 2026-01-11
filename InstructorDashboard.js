@@ -1,3 +1,4 @@
+// InstructorDashboard.js
 import React, { useState, useEffect } from 'react';
 
 const InstructorDashboard = ({ 
@@ -15,16 +16,23 @@ const InstructorDashboard = ({
   teachingMaterials = [],
   setTeachingMaterials = () => {}
 }) => {
+  const [userModules, setUserModules] = useState([]);
   const [assessmentData, setAssessmentData] = useState({ 
     title: '', 
     description: '', 
-    course: '', 
+    moduleCode: '', 
     deadline: '', 
-    criteria: '' 
+    criteria: '',
+    type: 'assignment',
+    maxMarks: 100
   });
-  const [userModules, setUserModules] = useState([]);
 
   useEffect(() => {
+    console.log('=== INSTRUCTOR DASHBOARD DEBUG ===');
+    console.log('Current user:', currentUser);
+    console.log('All modules:', modules);
+    console.log('All assessments:', assessments);
+    
     loadUserModules();
   }, [modules, currentUser]);
 
@@ -32,49 +40,102 @@ const InstructorDashboard = ({
     const instructorModules = modules.filter(m => 
       m.instructor_id === currentUser.id || m.instructorId === currentUser.id
     );
+    console.log('Instructor modules:', instructorModules);
     setUserModules(instructorModules);
   };
 
   const handleAssessmentSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!assessmentData.moduleCode) {
+      alert('Please select a module');
+      return;
+    }
+    
+    console.log('Creating assessment for module:', assessmentData.moduleCode);
+    
     try {
+      // Use snake_case for database
       const assessment = {
-        id: Date.now(),
+        module_code: assessmentData.moduleCode,
         title: assessmentData.title,
         description: assessmentData.description,
-        course: assessmentData.course,
-        deadline: assessmentData.deadline,
+        due_date: assessmentData.deadline,
         criteria: assessmentData.criteria,
-        instructorId: currentUser.id,
-        files: [],
+        instructor_id: currentUser.id,
         status: 'draft',
-        approvedByExamAdmin: false
+        approved_by_exam_admin: false,
+        created_at: new Date().toISOString(),
+        type: assessmentData.type || 'assignment',
+        max_marks: assessmentData.maxMarks || 100
       };
       
+      console.log('Sending to Supabase:', assessment);
+      
       const createdAssessment = await SupabaseService.createAssessment(assessment);
-      const updatedAssessments = [...assessments, createdAssessment];
+      
+      console.log('Created assessment response:', createdAssessment);
+      
+      // Convert back to camelCase for frontend
+      const frontendAssessment = {
+        ...createdAssessment,
+        moduleCode: createdAssessment.module_code,
+        dueDate: createdAssessment.due_date,
+        instructorId: createdAssessment.instructor_id,
+        createdAt: createdAssessment.created_at,
+        approvedByExamAdmin: createdAssessment.approved_by_exam_admin,
+        maxMarks: createdAssessment.max_marks
+      };
+      
+      const updatedAssessments = [...assessments, frontendAssessment];
       setAssessments(updatedAssessments);
       localStorage.setItem('assessments', JSON.stringify(updatedAssessments));
-      setAssessmentData({ title: '', description: '', course: '', deadline: '', criteria: '' });
+      
+      setAssessmentData({ 
+        title: '', 
+        description: '', 
+        moduleCode: '', 
+        deadline: '', 
+        criteria: '',
+        type: 'assignment',
+        maxMarks: 100
+      });
+      
       alert('Assessment created successfully');
     } catch (error) {
+      console.error('Error creating assessment:', error);
+      
+      // Fallback to localStorage
       const assessment = {
         id: Date.now(),
+        moduleCode: assessmentData.moduleCode,
         title: assessmentData.title,
         description: assessmentData.description,
-        course: assessmentData.course,
-        deadline: assessmentData.deadline,
+        dueDate: assessmentData.deadline,
         criteria: assessmentData.criteria,
         instructorId: currentUser.id,
         files: [],
         status: 'draft',
-        approvedByExamAdmin: false
+        approvedByExamAdmin: false,
+        type: assessmentData.type || 'assignment',
+        maxMarks: assessmentData.maxMarks || 100
       };
+      
       const updatedAssessments = [...assessments, assessment];
       setAssessments(updatedAssessments);
       localStorage.setItem('assessments', JSON.stringify(updatedAssessments));
-      setAssessmentData({ title: '', description: '', course: '', deadline: '', criteria: '' });
-      alert('Assessment created');
+      
+      setAssessmentData({ 
+        title: '', 
+        description: '', 
+        moduleCode: '', 
+        deadline: '', 
+        criteria: '',
+        type: 'assignment',
+        maxMarks: 100
+      });
+      
+      alert('Assessment created (local storage)');
     }
   };
 
@@ -211,8 +272,14 @@ const InstructorDashboard = ({
   };
 
   const openModule = (moduleCode) => {
+    console.log('Opening module:', moduleCode);
     window.location.href = `?page=module&module=${moduleCode}`;
   };
+
+  // Get instructor's assessments
+  const instructorAssessments = assessments.filter(a => 
+    a.instructorId === currentUser.id || a.instructor_id === currentUser.id
+  );
 
   return (
     <div className="main-container">
@@ -236,52 +303,54 @@ const InstructorDashboard = ({
         </section>
         
         <section>
-          <h3>Create New Assessment</h3>
-          <form onSubmit={handleAssessmentSubmit} className="form-container" style={{ maxWidth: '600px' }}>
-            <input 
-              type="text" 
-              placeholder="Assessment Title" 
-              value={assessmentData.title} 
-              onChange={e => setAssessmentData({ ...assessmentData, title: e.target.value })} 
-              required 
-            />
-            <textarea 
-              placeholder="Assessment Description" 
-              value={assessmentData.description} 
-              onChange={e => setAssessmentData({ ...assessmentData, description: e.target.value })} 
-              required 
-              rows="3"
-            />
-            <input 
-              type="text" 
-              placeholder="Course Name" 
-              value={assessmentData.course} 
-              onChange={e => setAssessmentData({ ...assessmentData, course: e.target.value })} 
-              required 
-            />
-            <input 
-              type="datetime-local" 
-              value={assessmentData.deadline} 
-              onChange={e => setAssessmentData({ ...assessmentData, deadline: e.target.value })} 
-              required 
-            />
-            <textarea 
-              placeholder="Grading Criteria" 
-              value={assessmentData.criteria} 
-              onChange={e => setAssessmentData({ ...assessmentData, criteria: e.target.value })} 
-              required 
-              rows="3"
-            />
-            <button type="submit" className="btn-primary">Create Assessment</button>
-          </form>
+          <h3>My Assessments ({instructorAssessments.length})</h3>
+          {instructorAssessments.length === 0 ? (
+            <div className="empty-state">
+              <i className="fas fa-tasks" style={{ fontSize: '48px', color: '#ccc', marginBottom: '20px' }}></i>
+              <h4>No assessments created yet</h4>
+              <p>Create your first assessment using the form above.</p>
+            </div>
+          ) : (
+            <div className="quick-actions">
+              {instructorAssessments.map(assessment => {
+                const module = modules.find(m => m.code === assessment.moduleCode || m.code === assessment.module_code);
+                const assessmentSubmissions = submissions.filter(s => s.assessmentId === assessment.id);
+                
+                return (
+                  <div key={assessment.id} className="item-card">
+                    <h4>{assessment.title}</h4>
+                    <p>{assessment.description}</p>
+                    <p><strong>Module:</strong> {module ? `${module.name} (${module.code})` : 'Unknown module'}</p>
+                    <p><strong>Deadline:</strong> {new Date(assessment.dueDate || assessment.due_date).toLocaleDateString()}</p>
+                    <p><strong>Submissions:</strong> {assessmentSubmissions.length}</p>
+                    <p><strong>Status:</strong> 
+                      <span className={`status-badge status-${assessment.status || 'draft'}`} style={{ marginLeft: '10px' }}>
+                        {assessment.status || 'draft'}
+                      </span>
+                    </p>
+                    
+                    {module && (
+                      <button 
+                        onClick={() => openModule(module.code)}
+                        className="btn-secondary"
+                        style={{ marginTop: '10px', width: '100%' }}
+                      >
+                        <i className="fas fa-external-link-alt"></i> Open Module to View
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </section>
         
         <section>
           <h3>Student Submissions ({submissions.filter(s => 
-            assessments.find(a => a.id === s.assessmentId && a.instructorId === currentUser.id)
+            assessments.find(a => a.id === s.assessmentId && (a.instructorId === currentUser.id || a.instructor_id === currentUser.id))
           ).length})</h3>
           {submissions.filter(s => 
-            assessments.find(a => a.id === s.assessmentId && a.instructorId === currentUser.id)
+            assessments.find(a => a.id === s.assessmentId && (a.instructorId === currentUser.id || a.instructor_id === currentUser.id))
           ).length === 0 ? (
             <div className="empty-state">
               <i className="fas fa-inbox" style={{ fontSize: '48px', color: '#ccc', marginBottom: '20px' }}></i>
@@ -291,34 +360,45 @@ const InstructorDashboard = ({
           ) : (
             <div className="quick-actions">
               {submissions.filter(s => 
-                assessments.find(a => a.id === s.assessmentId && a.instructorId === currentUser.id)
-              ).map(s => (
-                <div key={s.id} className="item-card">
-                  <h4>Submission #{s.id}</h4>
-                  <p><strong>Student ID:</strong> {s.studentId}</p>
-                  <p><strong>Status:</strong> 
-                    <span className={`status-badge status-${s.status}`} style={{ marginLeft: '10px' }}>
-                      {s.status}
-                    </span>
-                  </p>
-                  <p><strong>Current Grade:</strong> {s.grade || 'Not graded'}</p>
-                  <div style={{ marginTop: '15px' }}>
-                    <input 
-                      type="number" 
-                      placeholder="Enter grade" 
-                      onChange={e => gradeSubmission(s.id, e.target.value)}
-                      style={{ marginBottom: '10px', width: '100%', padding: '8px' }}
-                    />
-                    <textarea 
-                      placeholder="Provide feedback..." 
-                      value={s.feedback || ''}
-                      onChange={e => updateFeedback(s.id, e.target.value)}
-                      style={{ width: '100%', padding: '8px', marginBottom: '10px' }}
-                      rows="3"
-                    />
+                assessments.find(a => a.id === s.assessmentId && (a.instructorId === currentUser.id || a.instructor_id === currentUser.id))
+              ).map(s => {
+                const assessment = assessments.find(a => a.id === s.assessmentId);
+                const module = modules.find(m => 
+                  m.code === assessment?.moduleCode || 
+                  m.code === assessment?.module_code ||
+                  (assessment?.course && m.name.includes(assessment.course))
+                );
+                
+                return (
+                  <div key={s.id} className="item-card">
+                    <h4>Submission #{s.id}</h4>
+                    <p><strong>Assessment:</strong> {assessment?.title || 'Unknown'}</p>
+                    <p><strong>Module:</strong> {module ? module.name : 'Unknown'}</p>
+                    <p><strong>Student ID:</strong> {s.studentId}</p>
+                    <p><strong>Status:</strong> 
+                      <span className={`status-badge status-${s.status}`} style={{ marginLeft: '10px' }}>
+                        {s.status}
+                      </span>
+                    </p>
+                    <p><strong>Current Grade:</strong> {s.grade || 'Not graded'}</p>
+                    <div style={{ marginTop: '15px' }}>
+                      <input 
+                        type="number" 
+                        placeholder="Enter grade" 
+                        onChange={e => gradeSubmission(s.id, e.target.value)}
+                        style={{ marginBottom: '10px', width: '100%', padding: '8px' }}
+                      />
+                      <textarea 
+                        placeholder="Provide feedback..." 
+                        value={s.feedback || ''}
+                        onChange={e => updateFeedback(s.id, e.target.value)}
+                        style={{ width: '100%', padding: '8px', marginBottom: '10px' }}
+                        rows="3"
+                      />
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </section>
@@ -333,76 +413,91 @@ const InstructorDashboard = ({
             </div>
           ) : (
             <div className="quick-actions">
-              {userModules.map(module => (
-                <div key={module.code} className="item-card">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div style={{ flex: 1 }}>
-                      <h4>{module.name}</h4>
-                      <p><strong>Code:</strong> {module.code}</p>
-                      <p><strong>Description:</strong> {module.description}</p>
-                    </div>
-                    <button 
-                      onClick={() => openModule(module.code)}
-                      className="btn-primary"
-                      style={{ padding: '8px 16px' }}
-                    >
-                      <i className="fas fa-external-link-alt"></i> Open Module
-                    </button>
-                  </div>
-                  
-                  {module.invitation_code ? (
-                    <>
-                      <div className="invitation-code-display">
-                        {module.invitation_code}
+              {userModules.map(module => {
+                const moduleAssessments = assessments.filter(a => 
+                  a.moduleCode === module.code || a.module_code === module.code
+                );
+                const moduleSubmissions = submissions.filter(s => 
+                  moduleAssessments.some(a => a.id === s.assessmentId)
+                );
+                
+                return (
+                  <div key={module.code} className="item-card">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div style={{ flex: 1 }}>
+                        <h4>{module.name}</h4>
+                        <p><strong>Code:</strong> {module.code}</p>
+                        <p><strong>Description:</strong> {module.description}</p>
+                        <p><strong>Assessments:</strong> {moduleAssessments.length}</p>
+                        <p><strong>Submissions:</strong> {moduleSubmissions.length}</p>
                       </div>
-                      <div className="invite-actions">
-                        <button 
-                          onClick={() => regenerateInvitationCode(module.code)}
-                          className="refresh-btn"
-                        >
-                          <i className="fas fa-sync-alt"></i> Regenerate Code
-                        </button>
-                        <button 
-                          onClick={() => copyToClipboard(module.invitation_code)}
-                          className="copy-btn"
-                        >
-                          <i className="fas fa-copy"></i> Copy
-                        </button>
-                      </div>
-                    </>
-                  ) : (
-                    <div>
-                      <p style={{ color: '#666', marginBottom: '10px' }}>
-                        No invitation code generated yet.
-                      </p>
                       <button 
-                        onClick={() => generateInvitationCode(module.code)}
+                        onClick={() => openModule(module.code)}
                         className="btn-primary"
-                        style={{ width: '100%' }}
+                        style={{ padding: '8px 16px' }}
                       >
-                        <i className="fas fa-key"></i> Generate Invitation Code
+                        <i className="fas fa-external-link-alt"></i> Open Module
                       </button>
                     </div>
-                  )}
-                  
-                  <div style={{ marginTop: '15px', fontSize: '14px', color: '#666' }}>
-                    <p><strong>How to invite students:</strong></p>
-                    <ol style={{ margin: '10px 0', paddingLeft: '20px' }}>
-                      <li>Generate an invitation code</li>
-                      <li>Share the code with students</li>
-                      <li>Students enter the code in their dashboard</li>
-                      <li>Students are automatically added to all classes in this module</li>
-                    </ol>
+                    
+                    {module.invitation_code ? (
+                      <>
+                        <div className="invitation-code-display">
+                          {module.invitation_code}
+                        </div>
+                        <div className="invite-actions">
+                          <button 
+                            onClick={() => regenerateInvitationCode(module.code)}
+                            className="refresh-btn"
+                          >
+                            <i className="fas fa-sync-alt"></i> Regenerate Code
+                          </button>
+                          <button 
+                            onClick={() => copyToClipboard(module.invitation_code)}
+                            className="copy-btn"
+                          >
+                            <i className="fas fa-copy"></i> Copy
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <div>
+                        <p style={{ color: '#666', marginBottom: '10px' }}>
+                          No invitation code generated yet.
+                        </p>
+                        <button 
+                          onClick={() => generateInvitationCode(module.code)}
+                          className="btn-primary"
+                          style={{ width: '100%' }}
+                        >
+                          <i className="fas fa-key"></i> Generate Invitation Code
+                        </button>
+                      </div>
+                    )}
+                    
+                    <div style={{ marginTop: '15px', fontSize: '14px', color: '#666' }}>
+                      <p><strong>How to invite students:</strong></p>
+                      <ol style={{ margin: '10px 0', paddingLeft: '20px' }}>
+                        <li>Generate an invitation code</li>
+                        <li>Share the code with students</li>
+                        <li>Students enter the code in their dashboard</li>
+                        <li>Students are automatically added to all classes in this module</li>
+                      </ol>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </section>
         
         <section>
-          <h3>Student Questions ({questions.length})</h3>
-          {questions.length === 0 ? (
+          <h3>Student Questions ({questions.filter(q => 
+            assessments.find(a => a.id === q.assessmentId && (a.instructorId === currentUser.id || a.instructor_id === currentUser.id))
+          ).length})</h3>
+          {questions.filter(q => 
+            assessments.find(a => a.id === q.assessmentId && (a.instructorId === currentUser.id || a.instructor_id === currentUser.id))
+          ).length === 0 ? (
             <div className="empty-state">
               <i className="fas fa-question-circle" style={{ fontSize: '48px', color: '#ccc', marginBottom: '20px' }}></i>
               <h4>No questions yet</h4>
@@ -410,54 +505,60 @@ const InstructorDashboard = ({
             </div>
           ) : (
             <div className="quick-actions">
-              {questions.map(q => (
-                <div key={q.id} className="item-card">
-                  <h4>Question #{q.id}</h4>
-                  <p><strong>Question:</strong> {q.question}</p>
-                  <p><strong>Assessment ID:</strong> {q.assessmentId}</p>
-                  {q.answers && q.answers.length > 0 && (
-                    <div style={{ marginTop: '10px' }}>
-                      <p><strong>Previous Answers:</strong></p>
-                      {q.answers.map((answer, idx) => (
-                        <div key={idx} style={{ 
-                          padding: '8px', 
-                          margin: '5px 0', 
-                          backgroundColor: '#f8f9fa',
-                          borderRadius: '4px',
-                          fontSize: '14px'
-                        }}>
-                          <p><strong>Answer {idx + 1}:</strong> {answer.answer}</p>
-                          <p><em>{answer.official ? '(Official Answer)' : '(Peer Answer)'}</em></p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  <textarea 
-                    placeholder="Type your answer here..." 
-                    onChange={(e) => {
-                      const textarea = e.target;
-                      textarea.dataset.answer = e.target.value;
-                    }}
-                    style={{ width: '100%', padding: '8px', marginTop: '10px' }}
-                    rows="3"
-                  />
-                  <button 
-                    onClick={(e) => {
-                      const textarea = e.target.previousElementSibling;
-                      if (textarea && textarea.dataset.answer) {
-                        answerQuestion(q.id, textarea.dataset.answer);
-                        alert('Answer submitted!');
-                        textarea.value = '';
-                        textarea.dataset.answer = '';
-                      }
-                    }}
-                    className="btn-primary"
-                    style={{ marginTop: '10px', width: '100%' }}
-                  >
-                    Submit Answer
-                  </button>
-                </div>
-              ))}
+              {questions.filter(q => 
+                assessments.find(a => a.id === q.assessmentId && (a.instructorId === currentUser.id || a.instructor_id === currentUser.id))
+              ).map(q => {
+                const assessment = assessments.find(a => a.id === q.assessmentId);
+                
+                return (
+                  <div key={q.id} className="item-card">
+                    <h4>Question #{q.id}</h4>
+                    <p><strong>Assessment:</strong> {assessment?.title || 'Unknown'}</p>
+                    <p><strong>Question:</strong> {q.question}</p>
+                    {q.answers && q.answers.length > 0 && (
+                      <div style={{ marginTop: '10px' }}>
+                        <p><strong>Previous Answers:</strong></p>
+                        {q.answers.map((answer, idx) => (
+                          <div key={idx} style={{ 
+                            padding: '8px', 
+                            margin: '5px 0', 
+                            backgroundColor: '#f8f9fa',
+                            borderRadius: '4px',
+                            fontSize: '14px'
+                          }}>
+                            <p><strong>Answer {idx + 1}:</strong> {answer.answer}</p>
+                            <p><em>{answer.official ? '(Official Answer)' : '(Peer Answer)'}</em></p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <textarea 
+                      placeholder="Type your answer here..." 
+                      onChange={(e) => {
+                        const textarea = e.target;
+                        textarea.dataset.answer = e.target.value;
+                      }}
+                      style={{ width: '100%', padding: '8px', marginTop: '10px' }}
+                      rows="3"
+                    />
+                    <button 
+                      onClick={(e) => {
+                        const textarea = e.target.previousElementSibling;
+                        if (textarea && textarea.dataset.answer) {
+                          answerQuestion(q.id, textarea.dataset.answer);
+                          alert('Answer submitted!');
+                          textarea.value = '';
+                          textarea.dataset.answer = '';
+                        }
+                      }}
+                      className="btn-primary"
+                      style={{ marginTop: '10px', width: '100%' }}
+                    >
+                      Submit Answer
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           )}
         </section>

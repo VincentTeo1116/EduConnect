@@ -1,0 +1,377 @@
+[
+  {
+    "table_name": "assessments",
+    "column_name": "id",
+    "data_type": "bigint"
+  },
+  {
+    "table_name": "assessments",
+    "column_name": "max_marks",
+    "data_type": "integer"
+  },
+  {
+    "table_name": "assessments",
+    "column_name": "instructor_id",
+    "data_type": "bigint"
+  },
+  {
+    "table_name": "assessments",
+    "column_name": "file_size",
+    "data_type": "integer"
+  },
+  {
+    "table_name": "assessments",
+    "column_name": "created_at",
+    "data_type": "timestamp with time zone"
+  },
+  {
+    "table_name": "assessments",
+    "column_name": "updated_at",
+    "data_type": "timestamp with time zone"
+  },
+  {
+    "table_name": "assessments",
+    "column_name": "file_type",
+    "data_type": "character varying"
+  },
+  {
+    "table_name": "assessments",
+    "column_name": "file_path",
+    "data_type": "character varying"
+  },
+  {
+    "table_name": "assessments",
+    "column_name": "file_name",
+    "data_type": "character varying"
+  },
+  {
+    "table_name": "assessments",
+    "column_name": "criteria",
+    "data_type": "text"
+  },
+  {
+    "table_name": "assessments",
+    "column_name": "type",
+    "data_type": "character varying"
+  },
+  {
+    "table_name": "assessments",
+    "column_name": "description",
+    "data_type": "text"
+  },
+  {
+    "table_name": "assessments",
+    "column_name": "title",
+    "data_type": "character varying"
+  },
+  {
+    "table_name": "assessments",
+    "column_name": "module_code",
+    "data_type": "character varying"
+  },
+  {
+    "table_name": "assessments",
+    "column_name": "approved_by_exam_admin",
+    "data_type": "boolean"
+  },
+  {
+    "table_name": "assessments",
+    "column_name": "status",
+    "data_type": "character varying"
+  },
+  {
+    "table_name": "assessments",
+    "column_name": "due_date",
+    "data_type": "timestamp with time zone"
+  },
+  {
+    "table_name": "classes",
+    "column_name": "updated_at",
+    "data_type": "timestamp with time zone"
+  },
+  {
+    "table_name": "classes",
+    "column_name": "module_code",
+    "data_type": "character varying"
+  },
+  {
+    "table_name": "classes",
+    "column_name": "name",
+    "data_type": "character varying"
+  },
+  {
+    "table_name": "classes",
+    "column_name": "id",
+    "data_type": "bigint"
+  },
+  {
+    "table_name": "classes",
+    "column_name": "students",
+    "data_type": "jsonb"
+  },
+  {
+    "table_name": "classes",
+    "column_name": "created_at",
+    "data_type": "timestamp with time zone"
+  },
+  {
+    "table_name": "modules",
+    "column_name": "instructor_id",
+    "data_type": "bigint"
+  },
+  {
+    "table_name": "modules",
+    "column_name": "exam_admin_id",
+    "data_type": "bigint"
+  },
+  {
+    "table_name": "modules",
+    "column_name": "created_at",
+    "data_type": "timestamp with time zone"
+  },
+  {
+    "table_name": "modules",
+    "column_name": "updated_at",
+    "data_type": "timestamp with time zone"
+  },
+  {
+    "table_name": "modules",
+    "column_name": "invitation_code",
+    "data_type": "text"
+  },
+  {
+    "table_name": "modules",
+    "column_name": "description",
+    "data_type": "text"
+  },
+  {
+    "table_name": "modules",
+    "column_name": "code",
+    "data_type": "character varying"
+  },
+  {
+    "table_name": "modules",
+    "column_name": "name",
+    "data_type": "character varying"
+  },
+  {
+    "table_name": "modules",
+    "column_name": "id",
+    "data_type": "bigint"
+  },
+  {
+    "table_name": "questions",
+    "column_name": "updated_at",
+    "data_type": "timestamp with time zone"
+  },
+  {
+    "table_name": "questions",
+    "column_name": "id",
+    "data_type": "bigint"
+  },
+  {
+    "table_name": "questions",
+    "column_name": "assessment_id",
+    "data_type": "bigint"
+  },
+  {
+    "table_name": "questions",
+    "column_name": "student_id",
+    "data_type": "bigint"
+  },
+  {
+    "table_name": "questions",
+    "column_name": "answers",
+    "data_type": "jsonb"
+  },
+  {
+    "table_name": "questions",
+    "column_name": "created_at",
+    "data_type": "timestamp with time zone"
+  },
+  {
+    "table_name": "questions",
+    "column_name": "question",
+    "data_type": "text"
+  },
+  {
+    "table_name": "submissions",
+    "column_name": "updated_at",
+    "data_type": "timestamp with time zone"
+  },
+  {
+    "table_name": "submissions",
+    "column_name": "released_to_student",
+    "data_type": "boolean"
+  },
+  {
+    "table_name": "submissions",
+    "column_name": "student_id",
+    "data_type": "bigint"
+  },
+  {
+    "table_name": "submissions",
+    "column_name": "approved_by_exam_admin",
+    "data_type": "boolean"
+  },
+  {
+    "table_name": "submissions",
+    "column_name": "status",
+    "data_type": "character varying"
+  },
+  {
+    "table_name": "submissions",
+    "column_name": "marked_at",
+    "data_type": "timestamp with time zone"
+  },
+  {
+    "table_name": "submissions",
+    "column_name": "marked_by",
+    "data_type": "bigint"
+  },
+  {
+    "table_name": "submissions",
+    "column_name": "grade",
+    "data_type": "numeric"
+  },
+  {
+    "table_name": "submissions",
+    "column_name": "file_name",
+    "data_type": "character varying"
+  },
+  {
+    "table_name": "submissions",
+    "column_name": "file_path",
+    "data_type": "character varying"
+  },
+  {
+    "table_name": "submissions",
+    "column_name": "file_type",
+    "data_type": "character varying"
+  },
+  {
+    "table_name": "submissions",
+    "column_name": "file_size",
+    "data_type": "integer"
+  },
+  {
+    "table_name": "submissions",
+    "column_name": "id",
+    "data_type": "bigint"
+  },
+  {
+    "table_name": "submissions",
+    "column_name": "feedback",
+    "data_type": "text"
+  },
+  {
+    "table_name": "submissions",
+    "column_name": "submitted_at",
+    "data_type": "timestamp with time zone"
+  },
+  {
+    "table_name": "submissions",
+    "column_name": "assessment_id",
+    "data_type": "bigint"
+  },
+  {
+    "table_name": "teaching_materials",
+    "column_name": "file_size",
+    "data_type": "integer"
+  },
+  {
+    "table_name": "teaching_materials",
+    "column_name": "title",
+    "data_type": "character varying"
+  },
+  {
+    "table_name": "teaching_materials",
+    "column_name": "description",
+    "data_type": "text"
+  },
+  {
+    "table_name": "teaching_materials",
+    "column_name": "file_name",
+    "data_type": "character varying"
+  },
+  {
+    "table_name": "teaching_materials",
+    "column_name": "file_path",
+    "data_type": "character varying"
+  },
+  {
+    "table_name": "teaching_materials",
+    "column_name": "views",
+    "data_type": "integer"
+  },
+  {
+    "table_name": "teaching_materials",
+    "column_name": "updated_at",
+    "data_type": "timestamp with time zone"
+  },
+  {
+    "table_name": "teaching_materials",
+    "column_name": "uploaded_at",
+    "data_type": "timestamp with time zone"
+  },
+  {
+    "table_name": "teaching_materials",
+    "column_name": "uploaded_by",
+    "data_type": "bigint"
+  },
+  {
+    "table_name": "teaching_materials",
+    "column_name": "module_code",
+    "data_type": "character varying"
+  },
+  {
+    "table_name": "teaching_materials",
+    "column_name": "id",
+    "data_type": "bigint"
+  },
+  {
+    "table_name": "teaching_materials",
+    "column_name": "file_type",
+    "data_type": "character varying"
+  },
+  {
+    "table_name": "users",
+    "column_name": "updated_at",
+    "data_type": "timestamp with time zone"
+  },
+  {
+    "table_name": "users",
+    "column_name": "created_at",
+    "data_type": "timestamp with time zone"
+  },
+  {
+    "table_name": "users",
+    "column_name": "active",
+    "data_type": "boolean"
+  },
+  {
+    "table_name": "users",
+    "column_name": "id",
+    "data_type": "bigint"
+  },
+  {
+    "table_name": "users",
+    "column_name": "email",
+    "data_type": "character varying"
+  },
+  {
+    "table_name": "users",
+    "column_name": "password",
+    "data_type": "character varying"
+  },
+  {
+    "table_name": "users",
+    "column_name": "role",
+    "data_type": "character varying"
+  },
+  {
+    "table_name": "users",
+    "column_name": "name",
+    "data_type": "character varying"
+  }
+]
