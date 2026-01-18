@@ -7,7 +7,9 @@
   <link rel="icon" href="Images/Logo.png" type="image/png">
   <link rel="stylesheet" href="App.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <style>
     /* Global popup styles */
     .global-popup-overlay {
@@ -6586,5 +6588,95 @@
     // Render the app
     ReactDOM.render(<App />, document.getElementById('root'));
   </script>
+
+  <div style="position: fixed; bottom: 20px; right: 20px; z-index: 10000;">
+    <button onclick="openZapierChat()" 
+      style="
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 60px;
+        height: 60px;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5);
+        font-size: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.3s ease;
+      "
+      onmouseover="showTooltip()"
+      onmouseout="hideTooltip()"
+    >
+      <i class="fas fa-robot"></i>
+    </button>
+    
+    <div id="chat-tooltip" style="
+      position: absolute;
+      bottom: 70px;
+      right: 0;
+      background: #333;
+      color: white;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 14px;
+      white-space: nowrap;
+      display: none;
+      z-index: 10001;
+    ">
+      EduConnect Support Chat
+    </div>
+  </div>
+
+  <script>
+    function openZapierChat() {
+      // Open in popup window
+      const width = 400;
+      const height = 600;
+      const left = window.screen.width - width - 20;
+      const top = window.screen.height - height - 80;
+      
+      window.open(
+        'https://educonnect-learning-centre.zapier.app/',
+        'EduConnectSupport',
+        `width=${width},height=${height},left=${left},top=${top},
+        location=no,menubar=no,toolbar=no,status=no,
+        resizable=yes,scrollbars=yes`
+      );
+    }
+    
+    function showTooltip() {
+      document.getElementById('chat-tooltip').style.display = 'block';
+    }
+    
+    function hideTooltip() {
+      document.getElementById('chat-tooltip').style.display = 'none';
+    }
+    
+    // Optional: Auto-open for first-time users
+    window.addEventListener('load', function() {
+      if (!localStorage.getItem('zapierChatSeen')) {
+        setTimeout(() => {
+          const button = document.querySelector('button[onclick="openZapierChat()"]');
+          button.style.animation = 'pulse 2s infinite';
+          
+          // Create pulse animation
+          const style = document.createElement('style');
+          style.textContent = `
+            @keyframes pulse {
+              0% { transform: scale(1); box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5); }
+              50% { transform: scale(1.1); box-shadow: 0 8px 20px rgba(102, 126, 234, 0.8); }
+              100% { transform: scale(1); box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5); }
+            }
+          `;
+          document.head.appendChild(style);
+        }, 5000);
+        
+        localStorage.setItem('zapierChatSeen', 'true');
+      }
+    });
+  </script>
+
 </body>
 </html>
