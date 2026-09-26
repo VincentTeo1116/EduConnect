@@ -23,13 +23,17 @@ A React-based learning management system for students, instructors, and administ
    cd EduConnect
    ```
 
-2. Open `index.html` in a web browser or serve with a local server:
+2. Install dependencies and start the Vite development server from the `educonnect` directory:
    ```bash
-   python -m http.server 8000
+   cd educonnect
+   npm install
+   npm run dev
    ```
-   Then open http://localhost:8000
+   Open the local URL printed by Vite.
 
-3. **First Time Setup**: The application will automatically create default modules and classes if none exist, allowing immediate testing of the feedback system.
+3. Supabase connection settings are read from the workspace-root `.env` file as `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`. Vite exposes these values to the browser, so the anon key is public and should be protected with Supabase Row Level Security policies.
+
+4. **First Time Setup**: The application will automatically create default modules and classes if none exist, allowing immediate testing of the feedback system.
 
 ## Moodle-like Feedback System
 

@@ -633,8 +633,8 @@
     const { useState, useEffect } = React;
 
     // Supabase configuration
-    const supabaseUrl = 'https://etilwlveocqsozzuizil.supabase.co';
-    const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV0aWx3bHZlb2Nxc296enVpemlsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcxMDc0NTQsImV4cCI6MjA4MjY4MzQ1NH0.VY_acdqcgBFXxXCfUUCIGKKrDRYqZmFTpsNj9_h2pm0';
+    const supabaseUrl = '%VITE_SUPABASE_URL%';
+    const supabaseAnonKey = '%VITE_SUPABASE_ANON_KEY%';
     
     const supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
     
